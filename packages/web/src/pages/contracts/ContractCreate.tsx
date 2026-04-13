@@ -43,6 +43,26 @@ export default function ContractCreate() {
   const { data: docTypes = [] } = useMaster<DocumentType>('document-types');
   const { data: paymentMethods = [] } = useMaster<PaymentMethod>('payment-methods');
 
+  // === Track uploaded documents (docTypeId → filename) ===
+  const [uploadedDocs, setUploadedDocs] = useState<Record<number, { filename: string; url: string }>>({});
+
+  // Upload handler — ส่งไฟล์ขึ้น /api/upload
+  const handleDocUpload = async (docId: number, file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    try {
+      const { data } = await api.post('/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      if (data.success) {
+        setUploadedDocs({ ...uploadedDocs, [docId]: { filename: file.name, url: data.data.url } });
+      }
+    } catch (err) {
+      console.error('Upload failed:', err);
+      alert(locale === 'th' ? 'อัปโหลดไม่สำเร็จ' : 'Upload failed');
+    }
+  };
+
   // === ข้อมูลสัญญาทั้งหมด ===
   const [formData, setFormData] = useState({
     // Step 1 — พื้นที่
@@ -396,28 +416,45 @@ export default function ContractCreate() {
                 {locale === 'th' ? '📎 เอกสารประกอบ' : '📎 Supporting Documents'}
               </Typography>
               <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1 }}>
-                {docTypes.filter((d) => d.isActive).map((doc) => (
-                  <Box
-                    key={doc.id}
-                    sx={{
-                      p: 1.5, border: `1px dashed ${doc.required ? 'rgba(217,83,79,.3)' : 'rgba(22,63,107,.25)'}`, borderRadius: 1,
-                      display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer',
-                      '&:hover': { borderColor: '#005b9f', bgcolor: 'rgba(0,91,159,.04)' },
-                    }}
-                  >
-                    <span className="material-icons-outlined" style={{ fontSize: 22, color: doc.required ? '#d9534f' : '#6c7f92' }}>upload_file</span>
-                    <Box sx={{ flex: 1 }}>
-                      <Typography sx={{ fontSize: 12 }}>
-                        {locale === 'th' ? doc.nameTh : (doc.nameEn || doc.nameTh)}
-                        {doc.required && <span style={{ color: '#d9534f', marginLeft: 4 }}>*</span>}
-                      </Typography>
+                {docTypes.filter((d) => d.isActive).map((doc) => {
+                  const uploaded = uploadedDocs[doc.id];
+                  return (
+                    <Box
+                      key={doc.id}
+                      sx={{
+                        p: 1.5, borderRadius: 1,
+                        border: `1px dashed ${uploaded ? '#1a9e5c' : doc.required ? 'rgba(217,83,79,.3)' : 'rgba(22,63,107,.25)'}`,
+                        bgcolor: uploaded ? 'rgba(26,158,92,.04)' : undefined,
+                        display: 'flex', alignItems: 'center', gap: 1,
+                      }}
+                    >
+                      <span className="material-icons-outlined" style={{ fontSize: 22, color: uploaded ? '#1a9e5c' : doc.required ? '#d9534f' : '#6c7f92' }}>
+                        {uploaded ? 'check_circle' : 'upload_file'}
+                      </span>
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Typography sx={{ fontSize: 12 }}>
+                          {locale === 'th' ? doc.nameTh : (doc.nameEn || doc.nameTh)}
+                          {doc.required && <span style={{ color: '#d9534f', marginLeft: 4 }}>*</span>}
+                        </Typography>
+                        {uploaded && (
+                          <Typography sx={{ fontSize: 9, color: '#1a9e5c', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            ✓ {uploaded.filename}
+                          </Typography>
+                        )}
+                      </Box>
+                      <Button size="small" variant="outlined" component="label" sx={{ fontSize: 10 }}>
+                        {uploaded ? (locale === 'th' ? 'เปลี่ยน' : 'Replace') : (locale === 'th' ? 'เลือกไฟล์' : 'Choose')}
+                        <input
+                          type="file" hidden accept=".pdf,.jpg,.jpeg,.png"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handleDocUpload(doc.id, file);
+                          }}
+                        />
+                      </Button>
                     </Box>
-                    <Button size="small" variant="outlined" component="label" sx={{ fontSize: 10 }}>
-                      {locale === 'th' ? 'เลือกไฟล์' : 'Choose'}
-                      <input type="file" hidden accept=".pdf,.jpg,.jpeg,.png" />
-                    </Button>
-                  </Box>
-                ))}
+                  );
+                })}
               </Box>
             </Box>
           )}

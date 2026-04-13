@@ -3,11 +3,14 @@ import { prisma } from '../../lib/prisma.js';
 
 const router = Router();
 
-// GET /api/dashboard/kpi — ดึงข้อมูล KPI สำหรับหน้า Dashboard
+// GET /api/dashboard/kpi — ดึงข้อมูล KPI สำหรับหน้า Dashboard (รองรับ multi-tenant)
 router.get('/kpi', async (req: Request, res: Response) => {
   try {
     const airportId = req.query.airportId ? Number(req.query.airportId) : undefined;
-    const where = airportId ? { airportId } : {};
+    const where: any = {};
+    if (airportId) where.airportId = airportId;
+    // Multi-tenant filter
+    if (req.orgId) where.airport = { organizationId: req.orgId };
 
     // นับพื้นที่ตามสถานะ
     const [totalUnits, leasedUnits, vacantUnits, reservedUnits] = await Promise.all([

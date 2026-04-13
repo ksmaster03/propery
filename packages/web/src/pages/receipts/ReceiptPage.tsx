@@ -5,6 +5,7 @@ import {
 } from '@mui/material';
 import PageHeader from '../../components/shared/PageHeader';
 import { useTranslation } from '../../lib/i18n';
+import { generateSimplePdf } from '../../lib/pdf';
 
 // ข้อมูล mock ใบเสร็จ
 const mockReceipts = [
@@ -127,10 +128,32 @@ export default function ReceiptPage() {
                     <IconButton size="small" sx={{ color: '#005b9f' }} title={locale === 'th' ? 'ดูใบเสร็จ' : 'View Receipt'}>
                       <span className="material-icons-outlined" style={{ fontSize: 18 }}>visibility</span>
                     </IconButton>
-                    <IconButton size="small" sx={{ color: '#6c7f92' }} title={locale === 'th' ? 'พิมพ์' : 'Print'}>
+                    <IconButton
+                      size="small" sx={{ color: '#6c7f92' }} title={locale === 'th' ? 'พิมพ์' : 'Print'}
+                      onClick={() => window.print()}
+                    >
                       <span className="material-icons-outlined" style={{ fontSize: 18 }}>print</span>
                     </IconButton>
-                    <IconButton size="small" sx={{ color: '#1a9e5c' }} title={locale === 'th' ? 'ดาวน์โหลด' : 'Download'}>
+                    <IconButton
+                      size="small" sx={{ color: '#1a9e5c' }} title={locale === 'th' ? 'ดาวน์โหลด PDF' : 'Download PDF'}
+                      onClick={() => {
+                        generateSimplePdf(
+                          `ใบเสร็จรับเงิน / Official Receipt`,
+                          [
+                            ['เลขที่ใบเสร็จ / Receipt No.', r.receiptNo],
+                            ['อ้างอิงบิล / Bill Ref', r.billNo],
+                            ['สัญญา / Contract', r.contractNo],
+                            ['ผู้ชำระ / Payer', r.shopName],
+                            ['นิติบุคคล / Entity', r.partnerName],
+                            ['จำนวนเงิน / Amount', `฿${formatMoney(r.amount)}`],
+                            ['วันที่ชำระ / Payment Date', r.paymentDate],
+                            ['ช่องทางชำระ / Method', r.paymentMethod],
+                            ['สถานะ / Status', r.status],
+                          ],
+                          `${r.receiptNo}.pdf`
+                        );
+                      }}
+                    >
                       <span className="material-icons-outlined" style={{ fontSize: 18 }}>download</span>
                     </IconButton>
                   </TableCell>

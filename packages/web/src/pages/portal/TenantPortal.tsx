@@ -1,8 +1,9 @@
 import { Box, Paper, Typography, Button, Chip, Divider } from '@mui/material';
 import { useTranslation } from '../../lib/i18n';
+import { usePortalDashboard } from '../../api/hooks';
 
-// ข้อมูลจำลอง — จะเรียก API จริงภายหลัง
-const tenantInfo = {
+// ข้อมูลจำลอง — fallback เมื่อ API ยังโหลดไม่เสร็จหรือ user ไม่ใช่ tenant
+const fallbackTenantInfo = {
   shopName: 'ครัวไทย',
   partnerName: 'บริษัท ฟู้ดแลนด์ จำกัด',
   contractNo: 'CTR-2566-001',
@@ -12,7 +13,7 @@ const tenantInfo = {
   daysLeft: 14,
 };
 
-const currentBill = {
+const fallbackCurrentBill = {
   billNo: 'BILL-202604-001',
   month: 'เม.ย. 2569',
   totalAmount: 78110,
@@ -28,7 +29,7 @@ const currentBill = {
   ],
 };
 
-const paymentHistory = [
+const fallbackPaymentHistory = [
   { month: 'มี.ค. 2569', billNo: 'BILL-202603-001', amount: 77789, date: '2026-03-03', status: 'PAID' },
   { month: 'ก.พ. 2569', billNo: 'BILL-202602-001', amount: 77789, date: '2026-02-05', status: 'PAID' },
   { month: 'ม.ค. 2569', billNo: 'BILL-202601-001', amount: 77789, date: '2026-01-04', status: 'PAID' },
@@ -38,6 +39,45 @@ const formatMoney = (n: number) => new Intl.NumberFormat('th-TH', { minimumFract
 
 export default function TenantPortal() {
   const { locale } = useTranslation();
+
+  // ดึงข้อมูลจาก API (เฉพาะ tenant role)
+  const { data: apiPortal, isError } = usePortalDashboard();
+
+  // ใช้ API data ถ้ามี fallback เป็น mock (สำหรับ demo mode)
+  const tenantInfo = apiPortal?.contracts?.[0]
+    ? {
+        shopName: apiPortal.partner.shopNameTh || apiPortal.partner.nameTh,
+        partnerName: apiPortal.partner.nameTh,
+        contractNo: apiPortal.contracts[0].contractNo,
+        unitCode: apiPortal.contracts[0].unitCode,
+        areaSqm: apiPortal.contracts[0].areaSqm,
+        endDate: apiPortal.contracts[0].endDate,
+        daysLeft: apiPortal.contracts[0].daysLeft,
+      }
+    : fallbackTenantInfo;
+
+  const currentBill = apiPortal?.pendingBills?.[0]
+    ? {
+        billNo: apiPortal.pendingBills[0].billNo,
+        month: new Date(apiPortal.pendingBills[0].billingMonth).toLocaleDateString('th-TH', { month: 'short', year: 'numeric' }),
+        totalAmount: apiPortal.pendingBills[0].totalAmount,
+        dueDate: new Date(apiPortal.pendingBills[0].dueDate).toISOString().slice(0, 10),
+        status: apiPortal.pendingBills[0].status,
+        overdueDays: apiPortal.pendingBills[0].overdueDays,
+        lateFee: apiPortal.pendingBills[0].lateFeeAmount,
+        items: fallbackCurrentBill.items, // API ไม่มี line items — ใช้ fallback
+      }
+    : fallbackCurrentBill;
+
+  const paymentHistory = apiPortal?.paidBills?.length
+    ? apiPortal.paidBills.map((b: any) => ({
+        month: new Date(b.billingMonth).toLocaleDateString('th-TH', { month: 'short', year: 'numeric' }),
+        billNo: b.billNo,
+        amount: b.paidAmount,
+        date: b.paidAt ? new Date(b.paidAt).toISOString().slice(0, 10) : '',
+        status: 'PAID',
+      }))
+    : fallbackPaymentHistory;
 
   return (
     <Box sx={{

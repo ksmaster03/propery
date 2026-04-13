@@ -6,7 +6,7 @@ import PageHeader from '../../components/shared/PageHeader';
 import { useTranslation } from '../../lib/i18n';
 import api from '../../api/client';
 import { useUnits } from '../../api/hooks';
-import { useMaster, ZoneType } from '../../api/master-hooks';
+import { useMaster, ZoneType, useFloorplan, useSaveFloorplan } from '../../api/master-hooks';
 
 // === Types ===
 interface ZoneDraft {
@@ -98,27 +98,58 @@ export default function FloorPlan() {
     return d.toISOString().slice(0, 10);
   });
 
-  // === Upload SVG handler ===
+  // === API hooks สำหรับ Floor Plan SVG ===
+  // TODO: ควรใช้ airport ID จาก DB จริง — ตอนนี้ใช้ 1 ทั้งหมด (DMK)
+  const airportIdNum = 1;
+  const { data: apiFloorplans = [] } = useFloorplan(airportIdNum, buildingId, floorId);
+  const saveFloorplanMut = useSaveFloorplan();
+
+  // โหลด SVG จาก API ตอน airport/building/floor เปลี่ยน
+  useEffect(() => {
+    if (apiFloorplans.length > 0) {
+      const fp = apiFloorplans[0];
+      setFloorplanSvg(fp.svgContent);
+      setFloorplanFilename(fp.name);
+    } else {
+      setFloorplanSvg(null);
+      setFloorplanFilename('');
+    }
+  }, [apiFloorplans]);
+
+  // === Upload SVG handler — ส่งขึ้น API ===
   const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = (ev) => {
+    reader.onload = async (ev) => {
       const content = ev.target?.result as string;
+      let svgFinal: string;
       if (file.type === 'image/svg+xml' || file.name.endsWith('.svg')) {
-        setFloorplanSvg(content);
+        svgFinal = content;
       } else {
         // PNG/JPG — wrap เป็น SVG
-        setFloorplanSvg(
-          `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${canvasSize.width} ${canvasSize.height}"><image href="${content}" width="${canvasSize.width}" height="${canvasSize.height}" preserveAspectRatio="xMidYMid meet" /></svg>`
-        );
+        svgFinal = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${canvasSize.width} ${canvasSize.height}"><image href="${content}" width="${canvasSize.width}" height="${canvasSize.height}" preserveAspectRatio="xMidYMid meet" /></svg>`;
       }
+
+      // แสดงบน canvas ทันที
+      setFloorplanSvg(svgFinal);
       setFloorplanFilename(file.name);
-      // เก็บใน localStorage ต่อ airport+floor key — demo persistence
+
+      // บันทึกลง DB ผ่าน API
       try {
-        localStorage.setItem(`doa-floorplan-${airportId}-${floorId}`, content.substring(0, 500000)); // จำกัดขนาด
-      } catch {}
+        await saveFloorplanMut.mutateAsync({
+          airportId: airportIdNum,
+          buildingCode: buildingId,
+          floorCode: floorId,
+          name: file.name,
+          svgContent: svgFinal,
+          canvasWidth: canvasSize.width,
+          canvasHeight: canvasSize.height,
+        });
+      } catch (err) {
+        console.warn('Failed to save floorplan to DB:', err);
+      }
     };
 
     if (file.type === 'image/svg+xml' || file.name.endsWith('.svg')) {
@@ -127,20 +158,6 @@ export default function FloorPlan() {
       reader.readAsDataURL(file);
     }
   };
-
-  // === Load saved floorplan from localStorage เมื่อเปลี่ยน airport/floor ===
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem(`doa-floorplan-${airportId}-${floorId}`);
-      if (saved) {
-        setFloorplanSvg(saved);
-        setFloorplanFilename(`saved-${airportId}-${floorId}`);
-      } else {
-        setFloorplanSvg(null);
-        setFloorplanFilename('');
-      }
-    } catch {}
-  }, [airportId, floorId]);
 
   // === Helpers ===
   const snap = (val: number) => Math.round(val / GRID_SIZE) * GRID_SIZE;

@@ -1,20 +1,34 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Box, Paper, Typography, TextField, Button, Avatar, Divider, Alert } from '@mui/material';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import PageHeader from '../../components/shared/PageHeader';
 import { useAuthStore } from '../../lib/auth-store';
 import { useTranslation } from '../../lib/i18n';
+import api from '../../api/client';
 
 // หน้าแก้ไขโปรไฟล์ — ผู้ใช้สามารถแก้ไขข้อมูลส่วนตัวและเปลี่ยนรหัสผ่าน
 export default function ProfilePage() {
   const { user } = useAuthStore();
   const { locale } = useTranslation();
   const [saved, setSaved] = useState(false);
+  const [pwdSaved, setPwdSaved] = useState(false);
+  const [error, setError] = useState('');
+  const [pwdError, setPwdError] = useState('');
+
+  // โหลดโปรไฟล์ปัจจุบันจาก API
+  const { data: profile } = useQuery({
+    queryKey: ['profile'],
+    queryFn: async () => {
+      const { data } = await api.get('/profile');
+      return data.data;
+    },
+  });
 
   const [form, setForm] = useState({
-    fullName: user?.username || '',
-    email: user?.email || '',
+    fullName: '',
+    email: '',
     phone: '',
-    department: '',
+    departmentCode: '',
   });
 
   const [passwordForm, setPasswordForm] = useState({
@@ -23,10 +37,65 @@ export default function ProfilePage() {
     confirmPassword: '',
   });
 
+  // Sync API data → form
+  useEffect(() => {
+    if (profile) {
+      setForm({
+        fullName: profile.fullName || '',
+        email: profile.email || '',
+        phone: profile.phone || '',
+        departmentCode: profile.departmentCode || '',
+      });
+    }
+  }, [profile]);
+
+  // Save profile mutation
+  const saveMut = useMutation({
+    mutationFn: async (payload: typeof form) => {
+      const { data } = await api.put('/profile', payload);
+      return data;
+    },
+    onSuccess: () => {
+      setSaved(true);
+      setError('');
+      setTimeout(() => setSaved(false), 3000);
+    },
+    onError: (err: any) => setError(err.response?.data?.error || 'Failed to save'),
+  });
+
+  // Change password mutation
+  const pwdMut = useMutation({
+    mutationFn: async (payload: { currentPassword: string; newPassword: string }) => {
+      const { data } = await api.put('/profile/password', payload);
+      return data;
+    },
+    onSuccess: () => {
+      setPwdSaved(true);
+      setPwdError('');
+      setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      setTimeout(() => setPwdSaved(false), 3000);
+    },
+    onError: (err: any) => setPwdError(err.response?.data?.error || 'Failed'),
+  });
+
   const handleSave = () => {
-    // TODO: เรียก API บันทึกจริง
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+    saveMut.mutate(form);
+  };
+
+  const handleChangePassword = () => {
+    setPwdError('');
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setPwdError(locale === 'th' ? 'รหัสผ่านใหม่ไม่ตรงกัน' : 'Passwords do not match');
+      return;
+    }
+    if (passwordForm.newPassword.length < 6) {
+      setPwdError(locale === 'th' ? 'รหัสผ่านต้องยาวอย่างน้อย 6 ตัวอักษร' : 'Password must be at least 6 chars');
+      return;
+    }
+    pwdMut.mutate({
+      currentPassword: passwordForm.currentPassword,
+      newPassword: passwordForm.newPassword,
+    });
   };
 
   return (
@@ -95,13 +164,18 @@ export default function ProfilePage() {
               <TextField
                 label={locale === 'th' ? 'แผนก/หน่วยงาน' : 'Department'}
                 size="small" fullWidth
-                value={form.department}
-                onChange={(e) => setForm({ ...form, department: e.target.value })}
+                value={form.departmentCode}
+                onChange={(e) => setForm({ ...form, departmentCode: e.target.value })}
               />
 
-              <Button variant="contained" onClick={handleSave} sx={{ mt: 1, fontSize: 12 }}>
+              {error && <Alert severity="error" sx={{ fontSize: 11 }}>{error}</Alert>}
+              {saved && <Alert severity="success" sx={{ fontSize: 11 }}>{locale === 'th' ? '✓ บันทึกเรียบร้อย' : '✓ Saved'}</Alert>}
+
+              <Button variant="contained" onClick={handleSave} disabled={saveMut.isPending} sx={{ mt: 1, fontSize: 12 }}>
                 <span className="material-icons-outlined" style={{ fontSize: 16, marginRight: 4 }}>save</span>
-                {locale === 'th' ? 'บันทึกข้อมูล' : 'Save Changes'}
+                {saveMut.isPending
+                  ? (locale === 'th' ? 'กำลังบันทึก...' : 'Saving...')
+                  : (locale === 'th' ? 'บันทึกข้อมูล' : 'Save Changes')}
               </Button>
             </Box>
           </Paper>
@@ -136,13 +210,22 @@ export default function ProfilePage() {
 
               <Alert severity="info" sx={{ fontSize: 11 }}>
                 {locale === 'th'
-                  ? 'รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร ประกอบด้วยตัวพิมพ์ใหญ่ ตัวพิมพ์เล็ก และตัวเลข'
-                  : 'Password must be at least 8 characters with uppercase, lowercase, and numbers'}
+                  ? 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร'
+                  : 'Password must be at least 6 characters'}
               </Alert>
+              {pwdError && <Alert severity="error" sx={{ fontSize: 11 }}>{pwdError}</Alert>}
+              {pwdSaved && <Alert severity="success" sx={{ fontSize: 11 }}>{locale === 'th' ? '✓ เปลี่ยนรหัสผ่านสำเร็จ' : '✓ Password changed'}</Alert>}
 
-              <Button variant="contained" color="warning" sx={{ mt: 1, fontSize: 12 }}>
+              <Button
+                variant="contained" color="warning"
+                onClick={handleChangePassword}
+                disabled={pwdMut.isPending}
+                sx={{ mt: 1, fontSize: 12 }}
+              >
                 <span className="material-icons-outlined" style={{ fontSize: 16, marginRight: 4 }}>vpn_key</span>
-                {locale === 'th' ? 'เปลี่ยนรหัสผ่าน' : 'Change Password'}
+                {pwdMut.isPending
+                  ? (locale === 'th' ? 'กำลังเปลี่ยน...' : 'Changing...')
+                  : (locale === 'th' ? 'เปลี่ยนรหัสผ่าน' : 'Change Password')}
               </Button>
             </Box>
           </Paper>

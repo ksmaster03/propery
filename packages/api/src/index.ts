@@ -17,6 +17,7 @@ import portalRoutes from './routes/portal/portal.routes.js';
 import userRoutes from './routes/user/user.routes.js';
 import settingsRoutes from './routes/settings/settings.routes.js';
 import auditRoutes from './routes/audit/audit.routes.js';
+import profileRoutes from './routes/profile/profile.routes.js';
 import { orgContext } from './middleware/org-context.js';
 
 const app = express();
@@ -49,6 +50,7 @@ app.use('/api/portal', authGuard, portalRoutes);
 app.use('/api/users', authGuard, userRoutes);
 app.use('/api/settings', authGuard, settingsRoutes);
 app.use('/api/audit', authGuard, auditRoutes);
+app.use('/api/profile', authGuard, profileRoutes);
 
 // === จัดการ Error กลาง ===
 app.use(errorHandler);

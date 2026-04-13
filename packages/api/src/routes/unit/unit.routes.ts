@@ -3,13 +3,15 @@ import { prisma } from '../../lib/prisma.js';
 
 const router = Router();
 
-// GET /api/units — รายการพื้นที่เช่าทั้งหมด (รองรับ filter + pagination)
+// GET /api/units — รายการพื้นที่เช่าทั้งหมด (รองรับ filter + pagination + multi-tenant)
 router.get('/', async (req: Request, res: Response) => {
   try {
     const { airportId, zoneId, status, search, page = '1', limit = '20' } = req.query;
     const skip = (Number(page) - 1) * Number(limit);
 
     const where: any = { isActive: true };
+    // Multi-tenant: filter ตาม active org ถ้ามี
+    if (req.orgId) where.airport = { organizationId: req.orgId };
     if (airportId) where.airportId = Number(airportId);
     if (zoneId) where.zoneId = Number(zoneId);
     if (status) where.status = status as string;

@@ -179,3 +179,37 @@ export function useBills(params?: { status?: string; contractId?: number; page?:
     },
   });
 }
+
+// === Reports ===
+export function useRevenueReport(year?: number) {
+  return useQuery({
+    queryKey: ['reports', 'revenue', year],
+    queryFn: async () => {
+      const { data } = await api.get('/reports/revenue', {
+        params: year ? { year } : undefined,
+      });
+      return data.data;
+    },
+  });
+}
+
+export function useAreaReport() {
+  return useQuery({
+    queryKey: ['reports', 'area'],
+    queryFn: async () => {
+      const { data } = await api.get('/reports/area');
+      return data.data;
+    },
+  });
+}
+
+// === Portal ===
+export function usePortalDashboard() {
+  return useQuery({
+    queryKey: ['portal', 'dashboard'],
+    queryFn: async () => {
+      const { data } = await api.get('/portal/dashboard');
+      return data.data;
+    },
+  });
+}

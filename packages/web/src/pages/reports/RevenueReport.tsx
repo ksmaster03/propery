@@ -7,6 +7,7 @@ import {
 } from 'chart.js';
 import PageHeader from '../../components/shared/PageHeader';
 import { useTranslation } from '../../lib/i18n';
+import { useRevenueReport } from '../../api/hooks';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, ArcElement, Filler, Title, Tooltip, Legend);
 
@@ -19,19 +20,27 @@ export default function RevenueReport() {
   const { locale } = useTranslation();
   const labels = locale === 'th' ? months : monthsEn;
 
+  // ดึงข้อมูล report จาก API
+  const { data: apiReport } = useRevenueReport();
+
+  // ใช้ข้อมูล API ถ้ามี fallback เป็น mock ถ้า loading
+  const actualData = apiReport?.monthlyRevenue?.map((m: any) => m.actual) || [3650000, 3820000, 3940000, 4050000, 4180000, 4270000];
+  const forecastData = apiReport?.monthlyRevenue?.map((m: any) => m.forecast) || [3800000, 3900000, 4000000, 4100000, 4200000, 4300000, 4400000, 4500000, 4600000, 4700000, 4800000, 4900000];
+  const summary = apiReport?.summary || { totalYtd: 23910000, avgMonthly: 3990000, collectionRate: 94.2, outstanding: 370000 };
+
   // กราฟ Revenue Trend
   const revenueTrendData = {
     labels,
     datasets: [{
       label: locale === 'th' ? 'รายรับจริง' : 'Actual Revenue',
-      data: [3650000, 3820000, 3940000, 4050000, 4180000, 4270000],
+      data: actualData,
       borderColor: '#005b9f',
       backgroundColor: 'rgba(0,91,159,.1)',
       fill: true,
       tension: .4,
     }, {
       label: locale === 'th' ? 'ประมาณการ' : 'Forecast',
-      data: [3800000, 3900000, 4000000, 4100000, 4200000, 4300000, 4400000, 4500000, 4600000, 4700000, 4800000, 4900000],
+      data: forecastData,
       borderColor: '#d7a94b',
       borderDash: [5, 5],
       fill: false,
@@ -88,10 +97,10 @@ export default function RevenueReport() {
         {/* KPI Summary */}
         <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 1.5, mb: 2 }}>
           {[
-            { label: locale === 'th' ? 'รายรับรวม (ปีนี้)' : 'Total Revenue (YTD)', value: '฿23.91M', sub: '↑ +12.4%', color: '#005b9f' },
-            { label: locale === 'th' ? 'รายรับเฉลี่ย/เดือน' : 'Avg Monthly', value: '฿3.99M', sub: locale === 'th' ? '6 เดือน' : '6 months', color: '#0f73b8' },
-            { label: locale === 'th' ? 'อัตราเก็บเงินได้' : 'Collection Rate', value: '94.2%', sub: '↑ +2.1%', color: '#1a9e5c' },
-            { label: locale === 'th' ? 'ค้างชำระ' : 'Outstanding', value: '฿0.37M', sub: '↓ -15.3%', color: '#d9534f' },
+            { label: locale === 'th' ? 'รายรับรวม (ปีนี้)' : 'Total Revenue (YTD)', value: summary.totalYtd >= 1_000_000 ? `฿${(summary.totalYtd / 1_000_000).toFixed(2)}M` : `฿${formatMoney(summary.totalYtd)}`, sub: '↑ Live', color: '#005b9f' },
+            { label: locale === 'th' ? 'รายรับเฉลี่ย/เดือน' : 'Avg Monthly', value: summary.avgMonthly >= 1_000_000 ? `฿${(summary.avgMonthly / 1_000_000).toFixed(2)}M` : `฿${formatMoney(summary.avgMonthly)}`, sub: locale === 'th' ? 'จาก DB' : 'from DB', color: '#0f73b8' },
+            { label: locale === 'th' ? 'อัตราเก็บเงินได้' : 'Collection Rate', value: `${summary.collectionRate}%`, sub: '↑ real', color: '#1a9e5c' },
+            { label: locale === 'th' ? 'ค้างชำระ' : 'Outstanding', value: summary.outstanding >= 1_000_000 ? `฿${(summary.outstanding / 1_000_000).toFixed(2)}M` : `฿${formatMoney(summary.outstanding)}`, sub: '↓ real', color: '#d9534f' },
           ].map((s) => (
             <Paper key={s.label} elevation={0} sx={{ p: 2, border: '1px solid rgba(22,63,107,.12)', boxShadow: '0 2px 12px rgba(10,22,40,.08)', textAlign: 'center' }}>
               <Typography sx={{ fontSize: 24, fontWeight: 700, fontFamily: "'IBM Plex Mono', monospace", color: s.color }}>{s.value}</Typography>

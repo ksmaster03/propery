@@ -2,11 +2,14 @@ import { useState } from 'react';
 import {
   Box, Paper, Typography, Button, Chip, Tabs, Tab,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-  IconButton,
+  IconButton, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Select, MenuItem, Alert,
 } from '@mui/material';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import PageHeader from '../../components/shared/PageHeader';
 import { useTranslation } from '../../lib/i18n';
 import { useBills } from '../../api/hooks';
+import { useMaster, PaymentMethod } from '../../api/master-hooks';
+import api from '../../api/client';
 
 // Fallback — ใช้ตอน offline/demo
 const fallbackBills = [
@@ -29,7 +32,61 @@ const formatMoney = (n: number) => new Intl.NumberFormat('th-TH', { minimumFract
 
 export default function BillingPage() {
   const { t, locale } = useTranslation();
+  const qc = useQueryClient();
   const [tab, setTab] = useState(0);
+  const [payDialogOpen, setPayDialogOpen] = useState(false);
+  const [batchDialogOpen, setBatchDialogOpen] = useState(false);
+  const [selectedBill, setSelectedBill] = useState<any>(null);
+  const [payForm, setPayForm] = useState({ paidAmount: 0, paymentRef: '', paymentMethod: 'TRANSFER' });
+  const [batchMonth, setBatchMonth] = useState(() => new Date().toISOString().slice(0, 7));
+  const [alertMsg, setAlertMsg] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
+
+  // Master data สำหรับ payment method dropdown
+  const { data: paymentMethods = [] } = useMaster<PaymentMethod>('payment-methods');
+
+  // Mutations
+  const payMut = useMutation({
+    mutationFn: async ({ id, ...payload }: any) => {
+      const { data } = await api.post(`/bills/${id}/pay`, payload);
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['bills'] });
+      setPayDialogOpen(false);
+      setAlertMsg({ type: 'success', msg: locale === 'th' ? 'บันทึกการชำระเงินเรียบร้อย' : 'Payment recorded' });
+      setTimeout(() => setAlertMsg(null), 3000);
+    },
+    onError: (err: any) => setAlertMsg({ type: 'error', msg: err.response?.data?.error || 'Failed to save payment' }),
+  });
+
+  const batchMut = useMutation({
+    mutationFn: async (billingMonth: string) => {
+      const { data } = await api.post('/bills/generate-batch', { billingMonth: `${billingMonth}-01` });
+      return data;
+    },
+    onSuccess: (data: any) => {
+      qc.invalidateQueries({ queryKey: ['bills'] });
+      setBatchDialogOpen(false);
+      setAlertMsg({ type: 'success', msg: data.message || 'Batch generated' });
+      setTimeout(() => setAlertMsg(null), 3000);
+    },
+    onError: (err: any) => setAlertMsg({ type: 'error', msg: err.response?.data?.error || 'Failed to generate' }),
+  });
+
+  const handlePay = (bill: any) => {
+    setSelectedBill(bill);
+    setPayForm({
+      paidAmount: bill.totalAmount + (bill.lateFee || 0),
+      paymentRef: '',
+      paymentMethod: 'TRANSFER',
+    });
+    setPayDialogOpen(true);
+  };
+
+  const confirmPay = () => {
+    if (!selectedBill) return;
+    payMut.mutate({ id: selectedBill.id, ...payForm });
+  };
 
   const tabFilters = ['ALL', 'ISSUED', 'PAID', 'OVERDUE'];
 
@@ -56,7 +113,7 @@ export default function BillingPage() {
         title={t('nav.billing')}
         subtitle={locale === 'th' ? 'จัดการใบแจ้งหนี้และการชำระค่าเช่า' : 'Manage billing and rent payments'}
         actions={
-          <Button variant="contained" size="small" sx={{ fontSize: 11 }}>
+          <Button variant="contained" size="small" sx={{ fontSize: 11 }} onClick={() => setBatchDialogOpen(true)}>
             <span className="material-icons-outlined" style={{ fontSize: 16, marginRight: 4 }}>receipt_long</span>
             {locale === 'th' ? 'สร้างบิลรายเดือน' : 'Generate Monthly Bills'}
           </Button>
@@ -141,7 +198,7 @@ export default function BillingPage() {
                     </TableCell>
                     <TableCell align="center">
                       {bill.status !== 'PAID' && (
-                        <Button size="small" variant="outlined" color="success" sx={{ fontSize: 10, mr: .5 }}>
+                        <Button size="small" variant="outlined" color="success" sx={{ fontSize: 10, mr: .5 }} onClick={() => handlePay(bill)}>
                           <span className="material-icons-outlined" style={{ fontSize: 14, marginRight: 2 }}>payments</span>
                           {locale === 'th' ? 'ชำระ' : 'Pay'}
                         </Button>
@@ -156,7 +213,78 @@ export default function BillingPage() {
             </TableBody>
           </Table>
         </Paper>
+
+        {alertMsg && (
+          <Alert severity={alertMsg.type} sx={{ position: 'fixed', top: 80, right: 20, zIndex: 1400, fontSize: 12 }}>
+            {alertMsg.msg}
+          </Alert>
+        )}
       </Box>
+
+      {/* === Pay Dialog === */}
+      <Dialog open={payDialogOpen} onClose={() => setPayDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ fontSize: 14, fontWeight: 700, borderBottom: '1px solid rgba(22,63,107,.12)' }}>
+          💳 {locale === 'th' ? 'บันทึกการชำระเงิน' : 'Record Payment'}
+        </DialogTitle>
+        <DialogContent sx={{ pt: '20px !important' }}>
+          {selectedBill && (
+            <Box>
+              <Paper elevation={0} sx={{ p: 2, mb: 2, bgcolor: '#f4f8fc' }}>
+                <Typography sx={{ fontSize: 11, color: '#6c7f92' }}>{locale === 'th' ? 'บิล' : 'Bill'}</Typography>
+                <Typography sx={{ fontSize: 13, fontWeight: 700 }}>{selectedBill.billNo}</Typography>
+                <Typography sx={{ fontSize: 12, color: '#6c7f92' }}>{selectedBill.shopName} · ฿{formatMoney(selectedBill.totalAmount)}</Typography>
+              </Paper>
+
+              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+                <TextField size="small" type="number" label={locale === 'th' ? 'จำนวนเงิน' : 'Amount'} value={payForm.paidAmount} onChange={(e) => setPayForm({ ...payForm, paidAmount: Number(e.target.value) })} />
+                <Select size="small" value={payForm.paymentMethod} onChange={(e) => setPayForm({ ...payForm, paymentMethod: e.target.value })}>
+                  {paymentMethods.filter((m) => m.isActive).map((m) => (
+                    <MenuItem key={m.id} value={m.code}>{locale === 'th' ? m.nameTh : (m.nameEn || m.nameTh)}</MenuItem>
+                  ))}
+                </Select>
+                <TextField size="small" label={locale === 'th' ? 'เลขอ้างอิง' : 'Reference'} value={payForm.paymentRef} onChange={(e) => setPayForm({ ...payForm, paymentRef: e.target.value })} sx={{ gridColumn: '1/3' }} />
+              </Box>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ px: 3, py: 1.5, borderTop: '1px solid rgba(22,63,107,.12)' }}>
+          <Button onClick={() => setPayDialogOpen(false)} variant="outlined">
+            {locale === 'th' ? 'ยกเลิก' : 'Cancel'}
+          </Button>
+          <Button onClick={confirmPay} variant="contained" color="success" disabled={payMut.isPending}>
+            {payMut.isPending ? (locale === 'th' ? 'กำลังบันทึก...' : 'Saving...') : (locale === 'th' ? 'บันทึกการชำระ' : 'Record Payment')}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* === Batch Generate Dialog === */}
+      <Dialog open={batchDialogOpen} onClose={() => setBatchDialogOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ fontSize: 14, fontWeight: 700, borderBottom: '1px solid rgba(22,63,107,.12)' }}>
+          📄 {locale === 'th' ? 'สร้างบิลรายเดือน (Batch)' : 'Generate Monthly Bills'}
+        </DialogTitle>
+        <DialogContent sx={{ pt: '20px !important' }}>
+          <Typography sx={{ fontSize: 11, color: '#6c7f92', mb: 2 }}>
+            {locale === 'th'
+              ? 'ระบบจะสร้างบิลสำหรับทุกสัญญาที่ active ในเดือนที่เลือก คำนวณค่าเช่า + ค่าน้ำค่าไฟ + VAT อัตโนมัติ'
+              : 'System will generate bills for all active contracts. Auto-calculates rent + utilities + VAT.'}
+          </Typography>
+          <TextField
+            fullWidth size="small" type="month"
+            label={locale === 'th' ? 'เดือนที่ออกบิล' : 'Billing Month'}
+            value={batchMonth}
+            onChange={(e) => setBatchMonth(e.target.value)}
+            InputLabelProps={{ shrink: true }}
+          />
+        </DialogContent>
+        <DialogActions sx={{ px: 3, py: 1.5, borderTop: '1px solid rgba(22,63,107,.12)' }}>
+          <Button onClick={() => setBatchDialogOpen(false)} variant="outlined">
+            {locale === 'th' ? 'ยกเลิก' : 'Cancel'}
+          </Button>
+          <Button onClick={() => batchMut.mutate(batchMonth)} variant="contained" disabled={batchMut.isPending}>
+            {batchMut.isPending ? (locale === 'th' ? 'กำลังสร้าง...' : 'Generating...') : (locale === 'th' ? 'สร้างบิล' : 'Generate')}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 }

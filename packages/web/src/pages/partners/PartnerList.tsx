@@ -2,12 +2,14 @@ import { useState } from 'react';
 import {
   Box, Paper, Typography, TextField, Select, MenuItem, Button,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-  Chip, IconButton, InputAdornment, Pagination,
+  Chip, IconButton, InputAdornment, Pagination, Alert,
   Dialog, DialogTitle, DialogContent, DialogActions,
 } from '@mui/material';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import PageHeader from '../../components/shared/PageHeader';
 import { useTranslation } from '../../lib/i18n';
 import { usePartners } from '../../api/hooks';
+import api from '../../api/client';
 
 // Fallback — ใช้ตอน offline/demo mode
 const fallbackPartners = [
@@ -23,9 +25,35 @@ const fallbackPartners = [
 
 export default function PartnerList() {
   const { t, locale } = useTranslation();
+  const qc = useQueryClient();
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState('ALL');
   const [addOpen, setAddOpen] = useState(false);
+  const [form, setForm] = useState<any>({ partnerType: 'JURISTIC' });
+  const [error, setError] = useState('');
+
+  // Create mutation
+  const createMut = useMutation({
+    mutationFn: async (payload: any) => {
+      const { data } = await api.post('/partners', payload);
+      return data.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['partners'] });
+      setAddOpen(false);
+      setForm({ partnerType: 'JURISTIC' });
+      setError('');
+    },
+    onError: (err: any) => setError(err.response?.data?.error || 'Failed to create'),
+  });
+
+  const handleSubmit = () => {
+    if (!form.nameTh || !form.taxId) {
+      setError(locale === 'th' ? 'กรุณากรอก ชื่อ และ เลขภาษี' : 'Name and Tax ID required');
+      return;
+    }
+    createMut.mutate(form);
+  };
 
   // เรียก API — fallback เป็น mock
   const { data: apiData } = usePartners({
@@ -171,24 +199,33 @@ export default function PartnerList() {
           </Box>
         </DialogTitle>
         <DialogContent sx={{ pt: '16px !important' }}>
+          {error && <Alert severity="error" sx={{ mb: 2, fontSize: 11 }}>{error}</Alert>}
           <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mt: 1 }}>
-            <TextField label={t('partners.name')} size="small" fullWidth required />
-            <TextField label={locale === 'th' ? 'ชื่อ (อังกฤษ)' : 'Name (English)'} size="small" fullWidth />
-            <TextField label={t('partners.shopName')} size="small" fullWidth />
-            <TextField label={t('partners.taxId')} size="small" fullWidth required />
-            <TextField label={t('partners.contact')} size="small" fullWidth />
-            <TextField label={t('partners.phone')} size="small" fullWidth />
-            <TextField label="Email" size="small" fullWidth sx={{ gridColumn: '1/3' }} />
+            <Select size="small" value={form.partnerType || 'JURISTIC'} onChange={(e) => setForm({ ...form, partnerType: e.target.value })} sx={{ gridColumn: '1/3' }}>
+              <MenuItem value="JURISTIC">{t('partners.juristic')}</MenuItem>
+              <MenuItem value="INDIVIDUAL">{t('partners.individual')}</MenuItem>
+            </Select>
+            <TextField label={t('partners.name')} size="small" fullWidth required value={form.nameTh || ''} onChange={(e) => setForm({ ...form, nameTh: e.target.value })} />
+            <TextField label={locale === 'th' ? 'ชื่อ (อังกฤษ)' : 'Name (English)'} size="small" fullWidth value={form.nameEn || ''} onChange={(e) => setForm({ ...form, nameEn: e.target.value })} />
+            <TextField label={t('partners.shopName')} size="small" fullWidth value={form.shopNameTh || ''} onChange={(e) => setForm({ ...form, shopNameTh: e.target.value })} />
+            <TextField label={t('partners.taxId')} size="small" fullWidth required value={form.taxId || ''} onChange={(e) => setForm({ ...form, taxId: e.target.value })} />
+            <TextField label={t('partners.contact')} size="small" fullWidth value={form.contactPerson || ''} onChange={(e) => setForm({ ...form, contactPerson: e.target.value })} />
+            <TextField label={t('partners.phone')} size="small" fullWidth value={form.phone || ''} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
+            <TextField label="Email" size="small" fullWidth sx={{ gridColumn: '1/3' }} value={form.email || ''} onChange={(e) => setForm({ ...form, email: e.target.value })} />
             <TextField
               label={locale === 'th' ? 'ที่อยู่' : 'Address'}
               size="small" fullWidth multiline rows={2}
               sx={{ gridColumn: '1/3' }}
+              value={form.address || ''}
+              onChange={(e) => setForm({ ...form, address: e.target.value })}
             />
           </Box>
         </DialogContent>
         <DialogActions sx={{ px: 3, py: 1.5, borderTop: '1px solid rgba(22,63,107,.12)' }}>
-          <Button onClick={() => setAddOpen(false)} variant="outlined" size="small">{t('common.cancel')}</Button>
-          <Button variant="contained" size="small">{t('common.save')}</Button>
+          <Button onClick={() => setAddOpen(false)} variant="outlined" size="small" disabled={createMut.isPending}>{t('common.cancel')}</Button>
+          <Button onClick={handleSubmit} variant="contained" size="small" disabled={createMut.isPending}>
+            {createMut.isPending ? (locale === 'th' ? 'กำลังบันทึก...' : 'Saving...') : t('common.save')}
+          </Button>
         </DialogActions>
       </Dialog>
     </>

@@ -10,6 +10,8 @@ router.get('/', async (req: Request, res: Response) => {
     const skip = (Number(page) - 1) * Number(limit);
 
     const where: any = {};
+    // Multi-tenant filter via airport's organization
+    if (req.orgId) where.airport = { organizationId: req.orgId };
     if (airportId) where.airportId = Number(airportId);
     if (status) where.contractStatus = status as string;
     if (type) where.contractType = type as string;
