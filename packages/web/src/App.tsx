@@ -22,6 +22,7 @@ import TemplatePage from './pages/templates/TemplatePage';
 import SettingsPage from './pages/settings/SettingsPage';
 import TenantPortal from './pages/portal/TenantPortal';
 import ProfilePage from './pages/profile/ProfilePage';
+import MasterDataPage from './pages/master-data/MasterDataPage';
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 30_000, retry: 1 } },
@@ -58,6 +59,7 @@ export default function App() {
               <Route path="/reports/area" element={<AreaReport />} />
               <Route path="/import-export" element={<ImportExport />} />
               <Route path="/data-cleansing" element={<DataCleansing />} />
+              <Route path="/master-data" element={<MasterDataPage />} />
               <Route path="/templates" element={<TemplatePage />} />
               <Route path="/settings" element={<SettingsPage />} />
               <Route path="/portal" element={<TenantPortal />} />

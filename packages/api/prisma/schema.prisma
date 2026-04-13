@@ -772,3 +772,134 @@ model TmTemplate {
 
   @@map("m_template")
 }
+
+// ============================================================
+// MASTER DATA: Organization (หน่วยงาน / บริษัท)
+// ใช้สำหรับ multi-tenant — 1 ระบบรองรับหลายหน่วยงาน
+// ============================================================
+
+model TmOrganization {
+  id             Int      @id @default(autoincrement())
+  orgCode        String   @unique @map("org_code") @db.VarChar(20)
+  nameTh         String   @map("name_th") @db.VarChar(200)
+  nameEn         String?  @map("name_en") @db.VarChar(200)
+  shortNameTh    String?  @map("short_name_th") @db.VarChar(50)
+  shortNameEn    String?  @map("short_name_en") @db.VarChar(50)
+  taxId          String?  @map("tax_id") @db.VarChar(20)
+  addressTh      String?  @map("address_th") @db.Text
+  addressEn      String?  @map("address_en") @db.Text
+  phone          String?  @map("phone") @db.VarChar(50)
+  email          String?  @map("email") @db.VarChar(100)
+  website        String?  @map("website") @db.VarChar(200)
+  logoUrl        String?  @map("logo_url") @db.VarChar(500)
+  // รายได้แบ่งตาม %
+  treasuryPct       Decimal? @default(50) @map("treasury_pct") @db.Decimal(5, 2)
+  welfareFundPct    Decimal? @default(20) @map("welfare_fund_pct") @db.Decimal(5, 2)
+  revolvingFundPct  Decimal? @default(30) @map("revolving_fund_pct") @db.Decimal(5, 2)
+  isActive       Boolean  @default(true) @map("is_active")
+  isDefault      Boolean  @default(false) @map("is_default")
+  createdBy      String?  @map("created_by") @db.VarChar(50)
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedBy      String?  @map("updated_by") @db.VarChar(50)
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  @@map("m_organization")
+}
+
+// ============================================================
+// MASTER DATA: ประเภทโซน (Booth, Retail, Event, Lounge, ...)
+// ============================================================
+
+model TmZoneType {
+  id          Int      @id @default(autoincrement())
+  code        String   @unique @map("code") @db.VarChar(20)
+  nameTh      String   @map("name_th") @db.VarChar(100)
+  nameEn      String?  @map("name_en") @db.VarChar(100)
+  icon        String?  @map("icon") @db.VarChar(50)
+  color       String?  @map("color") @db.VarChar(20)
+  defaultRate Decimal? @map("default_rate") @db.Decimal(12, 2)
+  sortOrder   Int      @default(0) @map("sort_order")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  @@map("m_zone_type")
+}
+
+// ============================================================
+// MASTER DATA: หมวดหมู่ธุรกิจ / วัตถุประสงค์การเช่า
+// ============================================================
+
+model TmBusinessCategory {
+  id         Int      @id @default(autoincrement())
+  code       String   @unique @map("code") @db.VarChar(30)
+  nameTh     String   @map("name_th") @db.VarChar(150)
+  nameEn     String?  @map("name_en") @db.VarChar(150)
+  icon       String?  @map("icon") @db.VarChar(50)
+  sortOrder  Int      @default(0) @map("sort_order")
+  isActive   Boolean  @default(true) @map("is_active")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  @@map("m_business_category")
+}
+
+// ============================================================
+// MASTER DATA: วิธีการชำระเงิน
+// ============================================================
+
+model TmPaymentMethod {
+  id         Int      @id @default(autoincrement())
+  code       String   @unique @map("code") @db.VarChar(30)
+  nameTh     String   @map("name_th") @db.VarChar(100)
+  nameEn     String?  @map("name_en") @db.VarChar(100)
+  icon       String?  @map("icon") @db.VarChar(50)
+  requiresRef Boolean @default(false) @map("requires_ref")
+  sortOrder  Int      @default(0) @map("sort_order")
+  isActive   Boolean  @default(true) @map("is_active")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  @@map("m_payment_method")
+}
+
+// ============================================================
+// MASTER DATA: ประเภทเอกสาร (สำหรับ upload ตอนสร้างสัญญา)
+// ============================================================
+
+model TmDocumentType {
+  id         Int      @id @default(autoincrement())
+  code       String   @unique @map("code") @db.VarChar(40)
+  nameTh     String   @map("name_th") @db.VarChar(150)
+  nameEn     String?  @map("name_en") @db.VarChar(150)
+  required   Boolean  @default(false) @map("required")
+  forPartner Boolean  @default(true) @map("for_partner")
+  forJuristic Boolean @default(true) @map("for_juristic")
+  sortOrder  Int      @default(0) @map("sort_order")
+  isActive   Boolean  @default(true) @map("is_active")
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  @@map("m_document_type")
+}
+
+// ============================================================
+// MASTER DATA: แผนก / ฝ่ายในหน่วยงาน
+// ============================================================
+
+model TmDepartment {
+  id        Int      @id @default(autoincrement())
+  code      String   @unique @map("code") @db.VarChar(30)
+  nameTh    String   @map("name_th") @db.VarChar(200)
+  nameEn    String?  @map("name_en") @db.VarChar(200)
+  parentId  Int?     @map("parent_id")
+  sortOrder Int      @default(0) @map("sort_order")
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  parent    TmDepartment?  @relation("DepartmentHierarchy", fields: [parentId], references: [id])
+  children  TmDepartment[] @relation("DepartmentHierarchy")
+
+  @@map("m_department")
+}

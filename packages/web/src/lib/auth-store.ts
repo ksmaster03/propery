@@ -14,8 +14,10 @@ interface AuthState {
   accessToken: string | null;
   refreshToken: string | null;
   mode: 'admin' | 'tenant'; // สลับระหว่างโหมดเจ้าหน้าที่ / ผู้เช่า
+  activeOrgId: number | null; // หน่วยงานที่ active อยู่ (multi-tenant)
   setAuth: (user: User, accessToken: string, refreshToken: string) => void;
   setMode: (mode: 'admin' | 'tenant') => void;
+  setActiveOrg: (orgId: number | null) => void;
   logout: () => void;
 }
 
@@ -27,11 +29,13 @@ export const useAuthStore = create<AuthState>()(
       accessToken: null,
       refreshToken: null,
       mode: 'admin',
+      activeOrgId: null,
       setAuth: (user, accessToken, refreshToken) =>
         set({ user, accessToken, refreshToken }),
       setMode: (mode) => set({ mode }),
+      setActiveOrg: (orgId) => set({ activeOrgId: orgId }),
       logout: () =>
-        set({ user: null, accessToken: null, refreshToken: null, mode: 'admin' }),
+        set({ user: null, accessToken: null, refreshToken: null, mode: 'admin', activeOrgId: null }),
     }),
     { name: 'doa-auth' }
   )

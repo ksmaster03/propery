@@ -1,8 +1,9 @@
-import { Box, Typography, Button, Avatar, Divider, IconButton, Menu, MenuItem, useMediaQuery, useTheme } from '@mui/material';
-import { useState } from 'react';
+import { Box, Typography, Button, Avatar, Divider, IconButton, Menu, MenuItem, Select, useMediaQuery, useTheme } from '@mui/material';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../lib/auth-store';
 import { useTranslation } from '../../lib/i18n';
+import { useMaster, Organization } from '../../api/master-hooks';
 
 // แถบด้านบน — ชื่อระบบ, สลับโหมด, สลับภาษา, โปรไฟล์
 interface TopbarProps {
@@ -11,12 +12,26 @@ interface TopbarProps {
 }
 
 export default function Topbar({ onMenuClick, showMenuButton }: TopbarProps) {
-  const { user, mode, setMode, logout } = useAuthStore();
+  const { user, mode, setMode, activeOrgId, setActiveOrg, logout } = useAuthStore();
   const { t, locale, setLocale } = useTranslation();
   const navigate = useNavigate();
   const theme = useTheme();
   const isSmall = useMediaQuery(theme.breakpoints.down('sm')); // < 600px
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+
+  // โหลด organizations เพื่อแสดงใน dropdown
+  const { data: orgs = [] } = useMaster<Organization>('organizations');
+  const activeOrgs = orgs.filter((o) => o.isActive);
+
+  // ตั้ง default org ครั้งแรก — เลือกที่ isDefault หรือตัวแรก
+  useEffect(() => {
+    if (!activeOrgId && activeOrgs.length > 0) {
+      const defaultOrg = activeOrgs.find((o) => o.isDefault) || activeOrgs[0];
+      setActiveOrg(defaultOrg.id);
+    }
+  }, [activeOrgs, activeOrgId, setActiveOrg]);
+
+  const activeOrg = activeOrgs.find((o) => o.id === activeOrgId);
 
   return (
     <Box
@@ -52,11 +67,48 @@ export default function Topbar({ onMenuClick, showMenuButton }: TopbarProps) {
           {t('app.title')}
         </Typography>
         <Typography sx={{ fontSize: 10, color: 'rgba(255,255,255,.6)', mt: .1, display: { xs: 'none', md: 'block' } }}>
-          {t('app.subtitle')}
+          {activeOrg ? (locale === 'th' ? activeOrg.nameTh : activeOrg.nameEn || activeOrg.nameTh) : t('app.subtitle')}
         </Typography>
       </Box>
 
       <Box sx={{ flex: 1 }} />
+
+      {/* Org switcher — เฉพาะเมื่อมี > 1 หน่วยงาน */}
+      {activeOrgs.length > 1 && (
+        <Select
+          size="small"
+          value={activeOrgId || ''}
+          onChange={(e) => setActiveOrg(Number(e.target.value))}
+          sx={{
+            display: { xs: 'none', md: 'inline-flex' },
+            fontSize: 11, minWidth: 140, height: 32,
+            color: '#fff',
+            bgcolor: 'rgba(255,255,255,.12)',
+            border: '1px solid rgba(255,255,255,.25)',
+            '& .MuiSvgIcon-root': { color: '#fff' },
+            '& fieldset': { border: 'none' },
+            '& .MuiSelect-select': { py: .5 },
+          }}
+          renderValue={(v) => {
+            const o = activeOrgs.find((x) => x.id === v);
+            return (
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: .75 }}>
+                <span className="material-icons-outlined" style={{ fontSize: 15 }}>business</span>
+                {o ? (o.shortNameEn || o.shortNameTh || o.orgCode) : '—'}
+              </Box>
+            );
+          }}
+        >
+          {activeOrgs.map((o) => (
+            <MenuItem key={o.id} value={o.id} sx={{ fontSize: 11.5 }}>
+              <Box>
+                <Typography sx={{ fontSize: 11.5, fontWeight: 600 }}>{locale === 'th' ? o.nameTh : o.nameEn || o.nameTh}</Typography>
+                <Typography sx={{ fontSize: 10, color: '#6c7f92' }}>{o.orgCode} · {o.taxId || '-'}</Typography>
+              </Box>
+            </MenuItem>
+          ))}
+        </Select>
+      )}
 
       {/* ปุ่มสลับภาษา */}
       <Box sx={{ display: 'flex', gap: .5, background: 'rgba(255,255,255,.1)', borderRadius: 999, p: .3 }}>

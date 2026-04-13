@@ -37,6 +37,7 @@ const translations: Record<Locale, Record<string, string>> = {
     'nav.importExport': 'นำเข้า/ส่งออกข้อมูล',
     'nav.dataCleansing': 'ตรวจสอบคุณภาพข้อมูล',
     'nav.system': 'ระบบ',
+    'nav.masterData': 'ข้อมูลหลัก (Master Data)',
     'nav.template': 'Template เอกสาร',
     'nav.settings': 'ตั้งค่าระบบ',
 
@@ -189,6 +190,7 @@ const translations: Record<Locale, Record<string, string>> = {
     'nav.importExport': 'Import/Export Data',
     'nav.dataCleansing': 'Data Quality Check',
     'nav.system': 'System',
+    'nav.masterData': 'Master Data',
     'nav.template': 'Document Templates',
     'nav.settings': 'System Settings',
 

@@ -9,6 +9,7 @@ import unitRoutes from './routes/unit/unit.routes.js';
 import partnerRoutes from './routes/partner/partner.routes.js';
 import contractRoutes from './routes/contract/contract.routes.js';
 import billingRoutes from './routes/billing/billing.routes.js';
+import masterRoutes from './routes/master/master.routes.js';
 
 const app = express();
 
@@ -31,6 +32,7 @@ app.use('/api/units', authGuard, unitRoutes);
 app.use('/api/partners', authGuard, partnerRoutes);
 app.use('/api/contracts', authGuard, contractRoutes);
 app.use('/api/bills', authGuard, billingRoutes);
+app.use('/api/master', authGuard, masterRoutes);
 
 // TODO: Phase 5-6
 // app.use('/api/receipts', authGuard, receiptRoutes);

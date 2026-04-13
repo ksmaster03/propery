@@ -6,6 +6,122 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 เริ่มเพิ่มข้อมูลตั้งต้น...');
 
+  // === หน่วยงาน / Organization ===
+  await prisma.tmOrganization.createMany({
+    data: [
+      {
+        orgCode: 'DOA',
+        nameTh: 'กรมท่าอากาศยาน',
+        nameEn: 'Department of Airports',
+        shortNameTh: 'ทย.',
+        shortNameEn: 'DOA',
+        taxId: '0994000165510',
+        addressTh: '71 ซอยงามดูพลี ถ.พระราม 4 แขวงทุ่งมหาเมฆ เขตสาทร กรุงเทพฯ 10120',
+        addressEn: '71 Soi Ngam Dupli, Rama 4 Rd, Thungmahamek, Sathon, Bangkok 10120',
+        phone: '02-287-0320',
+        email: 'info@airports.go.th',
+        website: 'https://www.airports.go.th',
+        treasuryPct: 50,
+        welfareFundPct: 20,
+        revolvingFundPct: 30,
+        isDefault: true,
+      },
+      {
+        orgCode: 'AOT',
+        nameTh: 'บริษัท ท่าอากาศยานไทย จำกัด (มหาชน)',
+        nameEn: 'Airports of Thailand PCL',
+        shortNameTh: 'ทอท.',
+        shortNameEn: 'AOT',
+        taxId: '0107545000365',
+        phone: '02-535-1111',
+        email: 'info@airportthai.co.th',
+        treasuryPct: 0,
+        welfareFundPct: 0,
+        revolvingFundPct: 100,
+        isActive: true,
+      },
+    ],
+    skipDuplicates: true,
+  });
+
+  // === ประเภทโซน ===
+  await prisma.tmZoneType.createMany({
+    data: [
+      { code: 'BOOTH', nameTh: 'คูหา', nameEn: 'Booth', icon: 'storefront', color: '#005b9f', defaultRate: 3500, sortOrder: 1 },
+      { code: 'RETAIL', nameTh: 'ร้านค้าปลีก', nameEn: 'Retail', icon: 'shopping_bag', color: '#1a9e5c', defaultRate: 4500, sortOrder: 2 },
+      { code: 'FOOD', nameTh: 'ร้านอาหาร / เครื่องดื่ม', nameEn: 'Food & Beverage', icon: 'restaurant', color: '#d97706', defaultRate: 5500, sortOrder: 3 },
+      { code: 'EVENT', nameTh: 'พื้นที่กิจกรรม', nameEn: 'Event Space', icon: 'celebration', color: '#7c3aed', defaultRate: 2500, sortOrder: 4 },
+      { code: 'LOUNGE', nameTh: 'Lounge / พักผ่อน', nameEn: 'Lounge', icon: 'weekend', color: '#0f73b8', defaultRate: 6000, sortOrder: 5 },
+      { code: 'SERVICE', nameTh: 'พื้นที่บริการ', nameEn: 'Service Area', icon: 'room_service', color: '#6c7f92', defaultRate: 2000, sortOrder: 6 },
+      { code: 'ATM', nameTh: 'ตู้ ATM / อัตโนมัติ', nameEn: 'ATM / Automated', icon: 'local_atm', color: '#d97706', defaultRate: 8000, sortOrder: 7 },
+      { code: 'ADVERT', nameTh: 'พื้นที่โฆษณา', nameEn: 'Advertising', icon: 'campaign', color: '#d9534f', defaultRate: 12000, sortOrder: 8 },
+    ],
+    skipDuplicates: true,
+  });
+
+  // === หมวดหมู่ธุรกิจ ===
+  await prisma.tmBusinessCategory.createMany({
+    data: [
+      { code: 'RESTAURANT', nameTh: 'ร้านอาหาร', nameEn: 'Restaurant', icon: 'restaurant', sortOrder: 1 },
+      { code: 'COFFEE', nameTh: 'ร้านกาแฟ', nameEn: 'Coffee Shop', icon: 'coffee', sortOrder: 2 },
+      { code: 'FASTFOOD', nameTh: 'อาหารจานด่วน', nameEn: 'Fast Food', icon: 'fastfood', sortOrder: 3 },
+      { code: 'RETAIL_GEN', nameTh: 'ร้านค้าปลีก', nameEn: 'Retail', icon: 'shopping_bag', sortOrder: 4 },
+      { code: 'SOUVENIR', nameTh: 'ของที่ระลึก / OTOP', nameEn: 'Souvenir / OTOP', icon: 'card_giftcard', sortOrder: 5 },
+      { code: 'PHARMACY', nameTh: 'ร้านยา', nameEn: 'Pharmacy', icon: 'local_pharmacy', sortOrder: 6 },
+      { code: 'COSMETIC', nameTh: 'เครื่องสำอาง / ความงาม', nameEn: 'Cosmetics & Beauty', icon: 'face', sortOrder: 7 },
+      { code: 'BOOKSTORE', nameTh: 'ร้านหนังสือ', nameEn: 'Bookstore', icon: 'menu_book', sortOrder: 8 },
+      { code: 'CONVENIENCE', nameTh: 'ร้านสะดวกซื้อ', nameEn: 'Convenience Store', icon: 'local_convenience_store', sortOrder: 9 },
+      { code: 'DUTY_FREE', nameTh: 'ดิวตี้ฟรี', nameEn: 'Duty Free', icon: 'luggage', sortOrder: 10 },
+      { code: 'TECH', nameTh: 'อิเล็กทรอนิกส์', nameEn: 'Electronics', icon: 'devices', sortOrder: 11 },
+      { code: 'CLOTHING', nameTh: 'เสื้อผ้า / แฟชั่น', nameEn: 'Fashion', icon: 'checkroom', sortOrder: 12 },
+      { code: 'SERVICES', nameTh: 'บริการ', nameEn: 'Services', icon: 'room_service', sortOrder: 13 },
+      { code: 'OTHER', nameTh: 'อื่นๆ', nameEn: 'Other', icon: 'more_horiz', sortOrder: 99 },
+    ],
+    skipDuplicates: true,
+  });
+
+  // === วิธีการชำระเงิน ===
+  await prisma.tmPaymentMethod.createMany({
+    data: [
+      { code: 'CASH', nameTh: 'เงินสด', nameEn: 'Cash', icon: 'payments', requiresRef: false, sortOrder: 1 },
+      { code: 'TRANSFER', nameTh: 'โอนผ่านธนาคาร', nameEn: 'Bank Transfer', icon: 'account_balance', requiresRef: true, sortOrder: 2 },
+      { code: 'QR_CODE', nameTh: 'QR PromptPay', nameEn: 'QR PromptPay', icon: 'qr_code_2', requiresRef: true, sortOrder: 3 },
+      { code: 'CHEQUE', nameTh: 'เช็ค', nameEn: 'Cheque', icon: 'receipt_long', requiresRef: true, sortOrder: 4 },
+      { code: 'CREDIT_CARD', nameTh: 'บัตรเครดิต', nameEn: 'Credit Card', icon: 'credit_card', requiresRef: true, sortOrder: 5 },
+      { code: 'DEBIT_CARD', nameTh: 'บัตรเดบิต', nameEn: 'Debit Card', icon: 'credit_card', requiresRef: true, sortOrder: 6 },
+    ],
+    skipDuplicates: true,
+  });
+
+  // === ประเภทเอกสาร ===
+  await prisma.tmDocumentType.createMany({
+    data: [
+      { code: 'ID_CARD', nameTh: 'สำเนาบัตรประชาชน', nameEn: 'ID Card Copy', required: true, forPartner: true, forJuristic: true, sortOrder: 1 },
+      { code: 'HOUSE_REG', nameTh: 'สำเนาทะเบียนบ้าน', nameEn: 'House Registration', required: true, forPartner: true, forJuristic: false, sortOrder: 2 },
+      { code: 'COMPANY_CERT', nameTh: 'หนังสือรับรองบริษัท', nameEn: 'Company Certificate', required: true, forPartner: false, forJuristic: true, sortOrder: 3 },
+      { code: 'VAT_CERT', nameTh: 'ภ.พ.20', nameEn: 'VAT Registration', required: true, forPartner: false, forJuristic: true, sortOrder: 4 },
+      { code: 'POWER_ATTORNEY', nameTh: 'หนังสือมอบอำนาจ', nameEn: 'Power of Attorney', required: false, forPartner: true, forJuristic: true, sortOrder: 5 },
+      { code: 'SHAREHOLDER', nameTh: 'บัญชีรายชื่อผู้ถือหุ้น', nameEn: 'Shareholder List', required: false, forPartner: false, forJuristic: true, sortOrder: 6 },
+      { code: 'MEMORANDUM', nameTh: 'หนังสือบริคณห์สนธิ', nameEn: 'Memorandum', required: false, forPartner: false, forJuristic: true, sortOrder: 7 },
+      { code: 'BANK_GUARANTEE', nameTh: 'หนังสือค้ำประกันธนาคาร', nameEn: 'Bank Guarantee Letter', required: false, forPartner: true, forJuristic: true, sortOrder: 8 },
+      { code: 'FINANCIAL', nameTh: 'งบการเงิน', nameEn: 'Financial Statement', required: false, forPartner: false, forJuristic: true, sortOrder: 9 },
+    ],
+    skipDuplicates: true,
+  });
+
+  // === แผนก / ฝ่าย ===
+  await prisma.tmDepartment.createMany({
+    data: [
+      { code: 'OPERATIONS', nameTh: 'ฝ่ายปฏิบัติการ', nameEn: 'Operations Department', sortOrder: 1 },
+      { code: 'COMMERCIAL', nameTh: 'ฝ่ายพาณิชย์', nameEn: 'Commercial Department', sortOrder: 2 },
+      { code: 'FINANCE', nameTh: 'ฝ่ายการเงิน', nameEn: 'Finance Department', sortOrder: 3 },
+      { code: 'LEGAL', nameTh: 'ฝ่ายกฎหมาย', nameEn: 'Legal Department', sortOrder: 4 },
+      { code: 'HR', nameTh: 'ฝ่ายทรัพยากรบุคคล', nameEn: 'Human Resources', sortOrder: 5 },
+      { code: 'IT', nameTh: 'ฝ่ายเทคโนโลยีสารสนเทศ', nameEn: 'Information Technology', sortOrder: 6 },
+    ],
+    skipDuplicates: true,
+  });
+
   // === ผู้ใช้ระบบ ===
   const passwordHash = await bcrypt.hash('admin123', 10);
   const operatorHash = await bcrypt.hash('operator123', 10);
