@@ -38,6 +38,8 @@ const translations: Record<Locale, Record<string, string>> = {
     'nav.dataCleansing': 'ตรวจสอบคุณภาพข้อมูล',
     'nav.system': 'ระบบ',
     'nav.masterData': 'ข้อมูลหลัก (Master Data)',
+    'nav.users': 'จัดการผู้ใช้ระบบ',
+    'nav.audit': 'Audit Trail · ประวัติ',
     'nav.template': 'Template เอกสาร',
     'nav.settings': 'ตั้งค่าระบบ',
 
@@ -191,6 +193,8 @@ const translations: Record<Locale, Record<string, string>> = {
     'nav.dataCleansing': 'Data Quality Check',
     'nav.system': 'System',
     'nav.masterData': 'Master Data',
+    'nav.users': 'User Management',
+    'nav.audit': 'Audit Trail',
     'nav.template': 'Document Templates',
     'nav.settings': 'System Settings',
 

@@ -70,6 +70,8 @@ const navGroups: NavGroup[] = [
     titleKey: 'nav.system',
     items: [
       { icon: 'storage', labelKey: 'nav.masterData', path: '/master-data' },
+      { icon: 'people', labelKey: 'nav.users', path: '/users' },
+      { icon: 'history', labelKey: 'nav.audit', path: '/audit' },
       { icon: 'article', labelKey: 'nav.template', path: '/templates' },
       { icon: 'settings', labelKey: 'nav.settings', path: '/settings' },
     ],

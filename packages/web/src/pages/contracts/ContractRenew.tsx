@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import {
-  Box, Paper, Typography, Button, Chip, Tabs, Tab,
+  Box, Paper, Typography, Button, Chip, Tabs, Tab, Alert,
   Table, TableBody, TableCell, TableHead, TableRow,
-  Dialog, DialogTitle, DialogContent, DialogActions, TextField,
+  Dialog, DialogTitle, DialogContent, DialogActions, TextField, CircularProgress,
 } from '@mui/material';
 import PageHeader from '../../components/shared/PageHeader';
 import { useTranslation } from '../../lib/i18n';
+import api from '../../api/client';
+import { useQueryClient } from '@tanstack/react-query';
 
 // ข้อมูล mock สัญญาใกล้หมดอายุ
 const mockExpiring = [
@@ -26,16 +28,66 @@ const formatMoney = (n: number) => new Intl.NumberFormat('th-TH').format(n);
 
 export default function ContractRenew() {
   const { t, locale } = useTranslation();
+  const qc = useQueryClient();
   const [tab, setTab] = useState(0);
   const [renewOpen, setRenewOpen] = useState(false);
   const [selected, setSelected] = useState<typeof mockExpiring[0] | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [renewForm, setRenewForm] = useState({
+    startDate: '',
+    endDate: '',
+    durationYears: 3,
+    monthlyRent: 0,
+    increasePct: 7.7,
+  });
 
   const tabFilters = [null, 'urgent', 'warning', 'normal'];
   const filtered = tab === 0 ? mockExpiring : mockExpiring.filter((c) => c.urgency === tabFilters[tab]);
 
   const handleRenew = (contract: typeof mockExpiring[0]) => {
     setSelected(contract);
+    setError('');
+    setSuccess('');
+    // ตั้งค่าเริ่มต้น: วันเริ่มใหม่ = วันหมดอายุเดิม, 3 ปี, ค่าเช่า +7.7%
+    const start = new Date(contract.endDate);
+    const end = new Date(start);
+    end.setFullYear(end.getFullYear() + 3);
+    setRenewForm({
+      startDate: start.toISOString().slice(0, 10),
+      endDate: end.toISOString().slice(0, 10),
+      durationYears: 3,
+      monthlyRent: Math.round(contract.monthlyRent * 1.077),
+      increasePct: 7.7,
+    });
     setRenewOpen(true);
+  };
+
+  // เรียก API ต่อสัญญา
+  const handleConfirmRenew = async () => {
+    if (!selected) return;
+    setSaving(true);
+    setError('');
+    try {
+      const { data } = await api.post(`/contracts/${selected.id}/renew`, {
+        startDate: renewForm.startDate,
+        endDate: renewForm.endDate,
+        durationMonths: renewForm.durationYears * 12,
+        monthlyRent: renewForm.monthlyRent,
+      });
+      if (data.success) {
+        setSuccess(locale === 'th' ? `ต่อสัญญาใหม่: ${data.data.contractNo}` : `New contract: ${data.data.contractNo}`);
+        qc.invalidateQueries({ queryKey: ['contracts'] });
+        setTimeout(() => setRenewOpen(false), 1500);
+      } else {
+        setError(data.error || 'ไม่สามารถต่อสัญญาได้');
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.error || err.message || 'Network error');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -144,18 +196,63 @@ export default function ContractRenew() {
               </Paper>
 
               <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
-                <TextField size="small" type="date" label={locale === 'th' ? 'วันที่เริ่มสัญญาใหม่' : 'New Start Date'} defaultValue={selected.endDate} InputLabelProps={{ shrink: true }} />
-                <TextField size="small" type="date" label={locale === 'th' ? 'วันที่สิ้นสุดสัญญาใหม่' : 'New End Date'} InputLabelProps={{ shrink: true }} />
-                <TextField size="small" label={locale === 'th' ? 'ระยะเวลา (ปี)' : 'Duration (years)'} defaultValue="3" />
-                <TextField size="small" label={locale === 'th' ? 'ค่าเช่าใหม่ (บาท/เดือน)' : 'New Rent (THB/month)'} defaultValue={selected.monthlyRent + 5000} />
-                <TextField size="small" label={locale === 'th' ? 'อัตราเพิ่ม (%)' : 'Increase (%)'} defaultValue="7.7" sx={{ gridColumn: '1/3' }} helperText={locale === 'th' ? 'ตามระเบียบการต่อสัญญา' : 'Per renewal policy'} />
+                <TextField
+                  size="small" type="date"
+                  label={locale === 'th' ? 'วันที่เริ่มสัญญาใหม่' : 'New Start Date'}
+                  value={renewForm.startDate}
+                  onChange={(e) => setRenewForm({ ...renewForm, startDate: e.target.value })}
+                  InputLabelProps={{ shrink: true }}
+                />
+                <TextField
+                  size="small" type="date"
+                  label={locale === 'th' ? 'วันที่สิ้นสุดสัญญาใหม่' : 'New End Date'}
+                  value={renewForm.endDate}
+                  onChange={(e) => setRenewForm({ ...renewForm, endDate: e.target.value })}
+                  InputLabelProps={{ shrink: true }}
+                />
+                <TextField
+                  size="small" type="number"
+                  label={locale === 'th' ? 'ระยะเวลา (ปี)' : 'Duration (years)'}
+                  value={renewForm.durationYears}
+                  onChange={(e) => {
+                    const y = Number(e.target.value);
+                    const end = new Date(renewForm.startDate);
+                    end.setFullYear(end.getFullYear() + y);
+                    setRenewForm({ ...renewForm, durationYears: y, endDate: end.toISOString().slice(0, 10) });
+                  }}
+                />
+                <TextField
+                  size="small" type="number"
+                  label={locale === 'th' ? 'ค่าเช่าใหม่ (บาท/เดือน)' : 'New Rent (THB/month)'}
+                  value={renewForm.monthlyRent}
+                  onChange={(e) => setRenewForm({ ...renewForm, monthlyRent: Number(e.target.value) })}
+                />
+                <TextField
+                  size="small" type="number"
+                  label={locale === 'th' ? 'อัตราเพิ่ม (%)' : 'Increase (%)'}
+                  value={renewForm.increasePct}
+                  onChange={(e) => {
+                    const pct = Number(e.target.value);
+                    setRenewForm({ ...renewForm, increasePct: pct, monthlyRent: Math.round(selected.monthlyRent * (1 + pct / 100)) });
+                  }}
+                  sx={{ gridColumn: '1/3' }}
+                  helperText={locale === 'th' ? 'ตามระเบียบการต่อสัญญา' : 'Per renewal policy'}
+                />
               </Box>
+
+              {error && <Alert severity="error" sx={{ mt: 2, fontSize: 11 }}>{error}</Alert>}
+              {success && <Alert severity="success" sx={{ mt: 2, fontSize: 11 }}>{success}</Alert>}
             </Box>
           )}
         </DialogContent>
         <DialogActions sx={{ px: 3, py: 1.5, borderTop: '1px solid rgba(22,63,107,.12)' }}>
-          <Button onClick={() => setRenewOpen(false)} variant="outlined">{t('common.cancel')}</Button>
-          <Button variant="contained">{locale === 'th' ? 'สร้างสัญญาใหม่' : 'Create New Contract'}</Button>
+          <Button onClick={() => setRenewOpen(false)} variant="outlined" disabled={saving}>
+            {t('common.cancel')}
+          </Button>
+          <Button variant="contained" onClick={handleConfirmRenew} disabled={saving}>
+            {saving ? <CircularProgress size={16} sx={{ color: '#fff', mr: 1 }} /> : null}
+            {saving ? (locale === 'th' ? 'กำลังบันทึก...' : 'Saving...') : (locale === 'th' ? 'สร้างสัญญาใหม่' : 'Create New Contract')}
+          </Button>
         </DialogActions>
       </Dialog>
     </>
