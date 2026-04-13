@@ -41,10 +41,10 @@ function hexToFill(hex: string | null | undefined) {
 
 // สีตามสถานะของ unit เดิม (จาก DB)
 const unitStatusColors: Record<string, { fill: string; stroke: string }> = {
-  VACANT: { fill: 'rgba(26,158,92,.15)', stroke: '#1a9e5c' },
+  VACANT: { fill: 'rgba(26,158,92,.15)', stroke: '#0f7a43' },
   LEASED: { fill: 'rgba(0,91,159,.18)', stroke: '#005b9f' },
-  RESERVED: { fill: 'rgba(217,119,6,.18)', stroke: '#d97706' },
-  MAINTENANCE: { fill: 'rgba(108,127,146,.15)', stroke: '#6c7f92' },
+  RESERVED: { fill: 'rgba(217,119,6,.18)', stroke: '#a45a00' },
+  MAINTENANCE: { fill: 'rgba(108,127,146,.15)', stroke: '#5a6d80' },
 };
 
 const GRID_SIZE = 24; // 1 ช่อง = 24px = 1 เมตร
@@ -337,12 +337,13 @@ export default function FloorPlan() {
         }
       />
 
-      <Box sx={{
+      <Box tabIndex={0} sx={{
         flex: 1, overflow: 'auto',
         p: { xs: 1.5, md: 2.5 },
         display: 'grid',
         gridTemplateColumns: { xs: '1fr', lg: mode === 'edit' ? '300px 1fr 280px' : '1fr 300px' },
         gap: 2,
+        '&:focus-visible': { outline: '2px solid #005b9f', outlineOffset: -2 },
       }}>
         {/* === Left: booking form (edit mode only) === */}
         {mode === 'edit' && (
@@ -409,7 +410,7 @@ export default function FloorPlan() {
                 </Button>
               </Box>
 
-              <Typography sx={{ fontSize: 10, color: '#6c7f92', lineHeight: 1.5 }}>
+              <Typography sx={{ fontSize: 10, color: '#5a6d80', lineHeight: 1.5 }}>
                 {locale === 'th'
                   ? '1 ช่อง = 1 เมตร ระบบ snap grid อัตโนมัติและตรวจ collision'
                   : '1 cell = 1m, auto grid snap and collision detection'}
@@ -451,32 +452,32 @@ export default function FloorPlan() {
           {mode === 'edit' && (
             <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }, gap: 1, p: 1.5, borderBottom: '1px solid rgba(22,63,107,.08)', bgcolor: '#f8fafc' }}>
               <Box>
-                <Typography sx={{ fontSize: 10, color: '#6c7f92' }}>{locale === 'th' ? 'ขนาด' : 'Size'}</Typography>
+                <Typography sx={{ fontSize: 10, color: '#5a6d80' }}>{locale === 'th' ? 'ขนาด' : 'Size'}</Typography>
                 <Typography sx={{ fontSize: 14, fontWeight: 700, fontFamily: "'IBM Plex Mono', monospace", color: '#163f6b' }}>
                   {selection ? `${selection.widthM}×${selection.heightM}m` : '—'}
                 </Typography>
               </Box>
               <Box>
-                <Typography sx={{ fontSize: 10, color: '#6c7f92' }}>{locale === 'th' ? 'พื้นที่' : 'Area'}</Typography>
+                <Typography sx={{ fontSize: 10, color: '#5a6d80' }}>{locale === 'th' ? 'พื้นที่' : 'Area'}</Typography>
                 <Typography sx={{ fontSize: 14, fontWeight: 700, fontFamily: "'IBM Plex Mono', monospace", color: '#163f6b' }}>
                   {selection ? `${selection.areaSqm.toFixed(1)} sqm` : '—'}
                 </Typography>
               </Box>
               <Box>
-                <Typography sx={{ fontSize: 10, color: '#6c7f92' }}>{locale === 'th' ? 'ราคา' : 'Price'}</Typography>
-                <Typography sx={{ fontSize: 14, fontWeight: 700, fontFamily: "'IBM Plex Mono', monospace", color: currentCollision ? '#d9534f' : '#1a9e5c' }}>
+                <Typography sx={{ fontSize: 10, color: '#5a6d80' }}>{locale === 'th' ? 'ราคา' : 'Price'}</Typography>
+                <Typography sx={{ fontSize: 14, fontWeight: 700, fontFamily: "'IBM Plex Mono', monospace", color: currentCollision ? '#b52822' : '#0f7a43' }}>
                   {selection ? `฿${formatMoney(selection.totalPrice)}` : '—'}
                 </Typography>
               </Box>
               <Box>
-                <Typography sx={{ fontSize: 10, color: '#6c7f92' }}>{locale === 'th' ? 'สถานะ' : 'Status'}</Typography>
+                <Typography sx={{ fontSize: 10, color: '#5a6d80' }}>{locale === 'th' ? 'สถานะ' : 'Status'}</Typography>
                 <Chip
                   label={currentCollision ? (locale === 'th' ? 'ชน' : 'Collide') : selection ? (locale === 'th' ? 'พร้อม' : 'OK') : '—'}
                   size="small"
                   sx={{
                     fontSize: 10, fontWeight: 700, height: 22,
                     bgcolor: currentCollision ? 'rgba(217,83,79,.1)' : selection ? 'rgba(26,158,92,.1)' : '#f4f8fc',
-                    color: currentCollision ? '#d9534f' : selection ? '#1a9e5c' : '#6c7f92',
+                    color: currentCollision ? '#b52822' : selection ? '#0f7a43' : '#5a6d80',
                     border: `1px solid ${currentCollision ? 'rgba(217,83,79,.25)' : selection ? 'rgba(26,158,92,.25)' : 'rgba(22,63,107,.12)'}`,
                   }}
                 />
@@ -485,7 +486,7 @@ export default function FloorPlan() {
           )}
 
           {/* Canvas */}
-          <Box sx={{ flex: 1, overflow: 'auto', p: { xs: 1, md: 2 } }}>
+          <Box tabIndex={0} sx={{ flex: 1, overflow: 'auto', p: { xs: 1, md: 2 }, '&:focus-visible': { outline: '2px solid #005b9f', outlineOffset: -2 } }}>
             <Box
               ref={canvasRef}
               onMouseDown={handleMouseDown}
@@ -522,7 +523,7 @@ export default function FloorPlan() {
 
               {/* Empty state */}
               {!floorplanSvg && apiUnits.length === 0 && draftZones.length === 0 && (
-                <Box sx={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', color: '#6c7f92' }}>
+                <Box sx={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', color: '#5a6d80' }}>
                   <span className="material-icons-outlined" style={{ fontSize: 72, opacity: .25 }}>add_photo_alternate</span>
                   <Typography sx={{ fontSize: 13, mt: 1, fontWeight: 600 }}>
                     {locale === 'th' ? 'ยังไม่มี Floor Plan' : 'No Floor Plan yet'}
@@ -555,7 +556,7 @@ export default function FloorPlan() {
                           {u.currentShop.length > 12 ? u.currentShop.slice(0, 12) + '…' : u.currentShop}
                         </text>
                       )}
-                      <text x={x + w / 2} y={y + 56} textAnchor="middle" fontSize="8" fill="#6c7f92" fontFamily="'IBM Plex Mono',monospace">
+                      <text x={x + w / 2} y={y + 56} textAnchor="middle" fontSize="8" fill="#5a6d80" fontFamily="'IBM Plex Mono',monospace">
                         {u.areaSqm} sqm
                       </text>
                     </g>
@@ -576,7 +577,7 @@ export default function FloorPlan() {
                       <text x={x + 6} y={y + 16} fontSize="11" fontWeight="700" fill={stroke}>
                         {zone.bookerName}
                       </text>
-                      <text x={x + 6} y={y + 30} fontSize="9" fill="#6c7f92" fontFamily="'IBM Plex Mono',monospace">
+                      <text x={x + 6} y={y + 30} fontSize="9" fill="#5a6d80" fontFamily="'IBM Plex Mono',monospace">
                         {zone.w}×{zone.h}m {zone.saved ? '✓' : '(draft)'}
                       </text>
                     </g>
@@ -590,10 +591,10 @@ export default function FloorPlan() {
                       x={currentRect.x} y={currentRect.y}
                       width={currentRect.w} height={currentRect.h}
                       fill={currentCollision ? 'rgba(217,83,79,.28)' : 'rgba(240,173,78,.32)'}
-                      stroke={currentCollision ? '#d9534f' : '#d7a94b'}
+                      stroke={currentCollision ? '#b52822' : '#d7a94b'}
                       strokeWidth="2.5" strokeDasharray="6 4" rx="4"
                     />
-                    <text x={currentRect.x + 6} y={currentRect.y + 18} fontSize="11" fontWeight="700" fill={currentCollision ? '#d9534f' : '#b2832d'}>
+                    <text x={currentRect.x + 6} y={currentRect.y + 18} fontSize="11" fontWeight="700" fill={currentCollision ? '#b52822' : '#b2832d'}>
                       {currentCollision ? (locale === 'th' ? 'ทับพื้นที่!' : 'Collision!') : (locale === 'th' ? 'กำลังเลือก' : 'Selecting')}
                     </text>
                   </g>
@@ -633,18 +634,18 @@ export default function FloorPlan() {
                   />
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: .5 }}>
                     {zone.saved && (
-                      <Chip size="small" label="✓" sx={{ height: 18, fontSize: 9, bgcolor: 'rgba(26,158,92,.15)', color: '#1a9e5c' }} />
+                      <Chip size="small" label="✓" sx={{ height: 18, fontSize: 9, bgcolor: 'rgba(26,158,92,.15)', color: '#0f7a43' }} />
                     )}
-                    <IconButton size="small" onClick={() => handleDeleteDraft(zone.id)} sx={{ color: '#d9534f' }}>
+                    <IconButton size="small" onClick={() => handleDeleteDraft(zone.id)} sx={{ color: '#b52822' }}>
                       <span className="material-icons-outlined" style={{ fontSize: 16 }}>delete</span>
                     </IconButton>
                   </Box>
                 </Box>
                 <Typography sx={{ fontSize: 12, fontWeight: 700 }}>{zone.bookerName}</Typography>
-                <Typography sx={{ fontSize: 10, color: '#6c7f92', fontFamily: "'IBM Plex Mono', monospace" }}>
+                <Typography sx={{ fontSize: 10, color: '#5a6d80', fontFamily: "'IBM Plex Mono', monospace" }}>
                   {zone.w}×{zone.h}m · {(zone.w * zone.h).toFixed(1)}sqm · ฿{formatMoney(zone.w * zone.h * zone.ratePerSqm)}
                 </Typography>
-                <Typography sx={{ fontSize: 9, color: '#6c7f92', mt: .3 }}>
+                <Typography sx={{ fontSize: 9, color: '#5a6d80', mt: .3 }}>
                   {zone.startDate} → {zone.endDate}
                 </Typography>
               </Paper>
@@ -669,14 +670,14 @@ export default function FloorPlan() {
                     sx={{
                       fontSize: 9, fontWeight: 700, height: 20,
                       bgcolor: unitStatusColors[u.status]?.fill || '#f4f8fc',
-                      color: unitStatusColors[u.status]?.stroke || '#6c7f92',
+                      color: unitStatusColors[u.status]?.stroke || '#5a6d80',
                     }}
                   />
                 </Box>
                 {u.currentShop && (
                   <Typography sx={{ fontSize: 11, fontWeight: 600, mt: .3 }}>{u.currentShop}</Typography>
                 )}
-                <Typography sx={{ fontSize: 10, color: '#6c7f92', fontFamily: "'IBM Plex Mono', monospace", mt: .2 }}>
+                <Typography sx={{ fontSize: 10, color: '#5a6d80', fontFamily: "'IBM Plex Mono', monospace", mt: .2 }}>
                   {u.areaSqm} sqm · {u.purpose || '—'}
                 </Typography>
               </Paper>

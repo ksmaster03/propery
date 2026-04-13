@@ -58,9 +58,9 @@ export default function SettingsPage() {
         subtitle={locale === 'th' ? 'ปรับแต่งพารามิเตอร์และนโยบาย — บันทึกใน DB' : 'Configure system parameters — persisted to DB'}
       />
 
-      <Box sx={{ flex: 1, overflow: 'auto', p: 2.75 }}>
+      <Box tabIndex={0} sx={{ flex: 1, overflow: "auto", p: 2.75, "&:focus-visible": { outline: "2px solid #005b9f", outlineOffset: -2 } }}>
         {isLoading ? (
-          <Box sx={{ p: 4, textAlign: 'center', color: '#6c7f92' }}>
+          <Box sx={{ p: 4, textAlign: 'center', color: '#5a6d80' }}>
             <CircularProgress size={24} />
           </Box>
         ) : (
@@ -109,7 +109,7 @@ export default function SettingsPage() {
                     <span className="material-icons-outlined" style={{ fontSize: 18, color: '#005b9f' }}>business</span>
                     {locale === 'th' ? 'ข้อมูลองค์กรเริ่มต้น' : 'Default Organization'}
                   </Typography>
-                  <Typography sx={{ fontSize: 10, color: '#6c7f92', mt: .3 }}>
+                  <Typography sx={{ fontSize: 10, color: '#5a6d80', mt: .3 }}>
                     {locale === 'th' ? '💡 การจัดการหน่วยงานหลายๆ หน่วย ดูที่เมนู Master Data' : '💡 Manage multiple organizations in Master Data menu'}
                   </Typography>
                 </Box>

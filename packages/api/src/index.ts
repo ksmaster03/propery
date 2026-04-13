@@ -18,6 +18,7 @@ import userRoutes from './routes/user/user.routes.js';
 import settingsRoutes from './routes/settings/settings.routes.js';
 import auditRoutes from './routes/audit/audit.routes.js';
 import profileRoutes from './routes/profile/profile.routes.js';
+import businessRoutes from './routes/business/business.routes.js';
 import { orgContext } from './middleware/org-context.js';
 
 const app = express();
@@ -33,7 +34,7 @@ app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// === Routes ที่ไ��่ต้อง login ===
+// === Routes ที่ไม่ต้อง login ===
 app.use('/api/auth', authRoutes);
 
 // === Routes ที่ต้อง login ก่อน ===
@@ -51,6 +52,7 @@ app.use('/api/users', authGuard, userRoutes);
 app.use('/api/settings', authGuard, settingsRoutes);
 app.use('/api/audit', authGuard, auditRoutes);
 app.use('/api/profile', authGuard, profileRoutes);
+app.use('/api/business', authGuard, businessRoutes);
 
 // === จัดการ Error กลาง ===
 app.use(errorHandler);

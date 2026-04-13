@@ -23,7 +23,7 @@ export default function PlaceholderPage({ icon, title, subtitle }: PlaceholderPa
         >
           <Typography sx={{ fontSize: 48, mb: 2 }}>{icon}</Typography>
           <Typography variant="h3" sx={{ mb: 1 }}>{title}</Typography>
-          <Typography sx={{ color: '#6c7f92' }}>
+          <Typography sx={{ color: '#5a6d80' }}>
             โมดูลนี้อยู่ระหว่างพัฒนา จะเปิดใช้งานเร็วๆ นี้
           </Typography>
         </Paper>

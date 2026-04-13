@@ -11,8 +11,8 @@ const issues = [
 ];
 
 const severityStyles = {
-  error: { color: '#d9534f', bg: 'rgba(217,83,79,.08)', border: 'rgba(217,83,79,.25)' },
-  warning: { color: '#d97706', bg: 'rgba(217,119,6,.08)', border: 'rgba(217,119,6,.25)' },
+  error: { color: '#b52822', bg: 'rgba(217,83,79,.08)', border: 'rgba(217,83,79,.25)' },
+  warning: { color: '#a45a00', bg: 'rgba(217,119,6,.08)', border: 'rgba(217,119,6,.25)' },
   info: { color: '#0f73b8', bg: 'rgba(15,115,184,.08)', border: 'rgba(15,115,184,.25)' },
 };
 
@@ -35,33 +35,33 @@ export default function DataCleansing() {
         }
       />
 
-      <Box sx={{ flex: 1, overflow: 'auto', p: 2.75 }}>
+      <Box tabIndex={0} sx={{ flex: 1, overflow: "auto", p: 2.75, "&:focus-visible": { outline: "2px solid #005b9f", outlineOffset: -2 } }}>
         {/* คะแนนคุณภาพ */}
         <Paper elevation={0} sx={{ p: 3, mb: 2, border: '1px solid rgba(22,63,107,.12)', boxShadow: '0 2px 12px rgba(10,22,40,.08)' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
             <Box sx={{
               width: 100, height: 100, borderRadius: '50%',
-              border: `6px solid ${quality >= 90 ? '#1a9e5c' : quality >= 70 ? '#d97706' : '#d9534f'}`,
+              border: `6px solid ${quality >= 90 ? '#0f7a43' : quality >= 70 ? '#a45a00' : '#b52822'}`,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               flexDirection: 'column', flexShrink: 0,
             }}>
-              <Typography sx={{ fontSize: 28, fontWeight: 700, fontFamily: "'IBM Plex Mono', monospace", color: quality >= 90 ? '#1a9e5c' : quality >= 70 ? '#d97706' : '#d9534f' }}>
+              <Typography sx={{ fontSize: 28, fontWeight: 700, fontFamily: "'IBM Plex Mono', monospace", color: quality >= 90 ? '#0f7a43' : quality >= 70 ? '#a45a00' : '#b52822' }}>
                 {quality}%
               </Typography>
-              <Typography sx={{ fontSize: 9, color: '#6c7f92' }}>{locale === 'th' ? 'คุณภาพ' : 'Quality'}</Typography>
+              <Typography sx={{ fontSize: 9, color: '#5a6d80' }}>{locale === 'th' ? 'คุณภาพ' : 'Quality'}</Typography>
             </Box>
             <Box sx={{ flex: 1 }}>
               <Typography sx={{ fontSize: 16, fontWeight: 700 }}>
                 {locale === 'th' ? 'คะแนนคุณภาพข้อมูล' : 'Data Quality Score'}
               </Typography>
-              <Typography sx={{ fontSize: 12, color: '#6c7f92', mt: .5 }}>
+              <Typography sx={{ fontSize: 12, color: '#5a6d80', mt: .5 }}>
                 {locale === 'th'
                   ? `พบปัญหา ${totalIssues} รายการจากข้อมูลทั้งหมด — ต้องแก้ไขเพื่อเพิ่มคุณภาพ`
                   : `Found ${totalIssues} issues — fix to improve quality`}
               </Typography>
               <Box sx={{ mt: 1.5, display: 'flex', gap: 2 }}>
-                <Chip label={`${issues.filter(i => i.severity === 'error').reduce((s, i) => s + i.count, 0)} ${locale === 'th' ? 'ร้ายแรง' : 'Errors'}`} size="small" sx={{ fontSize: 10, fontWeight: 700, bgcolor: 'rgba(217,83,79,.1)', color: '#d9534f', border: '1px solid rgba(217,83,79,.25)' }} />
-                <Chip label={`${issues.filter(i => i.severity === 'warning').reduce((s, i) => s + i.count, 0)} ${locale === 'th' ? 'เตือน' : 'Warnings'}`} size="small" sx={{ fontSize: 10, fontWeight: 700, bgcolor: 'rgba(217,119,6,.1)', color: '#d97706', border: '1px solid rgba(217,119,6,.25)' }} />
+                <Chip label={`${issues.filter(i => i.severity === 'error').reduce((s, i) => s + i.count, 0)} ${locale === 'th' ? 'ร้ายแรง' : 'Errors'}`} size="small" sx={{ fontSize: 10, fontWeight: 700, bgcolor: 'rgba(217,83,79,.1)', color: '#b52822', border: '1px solid rgba(217,83,79,.25)' }} />
+                <Chip label={`${issues.filter(i => i.severity === 'warning').reduce((s, i) => s + i.count, 0)} ${locale === 'th' ? 'เตือน' : 'Warnings'}`} size="small" sx={{ fontSize: 10, fontWeight: 700, bgcolor: 'rgba(217,119,6,.1)', color: '#a45a00', border: '1px solid rgba(217,119,6,.25)' }} />
                 <Chip label={`${issues.filter(i => i.severity === 'info').reduce((s, i) => s + i.count, 0)} ${locale === 'th' ? 'ข้อมูล' : 'Info'}`} size="small" sx={{ fontSize: 10, fontWeight: 700, bgcolor: 'rgba(15,115,184,.1)', color: '#0f73b8', border: '1px solid rgba(15,115,184,.25)' }} />
               </Box>
             </Box>
@@ -89,7 +89,7 @@ export default function DataCleansing() {
                     <Typography sx={{ fontSize: 13, fontWeight: 700, color: s.color }}>
                       {locale === 'th' ? issue.titleTh : issue.titleEn}
                     </Typography>
-                    <Typography sx={{ fontSize: 11, color: '#6c7f92', mt: .25 }}>
+                    <Typography sx={{ fontSize: 11, color: '#5a6d80', mt: .25 }}>
                       {locale === 'th' ? issue.descTh : issue.descEn}
                     </Typography>
                   </Box>

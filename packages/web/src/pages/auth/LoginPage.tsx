@@ -96,7 +96,7 @@ export default function LoginPage() {
               sx={{
                 fontSize: 12, fontWeight: 700, py: 1, borderRadius: 1.5,
                 bgcolor: loginType === 'admin' ? '#fff' : 'transparent',
-                color: loginType === 'admin' ? '#005b9f' : '#6c7f92',
+                color: loginType === 'admin' ? '#005b9f' : '#5a6d80',
                 boxShadow: loginType === 'admin' ? '0 2px 8px rgba(10,22,40,.08)' : 'none',
                 '&:hover': { bgcolor: loginType === 'admin' ? '#fff' : '#edf2f7' },
               }}
@@ -109,7 +109,7 @@ export default function LoginPage() {
               sx={{
                 fontSize: 12, fontWeight: 700, py: 1, borderRadius: 1.5,
                 bgcolor: loginType === 'tenant' ? '#fff' : 'transparent',
-                color: loginType === 'tenant' ? '#005b9f' : '#6c7f92',
+                color: loginType === 'tenant' ? '#005b9f' : '#5a6d80',
                 boxShadow: loginType === 'tenant' ? '0 2px 8px rgba(10,22,40,.08)' : 'none',
                 '&:hover': { bgcolor: loginType === 'tenant' ? '#fff' : '#edf2f7' },
               }}
@@ -148,12 +148,12 @@ export default function LoginPage() {
           </Button>
 
           <Divider sx={{ my: 2 }}>
-            <Typography sx={{ fontSize: 10, color: '#6c7f92' }}>
+            <Typography sx={{ fontSize: 10, color: '#5a6d80' }}>
               {locale === 'th' ? 'บัญชีทดสอบ' : 'Demo Accounts'}
             </Typography>
           </Divider>
 
-          <Box sx={{ fontSize: 11, color: '#6c7f92', textAlign: 'center' }}>
+          <Box sx={{ fontSize: 11, color: '#5a6d80', textAlign: 'center' }}>
             {loginType === 'admin' ? (
               <>
                 <Box>Admin: <code>admin</code> / <code>admin123</code></Box>

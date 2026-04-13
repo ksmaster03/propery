@@ -80,9 +80,9 @@ const navGroups: NavGroup[] = [
 
 const badgeStyles: Record<string, { bg: string; color: string; border: string }> = {
   blue: { bg: 'rgba(0,91,159,.1)', color: '#005b9f', border: 'rgba(0,91,159,.25)' },
-  amber: { bg: 'rgba(217,119,6,.1)', color: '#d97706', border: 'rgba(217,119,6,.25)' },
-  red: { bg: 'rgba(217,83,79,.1)', color: '#d9534f', border: 'rgba(217,83,79,.25)' },
-  green: { bg: 'rgba(26,158,92,.1)', color: '#1a9e5c', border: 'rgba(26,158,92,.25)' },
+  amber: { bg: 'rgba(217,119,6,.1)', color: '#a45a00', border: 'rgba(217,119,6,.25)' },
+  red: { bg: 'rgba(217,83,79,.1)', color: '#b52822', border: 'rgba(217,83,79,.25)' },
+  green: { bg: 'rgba(26,158,92,.1)', color: '#0f7a43', border: 'rgba(26,158,92,.25)' },
 };
 
 interface SidebarProps {
@@ -114,7 +114,7 @@ export default function Sidebar({ onNavigate }: SidebarProps = {}) {
         <Box key={group.titleKey} sx={{ px: 1.25, mt: 1.75 }}>
           <Typography
             sx={{
-              fontSize: 9, fontWeight: 700, color: '#6c7f92',
+              fontSize: 9, fontWeight: 700, color: '#5a6d80',
               textTransform: 'uppercase', letterSpacing: 1.2,
               px: 1, pb: .75, mb: .5,
               borderBottom: '1px solid rgba(22,63,107,.08)',
@@ -133,7 +133,7 @@ export default function Sidebar({ onNavigate }: SidebarProps = {}) {
                   display: 'flex', alignItems: 'center', gap: 1,
                   py: .875, px: 1.25, borderRadius: 1,
                   cursor: 'pointer', fontSize: 12.5, fontWeight: isActive ? 600 : 500,
-                  color: isActive ? '#005b9f' : '#6c7f92',
+                  color: isActive ? '#005b9f' : '#5a6d80',
                   background: isActive ? 'rgba(0,91,159,.1)' : 'transparent',
                   border: isActive ? '1px solid rgba(0,91,159,.25)' : '1px solid transparent',
                   mb: .125, transition: 'all .12s',

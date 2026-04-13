@@ -21,7 +21,7 @@ export default function ImportExport() {
         subtitle={locale === 'th' ? 'นำเข้าและส่งออกข้อมูลในรูปแบบ CSV/Excel' : 'Import and export data in CSV/Excel format'}
       />
 
-      <Box sx={{ flex: 1, overflow: 'auto', p: 2.75 }}>
+      <Box tabIndex={0} sx={{ flex: 1, overflow: "auto", p: 2.75, "&:focus-visible": { outline: "2px solid #005b9f", outlineOffset: -2 } }}>
         {/* 2 cards หลัก */}
         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mb: 3 }}>
           {/* Import */}
@@ -30,7 +30,7 @@ export default function ImportExport() {
             <Typography sx={{ fontSize: 16, fontWeight: 700, mt: 1, mb: .5 }}>
               {locale === 'th' ? '📥 นำเข้าข้อมูล' : '📥 Import Data'}
             </Typography>
-            <Typography sx={{ fontSize: 12, color: '#6c7f92', mb: 2 }}>
+            <Typography sx={{ fontSize: 12, color: '#5a6d80', mb: 2 }}>
               {locale === 'th' ? 'รองรับไฟล์ .csv, .xlsx ขนาดไม่เกิน 10MB' : 'Supports .csv, .xlsx up to 10MB'}
             </Typography>
             <Select size="small" defaultValue="partners" fullWidth sx={{ mb: 2, fontSize: 12 }}>
@@ -56,11 +56,11 @@ export default function ImportExport() {
 
           {/* Export */}
           <Paper elevation={0} sx={{ p: 3, border: '2px dashed rgba(26,158,92,.2)', borderRadius: 2, textAlign: 'center' }}>
-            <span className="material-icons-outlined" style={{ fontSize: 48, color: '#1a9e5c' }}>cloud_download</span>
+            <span className="material-icons-outlined" style={{ fontSize: 48, color: '#0f7a43' }}>cloud_download</span>
             <Typography sx={{ fontSize: 16, fontWeight: 700, mt: 1, mb: .5 }}>
               {locale === 'th' ? '📤 ส่งออกข้อมูล' : '📤 Export Data'}
             </Typography>
-            <Typography sx={{ fontSize: 12, color: '#6c7f92', mb: 2 }}>
+            <Typography sx={{ fontSize: 12, color: '#5a6d80', mb: 2 }}>
               {locale === 'th' ? 'ส่งออกเป็น Excel หรือ CSV ตามช่วงเวลา' : 'Export as Excel or CSV by date range'}
             </Typography>
             <Select size="small" defaultValue="contracts" fullWidth sx={{ mb: 2, fontSize: 12 }}>
@@ -105,10 +105,10 @@ export default function ImportExport() {
                 <TableRow key={h.id} hover>
                   <TableCell>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: .5 }}>
-                      <span className="material-icons-outlined" style={{ fontSize: 16, color: h.type === 'IMPORT' ? '#005b9f' : '#1a9e5c' }}>
+                      <span className="material-icons-outlined" style={{ fontSize: 16, color: h.type === 'IMPORT' ? '#005b9f' : '#0f7a43' }}>
                         {h.type === 'IMPORT' ? 'file_download' : 'file_upload'}
                       </span>
-                      <Typography sx={{ fontSize: 11, fontWeight: 600, color: h.type === 'IMPORT' ? '#005b9f' : '#1a9e5c' }}>{h.type}</Typography>
+                      <Typography sx={{ fontSize: 11, fontWeight: 600, color: h.type === 'IMPORT' ? '#005b9f' : '#0f7a43' }}>{h.type}</Typography>
                     </Box>
                   </TableCell>
                   <TableCell sx={{ fontSize: 12 }}>{h.category}</TableCell>
@@ -118,16 +118,16 @@ export default function ImportExport() {
                     <Box sx={{
                       display: 'inline-flex', alignItems: 'center', gap: .3, px: 1, py: .25, borderRadius: 999,
                       bgcolor: h.status === 'SUCCESS' ? 'rgba(26,158,92,.1)' : 'rgba(217,83,79,.1)',
-                      color: h.status === 'SUCCESS' ? '#1a9e5c' : '#d9534f',
+                      color: h.status === 'SUCCESS' ? '#0f7a43' : '#b52822',
                       border: `1px solid ${h.status === 'SUCCESS' ? 'rgba(26,158,92,.25)' : 'rgba(217,83,79,.25)'}`,
                       fontSize: 10, fontWeight: 700,
                     }}>
                       <span className="material-icons-outlined" style={{ fontSize: 12 }}>{h.status === 'SUCCESS' ? 'check' : 'error'}</span>
                       {h.status}
                     </Box>
-                    {h.error && <Typography sx={{ fontSize: 10, color: '#d9534f', mt: .2 }}>{h.error}</Typography>}
+                    {h.error && <Typography sx={{ fontSize: 10, color: '#b52822', mt: .2 }}>{h.error}</Typography>}
                   </TableCell>
-                  <TableCell sx={{ fontSize: 11, color: '#6c7f92' }}>{h.date}</TableCell>
+                  <TableCell sx={{ fontSize: 11, color: '#5a6d80' }}>{h.date}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

@@ -19,8 +19,8 @@ const mockExpiring = [
 ];
 
 const urgencyConfig: Record<string, { color: string; bg: string; border: string; labelTh: string; labelEn: string }> = {
-  urgent: { color: '#d9534f', bg: 'rgba(217,83,79,.1)', border: 'rgba(217,83,79,.25)', labelTh: 'เร่งด่วน', labelEn: 'Urgent' },
-  warning: { color: '#d97706', bg: 'rgba(217,119,6,.1)', border: 'rgba(217,119,6,.25)', labelTh: 'ใกล้ถึง', labelEn: 'Approaching' },
+  urgent: { color: '#b52822', bg: 'rgba(217,83,79,.1)', border: 'rgba(217,83,79,.25)', labelTh: 'เร่งด่วน', labelEn: 'Urgent' },
+  warning: { color: '#a45a00', bg: 'rgba(217,119,6,.1)', border: 'rgba(217,119,6,.25)', labelTh: 'ใกล้ถึง', labelEn: 'Approaching' },
   normal: { color: '#005b9f', bg: 'rgba(0,91,159,.1)', border: 'rgba(0,91,159,.25)', labelTh: 'ปกติ', labelEn: 'Normal' },
 };
 
@@ -98,16 +98,16 @@ export default function ContractRenew() {
         subtitle={locale === 'th' ? 'จัดการสัญญาใกล้หมดอายุและต่ออายุสัญญา' : 'Manage expiring contracts and renewals'}
       />
 
-      <Box sx={{ flex: 1, overflow: 'auto', p: 2.75 }}>
+      <Box tabIndex={0} sx={{ flex: 1, overflow: "auto", p: 2.75, "&:focus-visible": { outline: "2px solid #005b9f", outlineOffset: -2 } }}>
         {/* KPI */}
         <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 1.5, mb: 2 }}>
           {[
-            { label: locale === 'th' ? 'เร่งด่วน (≤30 วัน)' : 'Urgent (≤30 days)', value: mockExpiring.filter((c) => c.urgency === 'urgent').length, color: '#d9534f' },
-            { label: locale === 'th' ? 'ใกล้ถึง (31-60 วัน)' : 'Approaching (31-60 days)', value: mockExpiring.filter((c) => c.urgency === 'warning').length, color: '#d97706' },
+            { label: locale === 'th' ? 'เร่งด่วน (≤30 วัน)' : 'Urgent (≤30 days)', value: mockExpiring.filter((c) => c.urgency === 'urgent').length, color: '#b52822' },
+            { label: locale === 'th' ? 'ใกล้ถึง (31-60 วัน)' : 'Approaching (31-60 days)', value: mockExpiring.filter((c) => c.urgency === 'warning').length, color: '#a45a00' },
             { label: locale === 'th' ? 'ปกติ (61-90 วัน)' : 'Normal (61-90 days)', value: mockExpiring.filter((c) => c.urgency === 'normal').length, color: '#005b9f' },
           ].map((s) => (
             <Paper key={s.label} elevation={0} sx={{ p: 2, border: '1px solid rgba(22,63,107,.12)', boxShadow: '0 2px 12px rgba(10,22,40,.08)' }}>
-              <Typography sx={{ fontSize: 11, color: '#6c7f92' }}>{s.label}</Typography>
+              <Typography sx={{ fontSize: 11, color: '#5a6d80' }}>{s.label}</Typography>
               <Typography sx={{ fontSize: 28, fontWeight: 700, fontFamily: "'IBM Plex Mono', monospace", color: s.color, mt: .5 }}>{s.value}</Typography>
             </Paper>
           ))}
@@ -116,8 +116,8 @@ export default function ContractRenew() {
         <Paper elevation={0} sx={{ border: '1px solid rgba(22,63,107,.12)', boxShadow: '0 2px 12px rgba(10,22,40,.08)' }}>
           <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ px: 2, borderBottom: '1px solid rgba(22,63,107,.08)', minHeight: 40 }}>
             <Tab label={`${t('common.all')} (${mockExpiring.length})`} sx={{ fontSize: 12, minHeight: 40 }} />
-            <Tab label={`${locale === 'th' ? 'เร่งด่วน' : 'Urgent'} (${mockExpiring.filter((c) => c.urgency === 'urgent').length})`} sx={{ fontSize: 12, minHeight: 40, color: '#d9534f' }} />
-            <Tab label={`${locale === 'th' ? 'ใกล้ถึง' : 'Approaching'} (${mockExpiring.filter((c) => c.urgency === 'warning').length})`} sx={{ fontSize: 12, minHeight: 40, color: '#d97706' }} />
+            <Tab label={`${locale === 'th' ? 'เร่งด่วน' : 'Urgent'} (${mockExpiring.filter((c) => c.urgency === 'urgent').length})`} sx={{ fontSize: 12, minHeight: 40, color: '#b52822' }} />
+            <Tab label={`${locale === 'th' ? 'ใกล้ถึง' : 'Approaching'} (${mockExpiring.filter((c) => c.urgency === 'warning').length})`} sx={{ fontSize: 12, minHeight: 40, color: '#a45a00' }} />
             <Tab label={`${locale === 'th' ? 'ปกติ' : 'Normal'} (${mockExpiring.filter((c) => c.urgency === 'normal').length})`} sx={{ fontSize: 12, minHeight: 40 }} />
           </Tabs>
 
@@ -147,7 +147,7 @@ export default function ContractRenew() {
                     </TableCell>
                     <TableCell>
                       <Typography sx={{ fontSize: 11.5, fontWeight: 600 }}>{c.shopName}</Typography>
-                      <Typography sx={{ fontSize: 10.5, color: '#6c7f92' }}>{c.partnerName}</Typography>
+                      <Typography sx={{ fontSize: 10.5, color: '#5a6d80' }}>{c.partnerName}</Typography>
                     </TableCell>
                     <TableCell align="right">
                       <Typography sx={{ fontSize: 12, fontWeight: 600, fontFamily: "'IBM Plex Mono', monospace" }}>฿{formatMoney(c.monthlyRent)}</Typography>
@@ -159,7 +159,7 @@ export default function ContractRenew() {
                       <Typography sx={{ fontSize: 18, fontWeight: 700, fontFamily: "'IBM Plex Mono', monospace", color: u.color }}>
                         {c.daysLeft}
                       </Typography>
-                      <Typography sx={{ fontSize: 9, color: '#6c7f92' }}>{locale === 'th' ? 'วัน' : 'days'}</Typography>
+                      <Typography sx={{ fontSize: 9, color: '#5a6d80' }}>{locale === 'th' ? 'วัน' : 'days'}</Typography>
                     </TableCell>
                     <TableCell>
                       <Chip label={locale === 'th' ? u.labelTh : u.labelEn} size="small" sx={{ fontSize: 10, fontWeight: 700, height: 22, bgcolor: u.bg, color: u.color, border: `1px solid ${u.border}` }} />
@@ -190,9 +190,9 @@ export default function ContractRenew() {
           {selected && (
             <Box>
               <Paper elevation={0} sx={{ p: 2, mb: 2, bgcolor: '#f4f8fc', border: '1px solid rgba(0,91,159,.12)' }}>
-                <Typography sx={{ fontSize: 11, color: '#6c7f92' }}>{locale === 'th' ? 'สัญญาเดิม' : 'Original Contract'}</Typography>
+                <Typography sx={{ fontSize: 11, color: '#5a6d80' }}>{locale === 'th' ? 'สัญญาเดิม' : 'Original Contract'}</Typography>
                 <Typography sx={{ fontSize: 13, fontWeight: 700 }}>{selected.contractNo} · {selected.unitCode}</Typography>
-                <Typography sx={{ fontSize: 12, color: '#6c7f92', mt: .5 }}>{selected.shopName} · {selected.partnerName}</Typography>
+                <Typography sx={{ fontSize: 12, color: '#5a6d80', mt: .5 }}>{selected.shopName} · {selected.partnerName}</Typography>
               </Paper>
 
               <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>

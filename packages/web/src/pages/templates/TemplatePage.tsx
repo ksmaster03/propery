@@ -14,8 +14,8 @@ const templates = [
 
 const typeIcons: Record<string, { icon: string; color: string }> = {
   FIXED_RENT: { icon: 'price_change', color: '#005b9f' },
-  REVENUE_SHARING: { icon: 'percent', color: '#1a9e5c' },
-  CONSIGNMENT: { icon: 'storefront', color: '#d97706' },
+  REVENUE_SHARING: { icon: 'percent', color: '#0f7a43' },
+  CONSIGNMENT: { icon: 'storefront', color: '#a45a00' },
   REAL_ESTATE: { icon: 'apartment', color: '#7c3aed' },
   RECEIPT: { icon: 'receipt_long', color: '#d7a94b' },
   BILL: { icon: 'credit_card', color: '#0f73b8' },
@@ -38,7 +38,7 @@ export default function TemplatePage() {
         }
       />
 
-      <Box sx={{ flex: 1, overflow: 'auto', p: 2.75 }}>
+      <Box tabIndex={0} sx={{ flex: 1, overflow: "auto", p: 2.75, "&:focus-visible": { outline: "2px solid #005b9f", outlineOffset: -2 } }}>
         <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 2 }}>
           {templates.map((tpl) => {
             const t = typeIcons[tpl.type] || typeIcons.FIXED_RENT;
@@ -67,7 +67,7 @@ export default function TemplatePage() {
                     <Typography sx={{ fontSize: 13, fontWeight: 700, lineHeight: 1.3 }}>
                       {locale === 'th' ? tpl.nameTh : tpl.nameEn}
                     </Typography>
-                    <Typography sx={{ fontSize: 10, fontFamily: "'IBM Plex Mono', monospace", color: '#6c7f92', mt: .25 }}>
+                    <Typography sx={{ fontSize: 10, fontFamily: "'IBM Plex Mono', monospace", color: '#5a6d80', mt: .25 }}>
                       {tpl.code}
                     </Typography>
                   </Box>
@@ -81,13 +81,13 @@ export default function TemplatePage() {
                     sx={{
                       fontSize: 10, fontWeight: 700, height: 20,
                       bgcolor: tpl.active ? 'rgba(26,158,92,.1)' : '#f4f8fc',
-                      color: tpl.active ? '#1a9e5c' : '#6c7f92',
+                      color: tpl.active ? '#0f7a43' : '#5a6d80',
                       border: `1px solid ${tpl.active ? 'rgba(26,158,92,.25)' : 'rgba(22,63,107,.12)'}`,
                     }}
                   />
                 </Box>
 
-                <Typography sx={{ fontSize: 10.5, color: '#6c7f92', mb: 2 }}>
+                <Typography sx={{ fontSize: 10.5, color: '#5a6d80', mb: 2 }}>
                   {locale === 'th' ? 'อัปเดตล่าสุด' : 'Updated'}: {tpl.updated}
                 </Typography>
 
@@ -95,13 +95,13 @@ export default function TemplatePage() {
                   <IconButton size="small" sx={{ color: '#005b9f' }} title={locale === 'th' ? 'แก้ไข' : 'Edit'}>
                     <span className="material-icons-outlined" style={{ fontSize: 18 }}>edit</span>
                   </IconButton>
-                  <IconButton size="small" sx={{ color: '#6c7f92' }} title={locale === 'th' ? 'ดูตัวอย่าง' : 'Preview'}>
+                  <IconButton size="small" sx={{ color: '#5a6d80' }} title={locale === 'th' ? 'ดูตัวอย่าง' : 'Preview'}>
                     <span className="material-icons-outlined" style={{ fontSize: 18 }}>visibility</span>
                   </IconButton>
-                  <IconButton size="small" sx={{ color: '#1a9e5c' }} title={locale === 'th' ? 'ดาวน์โหลด' : 'Download'}>
+                  <IconButton size="small" sx={{ color: '#0f7a43' }} title={locale === 'th' ? 'ดาวน์โหลด' : 'Download'}>
                     <span className="material-icons-outlined" style={{ fontSize: 18 }}>download</span>
                   </IconButton>
-                  <IconButton size="small" sx={{ color: '#d97706' }} title={locale === 'th' ? 'คัดลอก' : 'Duplicate'}>
+                  <IconButton size="small" sx={{ color: '#a45a00' }} title={locale === 'th' ? 'คัดลอก' : 'Duplicate'}>
                     <span className="material-icons-outlined" style={{ fontSize: 18 }}>content_copy</span>
                   </IconButton>
                 </Box>

@@ -55,7 +55,7 @@ export default function RevenueReport() {
       : ['Fixed Rent', 'Revenue Sharing', 'Consignment', 'Real Estate'],
     datasets: [{
       data: [2100000, 1400000, 520000, 250000],
-      backgroundColor: ['#005b9f', '#1a9e5c', '#d97706', '#7c3aed'],
+      backgroundColor: ['#005b9f', '#0f7a43', '#a45a00', '#7c3aed'],
       borderWidth: 0,
     }],
   };
@@ -93,19 +93,19 @@ export default function RevenueReport() {
         }
       />
 
-      <Box sx={{ flex: 1, overflow: 'auto', p: 2.75 }}>
+      <Box tabIndex={0} sx={{ flex: 1, overflow: "auto", p: 2.75, "&:focus-visible": { outline: "2px solid #005b9f", outlineOffset: -2 } }}>
         {/* KPI Summary */}
         <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 1.5, mb: 2 }}>
           {[
             { label: locale === 'th' ? 'รายรับรวม (ปีนี้)' : 'Total Revenue (YTD)', value: summary.totalYtd >= 1_000_000 ? `฿${(summary.totalYtd / 1_000_000).toFixed(2)}M` : `฿${formatMoney(summary.totalYtd)}`, sub: '↑ Live', color: '#005b9f' },
             { label: locale === 'th' ? 'รายรับเฉลี่ย/เดือน' : 'Avg Monthly', value: summary.avgMonthly >= 1_000_000 ? `฿${(summary.avgMonthly / 1_000_000).toFixed(2)}M` : `฿${formatMoney(summary.avgMonthly)}`, sub: locale === 'th' ? 'จาก DB' : 'from DB', color: '#0f73b8' },
-            { label: locale === 'th' ? 'อัตราเก็บเงินได้' : 'Collection Rate', value: `${summary.collectionRate}%`, sub: '↑ real', color: '#1a9e5c' },
-            { label: locale === 'th' ? 'ค้างชำระ' : 'Outstanding', value: summary.outstanding >= 1_000_000 ? `฿${(summary.outstanding / 1_000_000).toFixed(2)}M` : `฿${formatMoney(summary.outstanding)}`, sub: '↓ real', color: '#d9534f' },
+            { label: locale === 'th' ? 'อัตราเก็บเงินได้' : 'Collection Rate', value: `${summary.collectionRate}%`, sub: '↑ real', color: '#0f7a43' },
+            { label: locale === 'th' ? 'ค้างชำระ' : 'Outstanding', value: summary.outstanding >= 1_000_000 ? `฿${(summary.outstanding / 1_000_000).toFixed(2)}M` : `฿${formatMoney(summary.outstanding)}`, sub: '↓ real', color: '#b52822' },
           ].map((s) => (
             <Paper key={s.label} elevation={0} sx={{ p: 2, border: '1px solid rgba(22,63,107,.12)', boxShadow: '0 2px 12px rgba(10,22,40,.08)', textAlign: 'center' }}>
               <Typography sx={{ fontSize: 24, fontWeight: 700, fontFamily: "'IBM Plex Mono', monospace", color: s.color }}>{s.value}</Typography>
-              <Typography sx={{ fontSize: 11, color: '#6c7f92', mt: .5 }}>{s.label}</Typography>
-              <Typography sx={{ fontSize: 10, color: s.sub.includes('↑') ? '#1a9e5c' : s.sub.includes('↓') ? '#d9534f' : '#6c7f92', mt: .5, fontWeight: 600 }}>{s.sub}</Typography>
+              <Typography sx={{ fontSize: 11, color: '#5a6d80', mt: .5 }}>{s.label}</Typography>
+              <Typography sx={{ fontSize: 10, color: s.sub.includes('↑') ? '#0f7a43' : s.sub.includes('↓') ? '#b52822' : '#5a6d80', mt: .5, fontWeight: 600 }}>{s.sub}</Typography>
             </Paper>
           ))}
         </Box>

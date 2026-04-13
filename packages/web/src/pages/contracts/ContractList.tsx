@@ -22,17 +22,17 @@ const fallbackContracts = [
 
 const typeConfig: Record<string, { label: string; labelEn: string; color: string; bg: string; border: string }> = {
   FIXED_RENT: { label: 'ค่าเช่าคงที่', labelEn: 'Fixed Rent', color: '#005b9f', bg: 'rgba(0,91,159,.1)', border: 'rgba(0,91,159,.25)' },
-  REVENUE_SHARING: { label: 'ปันผลประโยชน์', labelEn: 'Revenue Sharing', color: '#1a9e5c', bg: 'rgba(26,158,92,.1)', border: 'rgba(26,158,92,.25)' },
-  CONSIGNMENT: { label: 'ฝากขาย', labelEn: 'Consignment', color: '#d97706', bg: 'rgba(217,119,6,.1)', border: 'rgba(217,119,6,.25)' },
+  REVENUE_SHARING: { label: 'ปันผลประโยชน์', labelEn: 'Revenue Sharing', color: '#0f7a43', bg: 'rgba(26,158,92,.1)', border: 'rgba(26,158,92,.25)' },
+  CONSIGNMENT: { label: 'ฝากขาย', labelEn: 'Consignment', color: '#a45a00', bg: 'rgba(217,119,6,.1)', border: 'rgba(217,119,6,.25)' },
   REAL_ESTATE: { label: 'อสังหาริมทรัพย์', labelEn: 'Real Estate', color: '#7c3aed', bg: 'rgba(124,58,237,.1)', border: 'rgba(124,58,237,.25)' },
 };
 
 const statusConfig: Record<string, { label: string; labelEn: string; color: string; bg: string }> = {
-  ACTIVE: { label: 'มีผลบังคับ', labelEn: 'Active', color: '#1a9e5c', bg: 'rgba(26,158,92,.1)' },
-  DRAFT: { label: 'ร่าง', labelEn: 'Draft', color: '#6c7f92', bg: 'rgba(108,127,146,.1)' },
-  PENDING_REVIEW: { label: 'รอตรวจสอบ', labelEn: 'Pending Review', color: '#d97706', bg: 'rgba(217,119,6,.1)' },
+  ACTIVE: { label: 'มีผลบังคับ', labelEn: 'Active', color: '#0f7a43', bg: 'rgba(26,158,92,.1)' },
+  DRAFT: { label: 'ร่าง', labelEn: 'Draft', color: '#5a6d80', bg: 'rgba(108,127,146,.1)' },
+  PENDING_REVIEW: { label: 'รอตรวจสอบ', labelEn: 'Pending Review', color: '#a45a00', bg: 'rgba(217,119,6,.1)' },
   PENDING_APPROVAL: { label: 'รออนุมัติ', labelEn: 'Pending Approval', color: '#0f73b8', bg: 'rgba(15,115,184,.1)' },
-  EXPIRED: { label: 'หมดอายุ', labelEn: 'Expired', color: '#d9534f', bg: 'rgba(217,83,79,.1)' },
+  EXPIRED: { label: 'หมดอายุ', labelEn: 'Expired', color: '#b52822', bg: 'rgba(217,83,79,.1)' },
 };
 
 const formatMoney = (n: number) => new Intl.NumberFormat('th-TH').format(n);
@@ -74,13 +74,13 @@ export default function ContractList() {
         }
       />
 
-      <Box sx={{ flex: 1, overflow: 'auto', p: 2.75 }}>
+      <Box tabIndex={0} sx={{ flex: 1, overflow: "auto", p: 2.75, "&:focus-visible": { outline: "2px solid #005b9f", outlineOffset: -2 } }}>
         <Box sx={{ display: 'flex', gap: 1, mb: 2, alignItems: 'center' }}>
           <TextField
             size="small" placeholder={locale === 'th' ? 'ค้นหาเลขสัญญา, ผู้เช่า...' : 'Search contract, tenant...'}
             value={search} onChange={(e) => setSearch(e.target.value)}
             sx={{ flex: 1, maxWidth: 350, '& .MuiOutlinedInput-root': { fontSize: 12.5 } }}
-            InputProps={{ startAdornment: <InputAdornment position="start"><span className="material-icons-outlined" style={{ fontSize: 18, color: '#6c7f92' }}>search</span></InputAdornment> }}
+            InputProps={{ startAdornment: <InputAdornment position="start"><span className="material-icons-outlined" style={{ fontSize: 18, color: '#5a6d80' }}>search</span></InputAdornment> }}
           />
           <Select size="small" value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} sx={{ minWidth: 140, fontSize: 12 }}>
             <MenuItem value="ALL">{t('common.all')}</MenuItem>
@@ -131,7 +131,7 @@ export default function ContractList() {
                     </TableCell>
                     <TableCell>
                       <Typography sx={{ fontSize: 11.5, fontWeight: 600 }}>{c.shopName}</Typography>
-                      <Typography sx={{ fontSize: 10.5, color: '#6c7f92' }}>{c.partnerName}</Typography>
+                      <Typography sx={{ fontSize: 10.5, color: '#5a6d80' }}>{c.partnerName}</Typography>
                     </TableCell>
                     <TableCell align="right">
                       <Typography sx={{ fontSize: 12, fontWeight: 600, fontFamily: "'IBM Plex Mono', monospace" }}>
@@ -143,7 +143,7 @@ export default function ContractList() {
                         {new Date(c.endDate).toLocaleDateString(locale === 'th' ? 'th-TH' : 'en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
                       </Typography>
                       {c.daysLeft <= 90 && c.contractStatus === 'ACTIVE' && (
-                        <Typography sx={{ fontSize: 10, color: c.daysLeft <= 30 ? '#d9534f' : '#d97706', fontWeight: 600 }}>
+                        <Typography sx={{ fontSize: 10, color: c.daysLeft <= 30 ? '#b52822' : '#a45a00', fontWeight: 600 }}>
                           {c.daysLeft} {t('floorplan.days')}
                         </Typography>
                       )}
@@ -153,7 +153,7 @@ export default function ContractList() {
                     </TableCell>
                     <TableCell align="center">
                       <IconButton size="small" sx={{ color: '#005b9f' }}><span className="material-icons-outlined" style={{ fontSize: 18 }}>visibility</span></IconButton>
-                      <IconButton size="small" sx={{ color: '#6c7f92' }}><span className="material-icons-outlined" style={{ fontSize: 18 }}>edit</span></IconButton>
+                      <IconButton size="small" sx={{ color: '#5a6d80' }}><span className="material-icons-outlined" style={{ fontSize: 18 }}>edit</span></IconButton>
                     </TableCell>
                   </TableRow>
                 );

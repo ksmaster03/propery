@@ -127,7 +127,7 @@ export default function TenantPortal() {
         <Paper elevation={0} sx={{ p: 3, mb: 2, borderRadius: 3, boxShadow: '0 8px 28px rgba(0,0,0,.15)' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
             <Box>
-              <Typography sx={{ fontSize: 11, color: '#6c7f92', textTransform: 'uppercase', letterSpacing: .5 }}>
+              <Typography sx={{ fontSize: 11, color: '#5a6d80', textTransform: 'uppercase', letterSpacing: .5 }}>
                 {locale === 'th' ? 'ใบแจ้งหนี้ประจำเดือน' : 'Monthly Bill'}
               </Typography>
               <Typography sx={{ fontSize: 18, fontWeight: 700, mt: .5 }}>
@@ -136,7 +136,7 @@ export default function TenantPortal() {
             </Box>
             <Chip
               label={locale === 'th' ? `⚠ เกินกำหนด ${currentBill.overdueDays} วัน` : `⚠ Overdue ${currentBill.overdueDays} days`}
-              sx={{ fontSize: 11, fontWeight: 700, bgcolor: 'rgba(217,83,79,.1)', color: '#d9534f', border: '1px solid rgba(217,83,79,.25)' }}
+              sx={{ fontSize: 11, fontWeight: 700, bgcolor: 'rgba(217,83,79,.1)', color: '#b52822', border: '1px solid rgba(217,83,79,.25)' }}
             />
           </Box>
 
@@ -149,7 +149,7 @@ export default function TenantPortal() {
                   <Typography sx={{ fontSize: 12, fontFamily: "'IBM Plex Mono', monospace", fontWeight: 600 }}>฿{formatMoney(item.amount)}</Typography>
                 </Box>
               ))}
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', py: .75, borderBottom: '1px dashed rgba(217,83,79,.25)', color: '#d9534f' }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', py: .75, borderBottom: '1px dashed rgba(217,83,79,.25)', color: '#b52822' }}>
                 <Typography sx={{ fontSize: 12, fontWeight: 600 }}>
                   + {locale === 'th' ? 'ค่าปรับล่าช้า' : 'Late Fee'} ({currentBill.overdueDays} {locale === 'th' ? 'วัน' : 'days'})
                 </Typography>
@@ -159,11 +159,11 @@ export default function TenantPortal() {
                 <Typography sx={{ fontSize: 14, fontWeight: 700 }}>
                   {locale === 'th' ? 'ยอดรวมที่ต้องชำระ' : 'Total Due'}
                 </Typography>
-                <Typography sx={{ fontSize: 20, fontWeight: 700, fontFamily: "'IBM Plex Mono', monospace", color: '#d9534f' }}>
+                <Typography sx={{ fontSize: 20, fontWeight: 700, fontFamily: "'IBM Plex Mono', monospace", color: '#b52822' }}>
                   ฿{formatMoney(currentBill.totalAmount + currentBill.lateFee)}
                 </Typography>
               </Box>
-              <Typography sx={{ fontSize: 10, color: '#6c7f92', textAlign: 'right', mt: 1 }}>
+              <Typography sx={{ fontSize: 10, color: '#5a6d80', textAlign: 'right', mt: 1 }}>
                 {locale === 'th' ? 'ครบกำหนดชำระ' : 'Due Date'}: {currentBill.dueDate}
               </Typography>
             </Box>
@@ -186,7 +186,7 @@ export default function TenantPortal() {
               <Typography sx={{ fontSize: 11, fontWeight: 700, color: '#005b9f', mt: 1 }}>
                 PromptPay / QR Code
               </Typography>
-              <Typography sx={{ fontSize: 10, color: '#6c7f92' }}>
+              <Typography sx={{ fontSize: 10, color: '#5a6d80' }}>
                 {locale === 'th' ? 'สแกนด้วยแอปธนาคาร' : 'Scan with banking app'}
               </Typography>
             </Box>
@@ -221,20 +221,20 @@ export default function TenantPortal() {
             >
               <Box sx={{
                 width: 36, height: 36, borderRadius: '50%',
-                bgcolor: 'rgba(26,158,92,.1)', color: '#1a9e5c',
+                bgcolor: 'rgba(26,158,92,.1)', color: '#0f7a43',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
               }}>
                 <span className="material-icons-outlined" style={{ fontSize: 20 }}>check_circle</span>
               </Box>
               <Box sx={{ flex: 1 }}>
                 <Typography sx={{ fontSize: 12, fontWeight: 700 }}>{p.month}</Typography>
-                <Typography sx={{ fontSize: 10.5, color: '#6c7f92', fontFamily: "'IBM Plex Mono', monospace" }}>{p.billNo}</Typography>
+                <Typography sx={{ fontSize: 10.5, color: '#5a6d80', fontFamily: "'IBM Plex Mono', monospace" }}>{p.billNo}</Typography>
               </Box>
               <Box sx={{ textAlign: 'right' }}>
-                <Typography sx={{ fontSize: 13, fontWeight: 700, fontFamily: "'IBM Plex Mono', monospace", color: '#1a9e5c' }}>
+                <Typography sx={{ fontSize: 13, fontWeight: 700, fontFamily: "'IBM Plex Mono', monospace", color: '#0f7a43' }}>
                   ฿{formatMoney(p.amount)}
                 </Typography>
-                <Typography sx={{ fontSize: 10, color: '#6c7f92' }}>
+                <Typography sx={{ fontSize: 10, color: '#5a6d80' }}>
                   {locale === 'th' ? 'ชำระเมื่อ' : 'Paid'}: {p.date}
                 </Typography>
               </Box>

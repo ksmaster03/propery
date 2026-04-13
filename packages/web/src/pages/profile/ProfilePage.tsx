@@ -106,7 +106,7 @@ export default function ProfilePage() {
         subtitle={locale === 'th' ? 'จัดการข้อมูลส่วนตัวและรหัสผ่าน' : 'Manage personal info and password'}
       />
 
-      <Box sx={{ flex: 1, overflow: 'auto', p: 2.75 }}>
+      <Box tabIndex={0} sx={{ flex: 1, overflow: "auto", p: 2.75, "&:focus-visible": { outline: "2px solid #005b9f", outlineOffset: -2 } }}>
         {saved && (
           <Alert severity="success" sx={{ mb: 2, fontSize: 12 }}>
             {locale === 'th' ? 'บันทึกข้อมูลเรียบร้อย' : 'Profile saved successfully'}
@@ -134,7 +134,7 @@ export default function ProfilePage() {
                 </Avatar>
                 <Box>
                   <Typography sx={{ fontSize: 16, fontWeight: 700 }}>{user?.username}</Typography>
-                  <Typography sx={{ fontSize: 12, color: '#6c7f92' }}>
+                  <Typography sx={{ fontSize: 12, color: '#5a6d80' }}>
                     {user?.role || 'ADMIN'} · {user?.userId || 'USR-001'}
                   </Typography>
                   <Button size="small" variant="outlined" sx={{ mt: .5, fontSize: 10 }}>

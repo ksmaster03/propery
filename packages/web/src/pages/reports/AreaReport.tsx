@@ -16,7 +16,7 @@ export default function AreaReport() {
     datasets: [{
       label: '% Occupancy',
       data: [70.8, 82.3, 75.5, 68.2, 55.7, 48.9],
-      backgroundColor: ['#005b9f', '#0f73b8', '#1a9e5c', '#d97706', '#7c3aed', '#d9534f'],
+      backgroundColor: ['#005b9f', '#0f73b8', '#0f7a43', '#a45a00', '#7c3aed', '#b52822'],
       borderRadius: 4,
     }],
   };
@@ -28,7 +28,7 @@ export default function AreaReport() {
       : ['F&B', 'Retail', 'Service', 'Lounge', 'Other'],
     datasets: [{
       data: [3450, 4120, 2800, 1500, 970],
-      backgroundColor: ['#005b9f', '#1a9e5c', '#d97706', '#7c3aed', '#6c7f92'],
+      backgroundColor: ['#005b9f', '#0f7a43', '#a45a00', '#7c3aed', '#5a6d80'],
       borderWidth: 0,
     }],
   };
@@ -66,17 +66,17 @@ export default function AreaReport() {
         }
       />
 
-      <Box sx={{ flex: 1, overflow: 'auto', p: 2.75 }}>
+      <Box tabIndex={0} sx={{ flex: 1, overflow: "auto", p: 2.75, "&:focus-visible": { outline: "2px solid #005b9f", outlineOffset: -2 } }}>
         {/* KPI */}
         <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 1.5, mb: 2 }}>
           {[
             { label: locale === 'th' ? 'พื้นที่รวม' : 'Total Area', value: '12,840 ตร.ม.', color: '#005b9f' },
-            { label: locale === 'th' ? 'อัตราเช่าเฉลี่ย' : 'Avg Occupancy', value: '66.9%', color: '#1a9e5c' },
-            { label: locale === 'th' ? 'พื้นที่ว่าง' : 'Vacant', value: '4,250 ตร.ม.', color: '#d9534f' },
+            { label: locale === 'th' ? 'อัตราเช่าเฉลี่ย' : 'Avg Occupancy', value: '66.9%', color: '#0f7a43' },
+            { label: locale === 'th' ? 'พื้นที่ว่าง' : 'Vacant', value: '4,250 ตร.ม.', color: '#b52822' },
             { label: locale === 'th' ? 'รายได้/ตร.ม.' : 'Revenue/sqm', value: '฿1,862', color: '#d7a94b' },
           ].map((s) => (
             <Paper key={s.label} elevation={0} sx={{ p: 2, border: '1px solid rgba(22,63,107,.12)', boxShadow: '0 2px 12px rgba(10,22,40,.08)' }}>
-              <Typography sx={{ fontSize: 11, color: '#6c7f92' }}>{s.label}</Typography>
+              <Typography sx={{ fontSize: 11, color: '#5a6d80' }}>{s.label}</Typography>
               <Typography sx={{ fontSize: 22, fontWeight: 700, fontFamily: "'IBM Plex Mono', monospace", color: s.color, mt: .5 }}>{s.value}</Typography>
             </Paper>
           ))}

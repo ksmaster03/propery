@@ -169,7 +169,7 @@ export default function ContractCreate() {
         }
       />
 
-      <Box sx={{ flex: 1, overflow: 'auto', p: 2.75 }}>
+      <Box tabIndex={0} sx={{ flex: 1, overflow: "auto", p: 2.75, "&:focus-visible": { outline: "2px solid #005b9f", outlineOffset: -2 } }}>
         {/* === Stepper === */}
         <Paper elevation={0} sx={{ p: 2, mb: 2, border: '1px solid rgba(22,63,107,.12)', boxShadow: '0 2px 12px rgba(10,22,40,.08)' }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0 }}>
@@ -185,9 +185,9 @@ export default function ContractCreate() {
                   >
                     <Box sx={{
                       width: 32, height: 32, borderRadius: '50%',
-                      border: `2px solid ${isDone ? '#1a9e5c' : isActive ? '#005b9f' : 'rgba(22,63,107,.2)'}`,
-                      background: isDone ? '#1a9e5c' : isActive ? '#005b9f' : '#fff',
-                      color: isDone || isActive ? '#fff' : '#6c7f92',
+                      border: `2px solid ${isDone ? '#0f7a43' : isActive ? '#005b9f' : 'rgba(22,63,107,.2)'}`,
+                      background: isDone ? '#0f7a43' : isActive ? '#005b9f' : '#fff',
+                      color: isDone || isActive ? '#fff' : '#5a6d80',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       fontSize: 12, fontWeight: 700, flexShrink: 0,
                     }}>
@@ -197,14 +197,14 @@ export default function ContractCreate() {
                       className="step-label"
                       sx={{
                         fontSize: 11.5, fontWeight: isActive ? 700 : 500,
-                        color: isActive ? '#005b9f' : isDone ? '#1a9e5c' : '#6c7f92',
+                        color: isActive ? '#005b9f' : isDone ? '#0f7a43' : '#5a6d80',
                       }}
                     >
                       {locale === 'th' ? step.labelTh : step.labelEn}
                     </Typography>
                   </Box>
                   {stepNo < steps.length && (
-                    <Box sx={{ flex: 1, height: 2, mx: 1.5, bgcolor: isDone ? '#1a9e5c' : 'rgba(22,63,107,.12)' }} />
+                    <Box sx={{ flex: 1, height: 2, mx: 1.5, bgcolor: isDone ? '#0f7a43' : 'rgba(22,63,107,.12)' }} />
                   )}
                 </Box>
               );
@@ -273,7 +273,7 @@ export default function ContractCreate() {
               </Typography>
 
               {/* เลือกประเภทสัญญา */}
-              <Typography sx={{ fontSize: 11, fontWeight: 700, color: '#6c7f92', textTransform: 'uppercase', letterSpacing: .5, mb: 1 }}>
+              <Typography sx={{ fontSize: 11, fontWeight: 700, color: '#5a6d80', textTransform: 'uppercase', letterSpacing: .5, mb: 1 }}>
                 {locale === 'th' ? 'ประเภทสัญญา *' : 'Contract Type *'}
               </Typography>
               <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 1.5, mb: 3 }}>
@@ -289,11 +289,11 @@ export default function ContractCreate() {
                       '&:hover': { borderColor: '#005b9f', bgcolor: 'rgba(0,91,159,.04)' },
                     }}
                   >
-                    <span className="material-icons-outlined" style={{ fontSize: 28, color: contractType === ct.value ? '#005b9f' : '#6c7f92' }}>{ct.icon}</span>
+                    <span className="material-icons-outlined" style={{ fontSize: 28, color: contractType === ct.value ? '#005b9f' : '#5a6d80' }}>{ct.icon}</span>
                     <Typography sx={{ fontSize: 12, fontWeight: 700, color: contractType === ct.value ? '#005b9f' : '#17324a', mt: .5 }}>
                       {locale === 'th' ? ct.labelTh : ct.labelEn}
                     </Typography>
-                    <Typography sx={{ fontSize: 10, color: '#6c7f92', mt: .25 }}>
+                    <Typography sx={{ fontSize: 10, color: '#5a6d80', mt: .25 }}>
                       {locale === 'th' ? ct.descTh : ct.descEn}
                     </Typography>
                   </Box>
@@ -337,7 +337,7 @@ export default function ContractCreate() {
                     <TextField size="small" label={locale === 'th' ? '% ส่วนแบ่งรายได้' : 'Revenue Share %'} required value={formData.revenueSharePct} onChange={(e) => setFormData({ ...formData, revenueSharePct: e.target.value })} />
                   </Box>
                   {/* Tiered Rate Table */}
-                  <Typography sx={{ fontSize: 12, fontWeight: 700, mt: 2, mb: 1, color: '#6c7f92' }}>
+                  <Typography sx={{ fontSize: 12, fontWeight: 700, mt: 2, mb: 1, color: '#5a6d80' }}>
                     📐 {locale === 'th' ? 'อัตราแบบขั้นบันได' : 'Tiered Rate'}
                   </Typography>
                   <Table size="small" sx={{ border: '1px solid rgba(22,63,107,.12)', borderRadius: 1 }}>
@@ -412,7 +412,7 @@ export default function ContractCreate() {
               </Box>
 
               {/* Upload เอกสาร — ดึงรายการเอกสารจาก master data */}
-              <Typography sx={{ fontSize: 12, fontWeight: 700, color: '#6c7f92', mb: 1, textTransform: 'uppercase', letterSpacing: .5 }}>
+              <Typography sx={{ fontSize: 12, fontWeight: 700, color: '#5a6d80', mb: 1, textTransform: 'uppercase', letterSpacing: .5 }}>
                 {locale === 'th' ? '📎 เอกสารประกอบ' : '📎 Supporting Documents'}
               </Typography>
               <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1 }}>
@@ -423,21 +423,21 @@ export default function ContractCreate() {
                       key={doc.id}
                       sx={{
                         p: 1.5, borderRadius: 1,
-                        border: `1px dashed ${uploaded ? '#1a9e5c' : doc.required ? 'rgba(217,83,79,.3)' : 'rgba(22,63,107,.25)'}`,
+                        border: `1px dashed ${uploaded ? '#0f7a43' : doc.required ? 'rgba(217,83,79,.3)' : 'rgba(22,63,107,.25)'}`,
                         bgcolor: uploaded ? 'rgba(26,158,92,.04)' : undefined,
                         display: 'flex', alignItems: 'center', gap: 1,
                       }}
                     >
-                      <span className="material-icons-outlined" style={{ fontSize: 22, color: uploaded ? '#1a9e5c' : doc.required ? '#d9534f' : '#6c7f92' }}>
+                      <span className="material-icons-outlined" style={{ fontSize: 22, color: uploaded ? '#0f7a43' : doc.required ? '#b52822' : '#5a6d80' }}>
                         {uploaded ? 'check_circle' : 'upload_file'}
                       </span>
                       <Box sx={{ flex: 1, minWidth: 0 }}>
                         <Typography sx={{ fontSize: 12 }}>
                           {locale === 'th' ? doc.nameTh : (doc.nameEn || doc.nameTh)}
-                          {doc.required && <span style={{ color: '#d9534f', marginLeft: 4 }}>*</span>}
+                          {doc.required && <span style={{ color: '#b52822', marginLeft: 4 }}>*</span>}
                         </Typography>
                         {uploaded && (
-                          <Typography sx={{ fontSize: 9, color: '#1a9e5c', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          <Typography sx={{ fontSize: 9, color: '#0f7a43', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                             ✓ {uploaded.filename}
                           </Typography>
                         )}
@@ -475,7 +475,7 @@ export default function ContractCreate() {
                 <Typography sx={{ fontSize: 16, fontWeight: 700, textAlign: 'center', mb: .5 }}>
                   {locale === 'th' ? 'สัญญาเช่าพื้นที่เชิงพาณิชย์' : 'Commercial Lease Contract'}
                 </Typography>
-                <Typography sx={{ fontSize: 11, textAlign: 'center', color: '#6c7f92', mb: 2 }}>
+                <Typography sx={{ fontSize: 11, textAlign: 'center', color: '#5a6d80', mb: 2 }}>
                   {locale === 'th' ? 'ท่าอากาศยานดอนเมือง · กรมท่าอากาศยาน' : 'Don Mueang Airport · Department of Airports'}
                 </Typography>
                 <Divider sx={{ mb: 2 }} />
@@ -496,14 +496,14 @@ export default function ContractCreate() {
                     [locale === 'th' ? 'ค่าปรับล่าช้า' : 'Late Penalty', `${formData.latePenaltyRate}%/${locale === 'th' ? 'ปี' : 'year'}`],
                   ].map(([label, value], i) => (
                     <Box key={i} sx={{ display: 'contents' }}>
-                      <Typography sx={{ fontSize: 12, color: '#6c7f92' }}>{label}</Typography>
+                      <Typography sx={{ fontSize: 12, color: '#5a6d80' }}>{label}</Typography>
                       <Typography sx={{ fontSize: 12, fontWeight: 600 }}>{value}</Typography>
                     </Box>
                   ))}
                 </Box>
 
                 <Divider sx={{ my: 2 }} />
-                <Typography sx={{ fontSize: 11, color: '#6c7f92', fontStyle: 'italic', textAlign: 'center' }}>
+                <Typography sx={{ fontSize: 11, color: '#5a6d80', fontStyle: 'italic', textAlign: 'center' }}>
                   {locale === 'th' ? 'ร่างสัญญาจะถูกสร้างเป็น PDF หลังจากคลิก "ลงนาม"' : 'Full contract PDF will be generated after clicking "Sign"'}
                 </Typography>
               </Paper>
@@ -513,13 +513,13 @@ export default function ContractCreate() {
           {/* Step 6: ลงนาม/ดาวน์โหลด */}
           {currentStep === 6 && (
             <Box sx={{ textAlign: 'center', py: 4 }}>
-              <Box sx={{ width: 80, height: 80, borderRadius: '50%', bgcolor: 'rgba(26,158,92,.1)', border: '3px solid #1a9e5c', display: 'flex', alignItems: 'center', justifyContent: 'center', mx: 'auto', mb: 2 }}>
-                <span className="material-icons-outlined" style={{ fontSize: 48, color: '#1a9e5c' }}>check_circle</span>
+              <Box sx={{ width: 80, height: 80, borderRadius: '50%', bgcolor: 'rgba(26,158,92,.1)', border: '3px solid #0f7a43', display: 'flex', alignItems: 'center', justifyContent: 'center', mx: 'auto', mb: 2 }}>
+                <span className="material-icons-outlined" style={{ fontSize: 48, color: '#0f7a43' }}>check_circle</span>
               </Box>
-              <Typography sx={{ fontSize: 18, fontWeight: 700, color: '#1a9e5c', mb: 1 }}>
+              <Typography sx={{ fontSize: 18, fontWeight: 700, color: '#0f7a43', mb: 1 }}>
                 {locale === 'th' ? 'สร้างสัญญาเรียบร้อย!' : 'Contract Created Successfully!'}
               </Typography>
-              <Typography sx={{ fontSize: 13, color: '#6c7f92', mb: 3 }}>
+              <Typography sx={{ fontSize: 13, color: '#5a6d80', mb: 3 }}>
                 {locale === 'th' ? 'สัญญาอยู่ในสถานะรออนุมัติจากหัวหน้า' : 'Contract is pending supervisor approval'}
               </Typography>
 
@@ -542,8 +542,8 @@ export default function ContractCreate() {
                     sx={{
                       fontSize: 10, fontWeight: 600,
                       bgcolor: s.status === 'done' ? 'rgba(26,158,92,.1)' : s.status === 'active' ? 'rgba(217,119,6,.1)' : '#f4f8fc',
-                      color: s.status === 'done' ? '#1a9e5c' : s.status === 'active' ? '#d97706' : '#6c7f92',
-                      border: `1px solid ${s.status === 'done' ? '#1a9e5c' : s.status === 'active' ? '#d97706' : 'rgba(22,63,107,.12)'}`,
+                      color: s.status === 'done' ? '#0f7a43' : s.status === 'active' ? '#a45a00' : '#5a6d80',
+                      border: `1px solid ${s.status === 'done' ? '#0f7a43' : s.status === 'active' ? '#a45a00' : 'rgba(22,63,107,.12)'}`,
                     }}
                   />
                 ))}

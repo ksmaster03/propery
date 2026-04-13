@@ -43,7 +43,7 @@ export default function PageHeader({ icon, title, subtitle, actions }: PageHeade
             {title}
           </Typography>
           {subtitle && (
-            <Typography sx={{ fontSize: { xs: 10.5, md: 11 }, color: '#6c7f92', mt: .1, display: { xs: '-webkit-box', sm: 'block' }, WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+            <Typography sx={{ fontSize: { xs: 10.5, md: 11 }, color: '#5a6d80', mt: .1, display: { xs: '-webkit-box', sm: 'block' }, WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
               {subtitle}
             </Typography>
           )}

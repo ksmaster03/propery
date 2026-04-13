@@ -55,16 +55,16 @@ const fallbackExpiring = [
 ];
 
 const urgencyColors = {
-  urgent: { color: '#d9534f', bg: 'rgba(217,83,79,.1)', border: 'rgba(217,83,79,.25)', label: 'เร่งด่วน' },
-  warning: { color: '#d97706', bg: 'rgba(217,119,6,.1)', border: 'rgba(217,119,6,.25)', label: 'ใกล้ถึง' },
+  urgent: { color: '#b52822', bg: 'rgba(217,83,79,.1)', border: 'rgba(217,83,79,.25)', label: 'เร่งด่วน' },
+  warning: { color: '#a45a00', bg: 'rgba(217,119,6,.1)', border: 'rgba(217,119,6,.25)', label: 'ใกล้ถึง' },
   normal: { color: '#005b9f', bg: 'rgba(0,91,159,.1)', border: 'rgba(0,91,159,.25)', label: 'ปกติ' },
 };
 
 // ข้อมูลแบ่งรายได้
 const revenueSplit = [
   { label: 'กรมธนารักษ์', amount: 2135000, pct: 50, color: '#005b9f' },
-  { label: 'กองทุนสวัสดิการ ทย.', amount: 854000, pct: 20, color: '#d97706' },
-  { label: 'เงินทุนหมุนเวียน ทย.', amount: 1281000, pct: 30, color: '#1a9e5c' },
+  { label: 'กองทุนสวัสดิการ ทย.', amount: 854000, pct: 20, color: '#a45a00' },
+  { label: 'เงินทุนหมุนเวียน ทย.', amount: 1281000, pct: 30, color: '#0f7a43' },
 ];
 
 // ข้อมูลกราฟสถานะชำระ
@@ -72,7 +72,7 @@ const paymentChartData = {
   labels: ['ชำระแล้ว', 'รอชำระ', 'เกินกำหนด'],
   datasets: [{
     data: [22, 8, 4],
-    backgroundColor: ['#1a9e5c', '#d97706', '#d9534f'],
+    backgroundColor: ['#0f7a43', '#a45a00', '#b52822'],
     borderWidth: 0,
   }],
 };
@@ -118,7 +118,7 @@ export default function Dashboard() {
         }
       />
 
-      <Box sx={{ flex: 1, overflow: 'auto', p: 2.75 }}>
+      <Box tabIndex={0} sx={{ flex: 1, overflow: "auto", p: 2.75, "&:focus-visible": { outline: "2px solid #005b9f", outlineOffset: -2 } }}>
         {/* KPI Cards */}
         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr 1fr', sm: 'repeat(3, 1fr)', md: 'repeat(5, 1fr)' }, gap: 1.5, mb: 1.75 }}>
           <KpiCard
@@ -140,14 +140,14 @@ export default function Dashboard() {
             label="พื้นที่ว่าง"
             subtitle="18.7% ของทั้งหมด"
             subtitleType="neutral"
-            accentColor="linear-gradient(90deg, #1a9e5c, #2ec97a)"
+            accentColor="linear-gradient(90deg, #0f7a43, #2ec97a)"
           />
           <KpiCard
             value={kpi.reservedUnits}
             label="รอทำสัญญา"
             subtitle="⚠ ใกล้ครบกำหนด 2"
             subtitleType="warn"
-            accentColor="linear-gradient(90deg, #d97706, #f5c842)"
+            accentColor="linear-gradient(90deg, #a45a00, #f5c842)"
           />
           <KpiCard
             value={kpi.monthlyRevenue >= 1_000_000 ? `${(kpi.monthlyRevenue / 1_000_000).toFixed(2)}M` : formatMoney(kpi.monthlyRevenue)}
@@ -165,13 +165,13 @@ export default function Dashboard() {
             <Box sx={{ px: 2.25, py: 1.4, borderBottom: '1px solid rgba(22,63,107,.08)', display: 'flex', alignItems: 'center', gap: 1, background: 'linear-gradient(180deg, rgba(0,91,159,.04), transparent)' }}>
               <Box>
                 <Typography sx={{ fontSize: 13, fontWeight: 700 }}>รายรับค่าเช่ารายเดือน (บาท)</Typography>
-                <Typography sx={{ fontSize: 10.5, color: '#6c7f92', mt: .1 }}>เปรียบเทียบประมาณการ vs จริง · ปีงบประมาณ 2569</Typography>
+                <Typography sx={{ fontSize: 10.5, color: '#5a6d80', mt: .1 }}>เปรียบเทียบประมาณการ vs จริง · ปีงบประมาณ 2569</Typography>
               </Box>
               <Box sx={{ flex: 1 }} />
               <Button size="small" variant="outlined" sx={{ fontSize: 11 }}>ดูทั้งหมด</Button>
             </Box>
             <Box sx={{ p: 2.25, pt: 1 }}>
-              <Box sx={{ height: 220 }}>
+              <Box sx={{ height: 220 }} role="img" aria-label="กราฟแท่งรายรับรายเดือน — เทียบประมาณการกับยอดจริง">
                 <Bar
                   data={revenueChartData}
                   options={{
@@ -192,7 +192,7 @@ export default function Dashboard() {
             <Box sx={{ px: 2.25, py: 1.4, borderBottom: '1px solid rgba(22,63,107,.08)', display: 'flex', alignItems: 'center', gap: 1, background: 'linear-gradient(180deg, rgba(0,91,159,.04), transparent)' }}>
               <Box>
                 <Typography sx={{ fontSize: 13, fontWeight: 700 }}>⚠ สัญญาใกล้หมดอายุ</Typography>
-                <Typography sx={{ fontSize: 10.5, color: '#6c7f92', mt: .1 }}>ภายใน 90 วัน · ต้องดำเนินการต่อสัญญา</Typography>
+                <Typography sx={{ fontSize: 10.5, color: '#5a6d80', mt: .1 }}>ภายใน 90 วัน · ต้องดำเนินการต่อสัญญา</Typography>
               </Box>
               <Box sx={{ flex: 1 }} />
               <Button size="small" color="warning" variant="outlined" sx={{ fontSize: 11 }}>จัดการ</Button>
@@ -217,11 +217,11 @@ export default function Dashboard() {
                       <Typography sx={{ fontSize: 18, fontWeight: 700, fontFamily: "'IBM Plex Mono', monospace", color: u.color, lineHeight: 1 }}>
                         {c.days}
                       </Typography>
-                      <Typography sx={{ fontSize: 9, color: '#6c7f92' }}>วัน</Typography>
+                      <Typography sx={{ fontSize: 9, color: '#5a6d80' }}>วัน</Typography>
                     </Box>
                     <Box sx={{ flex: 1 }}>
                       <Typography sx={{ fontSize: 12, fontWeight: 600 }}>{c.shop}</Typography>
-                      <Typography sx={{ fontSize: 11, color: '#6c7f92' }}>{c.partner} · สิ้นสุด {c.endDate}</Typography>
+                      <Typography sx={{ fontSize: 11, color: '#5a6d80' }}>{c.partner} · สิ้นสุด {c.endDate}</Typography>
                     </Box>
                     <Chip
                       label={u.label}
@@ -269,7 +269,7 @@ export default function Dashboard() {
               <Typography sx={{ fontSize: 13, fontWeight: 700 }}>สถานะชำระค่าเช่า</Typography>
             </Box>
             <Box sx={{ p: 2.25, display: 'flex', justifyContent: 'center' }}>
-              <Box sx={{ width: 180, height: 180 }}>
+              <Box sx={{ width: 180, height: 180 }} role="img" aria-label="กราฟโดนัทสถานะชำระเงิน — ชำระแล้ว ค้างชำระ เกินกำหนด">
                 <Doughnut
                   data={paymentChartData}
                   options={{
@@ -293,8 +293,8 @@ export default function Dashboard() {
               {[
                 { label: 'สัญญาทั้งหมด', value: '34', color: '#005b9f' },
                 { label: 'ค่าเช่าคงที่', value: '18', color: '#0f73b8' },
-                { label: 'ปันผลประโยชน์', value: '10', color: '#1a9e5c' },
-                { label: 'ฝากขาย', value: '4', color: '#d97706' },
+                { label: 'ปันผลประโยชน์', value: '10', color: '#0f7a43' },
+                { label: 'ฝากขาย', value: '4', color: '#a45a00' },
                 { label: 'อสังหาริมทรัพย์', value: '2', color: '#7c3aed' },
               ].map((item) => (
                 <Box key={item.label} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: .625, borderBottom: '1px solid rgba(22,63,107,.08)', '&:last-child': { borderBottom: 0 } }}>

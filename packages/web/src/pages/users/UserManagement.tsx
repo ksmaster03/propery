@@ -26,8 +26,8 @@ interface User {
 
 // === Role config ===
 const ROLES = [
-  { value: 'ADMIN', labelTh: 'ผู้ดูแลระบบ', labelEn: 'Administrator', color: '#d9534f' },
-  { value: 'SUPERVISOR', labelTh: 'หัวหน้างาน', labelEn: 'Supervisor', color: '#d97706' },
+  { value: 'ADMIN', labelTh: 'ผู้ดูแลระบบ', labelEn: 'Administrator', color: '#b52822' },
+  { value: 'SUPERVISOR', labelTh: 'หัวหน้างาน', labelEn: 'Supervisor', color: '#a45a00' },
   { value: 'OPERATOR', labelTh: 'เจ้าหน้าที่', labelEn: 'Operator', color: '#0f73b8' },
 ];
 
@@ -135,7 +135,7 @@ export default function UserManagement() {
         }
       />
 
-      <Box sx={{ flex: 1, overflow: 'auto', p: 2.75 }}>
+      <Box tabIndex={0} sx={{ flex: 1, overflow: "auto", p: 2.75, "&:focus-visible": { outline: "2px solid #005b9f", outlineOffset: -2 } }}>
         {/* Filter bar */}
         <Box sx={{ display: 'flex', gap: 1, mb: 2, alignItems: 'center', flexWrap: 'wrap' }}>
           <TextField
@@ -147,7 +147,7 @@ export default function UserManagement() {
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
-                  <span className="material-icons-outlined" style={{ fontSize: 18, color: '#6c7f92' }}>search</span>
+                  <span className="material-icons-outlined" style={{ fontSize: 18, color: '#5a6d80' }}>search</span>
                 </InputAdornment>
               ),
             }}
@@ -163,7 +163,7 @@ export default function UserManagement() {
         {/* Table */}
         <Paper elevation={0} sx={{ border: '1px solid rgba(22,63,107,.12)', boxShadow: '0 2px 12px rgba(10,22,40,.08)' }}>
           {isLoading ? (
-            <Box sx={{ p: 4, textAlign: 'center', color: '#6c7f92' }}>{locale === 'th' ? 'กำลังโหลด...' : 'Loading...'}</Box>
+            <Box sx={{ p: 4, textAlign: 'center', color: '#5a6d80' }}>{locale === 'th' ? 'กำลังโหลด...' : 'Loading...'}</Box>
           ) : users.length === 0 ? (
             <Alert severity="info" sx={{ m: 2, fontSize: 11 }}>
               {locale === 'th' ? 'ยังไม่มีผู้ใช้ในระบบ' : 'No users in system'}
@@ -192,7 +192,7 @@ export default function UserManagement() {
                       </TableCell>
                       <TableCell sx={{ fontSize: 12, fontWeight: 600 }}>{u.username}</TableCell>
                       <TableCell sx={{ fontSize: 12 }}>{u.fullName || '—'}</TableCell>
-                      <TableCell sx={{ fontSize: 11, color: '#6c7f92' }}>{u.email || '—'}</TableCell>
+                      <TableCell sx={{ fontSize: 11, color: '#5a6d80' }}>{u.email || '—'}</TableCell>
                       <TableCell>
                         <Chip
                           label={role ? (locale === 'th' ? role.labelTh : role.labelEn) : u.role}
@@ -200,12 +200,12 @@ export default function UserManagement() {
                           sx={{
                             fontSize: 10, fontWeight: 700, height: 22,
                             bgcolor: role ? `${role.color}15` : '#f4f8fc',
-                            color: role?.color || '#6c7f92',
+                            color: role?.color || '#5a6d80',
                             border: `1px solid ${role?.color || '#ccc'}40`,
                           }}
                         />
                       </TableCell>
-                      <TableCell sx={{ fontSize: 11, color: '#6c7f92' }}>{formatDate(u.lastLoginAt)}</TableCell>
+                      <TableCell sx={{ fontSize: 11, color: '#5a6d80' }}>{formatDate(u.lastLoginAt)}</TableCell>
                       <TableCell>
                         <Chip
                           label={u.isActive ? (locale === 'th' ? 'ใช้งาน' : 'Active') : (locale === 'th' ? 'ปิด' : 'Disabled')}
@@ -213,7 +213,7 @@ export default function UserManagement() {
                           sx={{
                             fontSize: 10, fontWeight: 700, height: 20,
                             bgcolor: u.isActive ? 'rgba(26,158,92,.1)' : '#f4f8fc',
-                            color: u.isActive ? '#1a9e5c' : '#6c7f92',
+                            color: u.isActive ? '#0f7a43' : '#5a6d80',
                           }}
                         />
                       </TableCell>
@@ -221,7 +221,7 @@ export default function UserManagement() {
                         <IconButton size="small" onClick={() => handleEdit(u)} sx={{ color: '#005b9f' }}>
                           <span className="material-icons-outlined" style={{ fontSize: 18 }}>edit</span>
                         </IconButton>
-                        <IconButton size="small" onClick={() => handleDelete(u.id)} sx={{ color: '#d9534f' }}>
+                        <IconButton size="small" onClick={() => handleDelete(u.id)} sx={{ color: '#b52822' }}>
                           <span className="material-icons-outlined" style={{ fontSize: 18 }}>block</span>
                         </IconButton>
                       </TableCell>

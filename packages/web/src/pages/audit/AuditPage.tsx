@@ -19,9 +19,9 @@ interface AuditLog {
 }
 
 const ACTION_COLORS: Record<string, { color: string; bg: string }> = {
-  CREATE: { color: '#1a9e5c', bg: 'rgba(26,158,92,.1)' },
+  CREATE: { color: '#0f7a43', bg: 'rgba(26,158,92,.1)' },
   UPDATE: { color: '#0f73b8', bg: 'rgba(15,115,184,.1)' },
-  DELETE: { color: '#d9534f', bg: 'rgba(217,83,79,.1)' },
+  DELETE: { color: '#b52822', bg: 'rgba(217,83,79,.1)' },
   APPROVE: { color: '#7c3aed', bg: 'rgba(124,58,237,.1)' },
   PAYMENT: { color: '#d7a94b', bg: 'rgba(215,169,75,.1)' },
 };
@@ -56,7 +56,7 @@ export default function AuditPage() {
         subtitle={locale === 'th' ? `${logs.length} รายการ` : `${logs.length} records`}
       />
 
-      <Box sx={{ flex: 1, overflow: 'auto', p: 2.75 }}>
+      <Box tabIndex={0} sx={{ flex: 1, overflow: "auto", p: 2.75, "&:focus-visible": { outline: "2px solid #005b9f", outlineOffset: -2 } }}>
         <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
           <Select size="small" value={actionFilter} onChange={(e) => setActionFilter(e.target.value)} sx={{ minWidth: 140, fontSize: 12 }}>
             <MenuItem value="ALL">{locale === 'th' ? 'ทุกการกระทำ' : 'All Actions'}</MenuItem>
@@ -79,7 +79,7 @@ export default function AuditPage() {
 
         <Paper elevation={0} sx={{ border: '1px solid rgba(22,63,107,.12)', boxShadow: '0 2px 12px rgba(10,22,40,.08)' }}>
           {isLoading ? (
-            <Box sx={{ p: 4, textAlign: 'center', color: '#6c7f92' }}>{locale === 'th' ? 'กำลังโหลด...' : 'Loading...'}</Box>
+            <Box sx={{ p: 4, textAlign: 'center', color: '#5a6d80' }}>{locale === 'th' ? 'กำลังโหลด...' : 'Loading...'}</Box>
           ) : logs.length === 0 ? (
             <Alert severity="info" sx={{ m: 2, fontSize: 11 }}>
               {locale === 'th' ? 'ยังไม่มีบันทึก audit — เริ่มใช้งานระบบเพื่อให้มีข้อมูล' : 'No audit logs yet'}
@@ -102,7 +102,7 @@ export default function AuditPage() {
                   const ac = ACTION_COLORS[log.action] || ACTION_COLORS.UPDATE;
                   return (
                     <TableRow key={log.id} hover>
-                      <TableCell sx={{ fontSize: 11, color: '#6c7f92', whiteSpace: 'nowrap' }}>{formatTime(log.createdAt)}</TableCell>
+                      <TableCell sx={{ fontSize: 11, color: '#5a6d80', whiteSpace: 'nowrap' }}>{formatTime(log.createdAt)}</TableCell>
                       <TableCell>
                         <Typography sx={{ fontSize: 11, fontWeight: 700, fontFamily: "'IBM Plex Mono', monospace", color: '#005b9f' }}>{log.userId}</Typography>
                       </TableCell>
@@ -111,8 +111,8 @@ export default function AuditPage() {
                       </TableCell>
                       <TableCell sx={{ fontSize: 11, fontFamily: "'IBM Plex Mono', monospace" }}>{log.tableName}</TableCell>
                       <TableCell sx={{ fontSize: 11 }}>{log.recordId || '—'}</TableCell>
-                      <TableCell sx={{ fontSize: 10, color: '#6c7f92' }}>{log.ipAddress || '—'}</TableCell>
-                      <TableCell sx={{ fontSize: 10, color: '#6c7f92', maxWidth: 300, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <TableCell sx={{ fontSize: 10, color: '#5a6d80' }}>{log.ipAddress || '—'}</TableCell>
+                      <TableCell sx={{ fontSize: 10, color: '#5a6d80', maxWidth: 300, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {log.newValue ? log.newValue.substring(0, 80) + (log.newValue.length > 80 ? '...' : '') : '—'}
                       </TableCell>
                     </TableRow>

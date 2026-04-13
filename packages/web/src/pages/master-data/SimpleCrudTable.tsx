@@ -83,7 +83,7 @@ export default function SimpleCrudTable({ entity, fields, titleTh, titleEn, desc
             {locale === 'th' ? titleTh : titleEn}
           </Typography>
           {descriptionTh && (
-            <Typography sx={{ fontSize: 11, color: '#6c7f92', mt: .2 }}>
+            <Typography sx={{ fontSize: 11, color: '#5a6d80', mt: .2 }}>
               {locale === 'th' ? descriptionTh : descriptionEn}
             </Typography>
           )}
@@ -95,7 +95,7 @@ export default function SimpleCrudTable({ entity, fields, titleTh, titleEn, desc
       </Box>
 
       {isLoading ? (
-        <Box sx={{ p: 4, textAlign: 'center', color: '#6c7f92' }}>
+        <Box sx={{ p: 4, textAlign: 'center', color: '#5a6d80' }}>
           {locale === 'th' ? 'กำลังโหลด...' : 'Loading...'}
         </Box>
       ) : data.length === 0 ? (
@@ -120,8 +120,8 @@ export default function SimpleCrudTable({ entity, fields, titleTh, titleEn, desc
                   <TableCell key={f.key}>
                     {f.type === 'icon' && item[f.key] ? (
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: .5 }}>
-                        <span className="material-icons-outlined" style={{ fontSize: 18, color: item.color || '#6c7f92' }}>{item[f.key]}</span>
-                        <Typography sx={{ fontSize: 11, color: '#6c7f92' }}>{item[f.key]}</Typography>
+                        <span className="material-icons-outlined" style={{ fontSize: 18, color: item.color || '#5a6d80' }}>{item[f.key]}</span>
+                        <Typography sx={{ fontSize: 11, color: '#5a6d80' }}>{item[f.key]}</Typography>
                       </Box>
                     ) : f.type === 'color' && item[f.key] ? (
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: .5 }}>
@@ -129,7 +129,7 @@ export default function SimpleCrudTable({ entity, fields, titleTh, titleEn, desc
                         <Typography sx={{ fontSize: 11, fontFamily: "'IBM Plex Mono', monospace" }}>{item[f.key]}</Typography>
                       </Box>
                     ) : f.type === 'switch' ? (
-                      <Chip label={item[f.key] ? '✓' : '✗'} size="small" sx={{ fontSize: 10, height: 20, bgcolor: item[f.key] ? 'rgba(26,158,92,.1)' : '#f4f8fc', color: item[f.key] ? '#1a9e5c' : '#6c7f92' }} />
+                      <Chip label={item[f.key] ? '✓' : '✗'} size="small" sx={{ fontSize: 10, height: 20, bgcolor: item[f.key] ? 'rgba(26,158,92,.1)' : '#f4f8fc', color: item[f.key] ? '#0f7a43' : '#5a6d80' }} />
                     ) : (
                       <Typography sx={{ fontSize: 12, fontFamily: f.key === 'code' ? "'IBM Plex Mono', monospace" : 'inherit', fontWeight: f.key === 'code' ? 700 : 400, color: f.key === 'code' ? '#005b9f' : 'inherit' }}>
                         {item[f.key] != null ? String(item[f.key]) : '—'}
@@ -144,7 +144,7 @@ export default function SimpleCrudTable({ entity, fields, titleTh, titleEn, desc
                     sx={{
                       fontSize: 10, fontWeight: 700, height: 20,
                       bgcolor: item.isActive ? 'rgba(26,158,92,.1)' : '#f4f8fc',
-                      color: item.isActive ? '#1a9e5c' : '#6c7f92',
+                      color: item.isActive ? '#0f7a43' : '#5a6d80',
                       border: `1px solid ${item.isActive ? 'rgba(26,158,92,.25)' : 'rgba(22,63,107,.12)'}`,
                     }}
                   />
@@ -153,7 +153,7 @@ export default function SimpleCrudTable({ entity, fields, titleTh, titleEn, desc
                   <IconButton size="small" onClick={() => handleOpenEdit(item)} sx={{ color: '#005b9f' }}>
                     <span className="material-icons-outlined" style={{ fontSize: 18 }}>edit</span>
                   </IconButton>
-                  <IconButton size="small" onClick={() => handleDelete(item.id)} sx={{ color: '#d9534f' }}>
+                  <IconButton size="small" onClick={() => handleDelete(item.id)} sx={{ color: '#b52822' }}>
                     <span className="material-icons-outlined" style={{ fontSize: 18 }}>delete</span>
                   </IconButton>
                 </TableCell>

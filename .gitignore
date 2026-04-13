@@ -9,3 +9,10 @@ build/
 Thumbs.db
 coverage/
 .prisma/
+test-results/
+playwright-report/
+lighthouse-report.json
+lighthouse-summary.json
+stress-summary.json
+summary.json
+*.tar.gz

@@ -45,17 +45,17 @@ export default function ReceiptPage() {
         }
       />
 
-      <Box sx={{ flex: 1, overflow: 'auto', p: 2.75 }}>
+      <Box tabIndex={0} sx={{ flex: 1, overflow: "auto", p: 2.75, "&:focus-visible": { outline: "2px solid #005b9f", outlineOffset: -2 } }}>
         {/* KPI */}
         <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 1.5, mb: 2 }}>
           {[
             { label: locale === 'th' ? 'ใบเสร็จทั้งหมด' : 'Total Receipts', value: mockReceipts.length, color: '#005b9f' },
-            { label: locale === 'th' ? 'ยอดรวม' : 'Total Amount', value: `฿${formatMoney(totalAmount)}`, color: '#1a9e5c' },
+            { label: locale === 'th' ? 'ยอดรวม' : 'Total Amount', value: `฿${formatMoney(totalAmount)}`, color: '#0f7a43' },
             { label: locale === 'th' ? 'เดือนนี้' : 'This Month', value: 3, color: '#0f73b8' },
-            { label: locale === 'th' ? 'รอตรวจสอบ' : 'Pending Verify', value: 0, color: '#d97706' },
+            { label: locale === 'th' ? 'รอตรวจสอบ' : 'Pending Verify', value: 0, color: '#a45a00' },
           ].map((s) => (
             <Paper key={s.label} elevation={0} sx={{ p: 2, border: '1px solid rgba(22,63,107,.12)', boxShadow: '0 2px 12px rgba(10,22,40,.08)' }}>
-              <Typography sx={{ fontSize: 11, color: '#6c7f92' }}>{s.label}</Typography>
+              <Typography sx={{ fontSize: 11, color: '#5a6d80' }}>{s.label}</Typography>
               <Typography sx={{ fontSize: 20, fontWeight: 700, fontFamily: "'IBM Plex Mono', monospace", color: s.color, mt: .5 }}>{s.value}</Typography>
             </Paper>
           ))}
@@ -72,7 +72,7 @@ export default function ReceiptPage() {
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
-                  <span className="material-icons-outlined" style={{ fontSize: 18, color: '#6c7f92' }}>search</span>
+                  <span className="material-icons-outlined" style={{ fontSize: 18, color: '#5a6d80' }}>search</span>
                 </InputAdornment>
               ),
             }}
@@ -98,14 +98,14 @@ export default function ReceiptPage() {
               {filtered.map((r) => (
                 <TableRow key={r.id} hover>
                   <TableCell>
-                    <Typography sx={{ fontSize: 12, fontWeight: 700, fontFamily: "'IBM Plex Mono', monospace", color: '#1a9e5c' }}>{r.receiptNo}</Typography>
+                    <Typography sx={{ fontSize: 12, fontWeight: 700, fontFamily: "'IBM Plex Mono', monospace", color: '#0f7a43' }}>{r.receiptNo}</Typography>
                   </TableCell>
                   <TableCell>
                     <Typography sx={{ fontSize: 11, fontFamily: "'IBM Plex Mono', monospace", color: '#005b9f' }}>{r.billNo}</Typography>
                   </TableCell>
                   <TableCell>
                     <Typography sx={{ fontSize: 11.5, fontWeight: 600 }}>{r.shopName}</Typography>
-                    <Typography sx={{ fontSize: 10.5, color: '#6c7f92' }}>{r.partnerName}</Typography>
+                    <Typography sx={{ fontSize: 10.5, color: '#5a6d80' }}>{r.partnerName}</Typography>
                   </TableCell>
                   <TableCell align="right">
                     <Typography sx={{ fontSize: 12, fontWeight: 700, fontFamily: "'IBM Plex Mono', monospace" }}>฿{formatMoney(r.amount)}</Typography>
@@ -122,20 +122,20 @@ export default function ReceiptPage() {
                     />
                   </TableCell>
                   <TableCell>
-                    <Chip label={locale === 'th' ? 'ตรวจสอบแล้ว' : 'Verified'} size="small" sx={{ fontSize: 10, fontWeight: 700, height: 22, bgcolor: 'rgba(26,158,92,.1)', color: '#1a9e5c', border: '1px solid rgba(26,158,92,.25)' }} />
+                    <Chip label={locale === 'th' ? 'ตรวจสอบแล้ว' : 'Verified'} size="small" sx={{ fontSize: 10, fontWeight: 700, height: 22, bgcolor: 'rgba(26,158,92,.1)', color: '#0f7a43', border: '1px solid rgba(26,158,92,.25)' }} />
                   </TableCell>
                   <TableCell align="center">
                     <IconButton size="small" sx={{ color: '#005b9f' }} title={locale === 'th' ? 'ดูใบเสร็จ' : 'View Receipt'}>
                       <span className="material-icons-outlined" style={{ fontSize: 18 }}>visibility</span>
                     </IconButton>
                     <IconButton
-                      size="small" sx={{ color: '#6c7f92' }} title={locale === 'th' ? 'พิมพ์' : 'Print'}
+                      size="small" sx={{ color: '#5a6d80' }} title={locale === 'th' ? 'พิมพ์' : 'Print'}
                       onClick={() => window.print()}
                     >
                       <span className="material-icons-outlined" style={{ fontSize: 18 }}>print</span>
                     </IconButton>
                     <IconButton
-                      size="small" sx={{ color: '#1a9e5c' }} title={locale === 'th' ? 'ดาวน์โหลด PDF' : 'Download PDF'}
+                      size="small" sx={{ color: '#0f7a43' }} title={locale === 'th' ? 'ดาวน์โหลด PDF' : 'Download PDF'}
                       onClick={() => {
                         generateSimplePdf(
                           `ใบเสร็จรับเงิน / Official Receipt`,

@@ -22,9 +22,9 @@ const fallbackBills = [
 ];
 
 const statusConfig: Record<string, { label: string; labelEn: string; color: string; bg: string; border: string }> = {
-  PAID: { label: 'ชำระแล้ว', labelEn: 'Paid', color: '#1a9e5c', bg: 'rgba(26,158,92,.1)', border: 'rgba(26,158,92,.25)' },
-  ISSUED: { label: 'รอชำระ', labelEn: 'Pending', color: '#d97706', bg: 'rgba(217,119,6,.1)', border: 'rgba(217,119,6,.25)' },
-  OVERDUE: { label: 'เกินกำหนด', labelEn: 'Overdue', color: '#d9534f', bg: 'rgba(217,83,79,.1)', border: 'rgba(217,83,79,.25)' },
+  PAID: { label: 'ชำระแล้ว', labelEn: 'Paid', color: '#0f7a43', bg: 'rgba(26,158,92,.1)', border: 'rgba(26,158,92,.25)' },
+  ISSUED: { label: 'รอชำระ', labelEn: 'Pending', color: '#a45a00', bg: 'rgba(217,119,6,.1)', border: 'rgba(217,119,6,.25)' },
+  OVERDUE: { label: 'เกินกำหนด', labelEn: 'Overdue', color: '#b52822', bg: 'rgba(217,83,79,.1)', border: 'rgba(217,83,79,.25)' },
   PARTIALLY_PAID: { label: 'ชำระบางส่วน', labelEn: 'Partial', color: '#0f73b8', bg: 'rgba(15,115,184,.1)', border: 'rgba(15,115,184,.25)' },
 };
 
@@ -120,17 +120,17 @@ export default function BillingPage() {
         }
       />
 
-      <Box sx={{ flex: 1, overflow: 'auto', p: 2.75 }}>
+      <Box tabIndex={0} sx={{ flex: 1, overflow: "auto", p: 2.75, "&:focus-visible": { outline: "2px solid #005b9f", outlineOffset: -2 } }}>
         {/* สรุป KPI */}
         <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 1.5, mb: 2 }}>
           {[
             { label: locale === 'th' ? 'บิลทั้งหมด' : 'Total Bills', value: allBills.length, color: '#005b9f' },
-            { label: locale === 'th' ? 'รอชำระ' : 'Pending', value: `฿${formatMoney(totalPending)}`, color: '#d97706' },
-            { label: locale === 'th' ? 'เกินกำหนด' : 'Overdue', value: `฿${formatMoney(totalOverdue)}`, color: '#d9534f' },
-            { label: locale === 'th' ? 'ชำระแล้ว' : 'Paid', value: `฿${formatMoney(totalPaid)}`, color: '#1a9e5c' },
+            { label: locale === 'th' ? 'รอชำระ' : 'Pending', value: `฿${formatMoney(totalPending)}`, color: '#a45a00' },
+            { label: locale === 'th' ? 'เกินกำหนด' : 'Overdue', value: `฿${formatMoney(totalOverdue)}`, color: '#b52822' },
+            { label: locale === 'th' ? 'ชำระแล้ว' : 'Paid', value: `฿${formatMoney(totalPaid)}`, color: '#0f7a43' },
           ].map((s) => (
             <Paper key={s.label} elevation={0} sx={{ p: 2, border: '1px solid rgba(22,63,107,.12)', boxShadow: '0 2px 12px rgba(10,22,40,.08)' }}>
-              <Typography sx={{ fontSize: 11, color: '#6c7f92' }}>{s.label}</Typography>
+              <Typography sx={{ fontSize: 11, color: '#5a6d80' }}>{s.label}</Typography>
               <Typography sx={{ fontSize: 20, fontWeight: 700, fontFamily: "'IBM Plex Mono', monospace", color: s.color, mt: .5 }}>
                 {s.value}
               </Typography>
@@ -144,7 +144,7 @@ export default function BillingPage() {
             <Tab label={`${t('common.all')} (${allBills.length})`} sx={{ fontSize: 12, minHeight: 40 }} />
             <Tab label={`${locale === 'th' ? 'รอชำระ' : 'Pending'} (${allBills.filter((b) => b.status === 'ISSUED').length})`} sx={{ fontSize: 12, minHeight: 40 }} />
             <Tab label={`${locale === 'th' ? 'ชำระแล้ว' : 'Paid'} (${allBills.filter((b) => b.status === 'PAID').length})`} sx={{ fontSize: 12, minHeight: 40 }} />
-            <Tab label={`${locale === 'th' ? 'เกินกำหนด' : 'Overdue'} (${allBills.filter((b) => b.status === 'OVERDUE').length})`} sx={{ fontSize: 12, minHeight: 40, color: '#d9534f' }} />
+            <Tab label={`${locale === 'th' ? 'เกินกำหนด' : 'Overdue'} (${allBills.filter((b) => b.status === 'OVERDUE').length})`} sx={{ fontSize: 12, minHeight: 40, color: '#b52822' }} />
           </Tabs>
 
           <Table size="small">
@@ -172,11 +172,11 @@ export default function BillingPage() {
                     </TableCell>
                     <TableCell>
                       <Typography sx={{ fontSize: 11, fontFamily: "'IBM Plex Mono', monospace" }}>{bill.contractNo}</Typography>
-                      <Typography sx={{ fontSize: 10.5, color: '#6c7f92' }}>{bill.unitCode}</Typography>
+                      <Typography sx={{ fontSize: 10.5, color: '#5a6d80' }}>{bill.unitCode}</Typography>
                     </TableCell>
                     <TableCell>
                       <Typography sx={{ fontSize: 11.5, fontWeight: 600 }}>{bill.shopName}</Typography>
-                      <Typography sx={{ fontSize: 10.5, color: '#6c7f92' }}>{bill.partnerName}</Typography>
+                      <Typography sx={{ fontSize: 10.5, color: '#5a6d80' }}>{bill.partnerName}</Typography>
                     </TableCell>
                     <TableCell sx={{ fontSize: 12 }}>{bill.billingMonth}</TableCell>
                     <TableCell align="right">
@@ -185,13 +185,13 @@ export default function BillingPage() {
                     <TableCell align="right">
                       <Typography sx={{ fontSize: 12, fontWeight: 600, fontFamily: "'IBM Plex Mono', monospace" }}>฿{formatMoney(bill.totalAmount)}</Typography>
                       {bill.lateFee > 0 && (
-                        <Typography sx={{ fontSize: 10, color: '#d9534f' }}>+฿{formatMoney(bill.lateFee)} ({locale === 'th' ? 'ค่าปรับ' : 'late fee'})</Typography>
+                        <Typography sx={{ fontSize: 10, color: '#b52822' }}>+฿{formatMoney(bill.lateFee)} ({locale === 'th' ? 'ค่าปรับ' : 'late fee'})</Typography>
                       )}
                     </TableCell>
                     <TableCell>
                       <Chip label={locale === 'th' ? st.label : st.labelEn} size="small" sx={{ fontSize: 10, fontWeight: 700, height: 22, bgcolor: st.bg, color: st.color, border: `1px solid ${st.border}` }} />
                       {bill.overdueDays > 0 && (
-                        <Typography sx={{ fontSize: 10, color: '#d9534f', mt: .3 }}>
+                        <Typography sx={{ fontSize: 10, color: '#b52822', mt: .3 }}>
                           {bill.overdueDays} {locale === 'th' ? 'วัน' : 'days'}
                         </Typography>
                       )}
@@ -203,7 +203,7 @@ export default function BillingPage() {
                           {locale === 'th' ? 'ชำระ' : 'Pay'}
                         </Button>
                       )}
-                      <IconButton size="small" sx={{ color: '#6c7f92' }}>
+                      <IconButton size="small" sx={{ color: '#5a6d80' }}>
                         <span className="material-icons-outlined" style={{ fontSize: 18 }}>print</span>
                       </IconButton>
                     </TableCell>
@@ -230,9 +230,9 @@ export default function BillingPage() {
           {selectedBill && (
             <Box>
               <Paper elevation={0} sx={{ p: 2, mb: 2, bgcolor: '#f4f8fc' }}>
-                <Typography sx={{ fontSize: 11, color: '#6c7f92' }}>{locale === 'th' ? 'บิล' : 'Bill'}</Typography>
+                <Typography sx={{ fontSize: 11, color: '#5a6d80' }}>{locale === 'th' ? 'บิล' : 'Bill'}</Typography>
                 <Typography sx={{ fontSize: 13, fontWeight: 700 }}>{selectedBill.billNo}</Typography>
-                <Typography sx={{ fontSize: 12, color: '#6c7f92' }}>{selectedBill.shopName} · ฿{formatMoney(selectedBill.totalAmount)}</Typography>
+                <Typography sx={{ fontSize: 12, color: '#5a6d80' }}>{selectedBill.shopName} · ฿{formatMoney(selectedBill.totalAmount)}</Typography>
               </Paper>
 
               <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
@@ -263,7 +263,7 @@ export default function BillingPage() {
           📄 {locale === 'th' ? 'สร้างบิลรายเดือน (Batch)' : 'Generate Monthly Bills'}
         </DialogTitle>
         <DialogContent sx={{ pt: '20px !important' }}>
-          <Typography sx={{ fontSize: 11, color: '#6c7f92', mb: 2 }}>
+          <Typography sx={{ fontSize: 11, color: '#5a6d80', mb: 2 }}>
             {locale === 'th'
               ? 'ระบบจะสร้างบิลสำหรับทุกสัญญาที่ active ในเดือนที่เลือก คำนวณค่าเช่า + ค่าน้ำค่าไฟ + VAT อัตโนมัติ'
               : 'System will generate bills for all active contracts. Auto-calculates rent + utilities + VAT.'}

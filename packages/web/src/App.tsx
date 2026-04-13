@@ -1,34 +1,51 @@
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import { ThemeProvider, CssBaseline } from '@mui/material';
+import { ThemeProvider, CssBaseline, Box, CircularProgress } from '@mui/material';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { theme } from './lib/theme';
 import AppShell from './components/layout/AppShell';
 import ProtectedRoute from './components/ProtectedRoute';
+
+// Login โหลดทันที (entry point)
 import LoginPage from './pages/auth/LoginPage';
+
+// === Lazy load pages เพื่อลด initial bundle ===
+// Dashboard โหลดทันที (landing page)
 import Dashboard from './pages/dashboard/Dashboard';
-import FloorPlan from './pages/floor-plan/FloorPlan';
-import UnitList from './pages/units/UnitList';
-import PartnerList from './pages/partners/PartnerList';
-import ContractList from './pages/contracts/ContractList';
-import ContractCreate from './pages/contracts/ContractCreate';
-import ContractRenew from './pages/contracts/ContractRenew';
-import BillingPage from './pages/billing/BillingPage';
-import ReceiptPage from './pages/receipts/ReceiptPage';
-import RevenueReport from './pages/reports/RevenueReport';
-import AreaReport from './pages/reports/AreaReport';
-import ImportExport from './pages/import-export/ImportExport';
-import DataCleansing from './pages/data-cleansing/DataCleansing';
-import TemplatePage from './pages/templates/TemplatePage';
-import SettingsPage from './pages/settings/SettingsPage';
-import TenantPortal from './pages/portal/TenantPortal';
-import ProfilePage from './pages/profile/ProfilePage';
-import MasterDataPage from './pages/master-data/MasterDataPage';
-import UserManagement from './pages/users/UserManagement';
-import AuditPage from './pages/audit/AuditPage';
+
+// หน้าอื่นๆ lazy load
+const FloorPlan = lazy(() => import('./pages/floor-plan/FloorPlan'));
+const UnitList = lazy(() => import('./pages/units/UnitList'));
+const PartnerList = lazy(() => import('./pages/partners/PartnerList'));
+const ContractList = lazy(() => import('./pages/contracts/ContractList'));
+const ContractCreate = lazy(() => import('./pages/contracts/ContractCreate'));
+const ContractRenew = lazy(() => import('./pages/contracts/ContractRenew'));
+const BillingPage = lazy(() => import('./pages/billing/BillingPage'));
+const ReceiptPage = lazy(() => import('./pages/receipts/ReceiptPage'));
+const RevenueReport = lazy(() => import('./pages/reports/RevenueReport'));
+const AreaReport = lazy(() => import('./pages/reports/AreaReport'));
+const ImportExport = lazy(() => import('./pages/import-export/ImportExport'));
+const DataCleansing = lazy(() => import('./pages/data-cleansing/DataCleansing'));
+const TemplatePage = lazy(() => import('./pages/templates/TemplatePage'));
+const SettingsPage = lazy(() => import('./pages/settings/SettingsPage'));
+const TenantPortal = lazy(() => import('./pages/portal/TenantPortal'));
+const ProfilePage = lazy(() => import('./pages/profile/ProfilePage'));
+const MasterDataPage = lazy(() => import('./pages/master-data/MasterDataPage'));
+const UserManagement = lazy(() => import('./pages/users/UserManagement'));
+const AuditPage = lazy(() => import('./pages/audit/AuditPage'));
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 30_000, retry: 1 } },
 });
+
+// Loading fallback
+function PageLoading() {
+  return (
+    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: 400 }}>
+      <CircularProgress />
+    </Box>
+  );
+}
 
 export default function App() {
   return (
@@ -49,25 +66,25 @@ export default function App() {
               }
             >
               <Route index element={<Dashboard />} />
-              <Route path="/floor-plan" element={<FloorPlan />} />
-              <Route path="/units" element={<UnitList />} />
-              <Route path="/partners" element={<PartnerList />} />
-              <Route path="/contracts" element={<ContractList />} />
-              <Route path="/contracts/create" element={<ContractCreate />} />
-              <Route path="/contracts/renew" element={<ContractRenew />} />
-              <Route path="/billing" element={<BillingPage />} />
-              <Route path="/receipts" element={<ReceiptPage />} />
-              <Route path="/reports/revenue" element={<RevenueReport />} />
-              <Route path="/reports/area" element={<AreaReport />} />
-              <Route path="/import-export" element={<ImportExport />} />
-              <Route path="/data-cleansing" element={<DataCleansing />} />
-              <Route path="/master-data" element={<MasterDataPage />} />
-              <Route path="/users" element={<UserManagement />} />
-              <Route path="/audit" element={<AuditPage />} />
-              <Route path="/templates" element={<TemplatePage />} />
-              <Route path="/settings" element={<SettingsPage />} />
-              <Route path="/portal" element={<TenantPortal />} />
-              <Route path="/profile" element={<ProfilePage />} />
+              <Route path="/floor-plan" element={<Suspense fallback={<PageLoading />}><FloorPlan /></Suspense>} />
+              <Route path="/units" element={<Suspense fallback={<PageLoading />}><UnitList /></Suspense>} />
+              <Route path="/partners" element={<Suspense fallback={<PageLoading />}><PartnerList /></Suspense>} />
+              <Route path="/contracts" element={<Suspense fallback={<PageLoading />}><ContractList /></Suspense>} />
+              <Route path="/contracts/create" element={<Suspense fallback={<PageLoading />}><ContractCreate /></Suspense>} />
+              <Route path="/contracts/renew" element={<Suspense fallback={<PageLoading />}><ContractRenew /></Suspense>} />
+              <Route path="/billing" element={<Suspense fallback={<PageLoading />}><BillingPage /></Suspense>} />
+              <Route path="/receipts" element={<Suspense fallback={<PageLoading />}><ReceiptPage /></Suspense>} />
+              <Route path="/reports/revenue" element={<Suspense fallback={<PageLoading />}><RevenueReport /></Suspense>} />
+              <Route path="/reports/area" element={<Suspense fallback={<PageLoading />}><AreaReport /></Suspense>} />
+              <Route path="/import-export" element={<Suspense fallback={<PageLoading />}><ImportExport /></Suspense>} />
+              <Route path="/data-cleansing" element={<Suspense fallback={<PageLoading />}><DataCleansing /></Suspense>} />
+              <Route path="/master-data" element={<Suspense fallback={<PageLoading />}><MasterDataPage /></Suspense>} />
+              <Route path="/users" element={<Suspense fallback={<PageLoading />}><UserManagement /></Suspense>} />
+              <Route path="/audit" element={<Suspense fallback={<PageLoading />}><AuditPage /></Suspense>} />
+              <Route path="/templates" element={<Suspense fallback={<PageLoading />}><TemplatePage /></Suspense>} />
+              <Route path="/settings" element={<Suspense fallback={<PageLoading />}><SettingsPage /></Suspense>} />
+              <Route path="/portal" element={<Suspense fallback={<PageLoading />}><TenantPortal /></Suspense>} />
+              <Route path="/profile" element={<Suspense fallback={<PageLoading />}><ProfilePage /></Suspense>} />
             </Route>
           </Routes>
         </BrowserRouter>

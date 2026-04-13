@@ -12,13 +12,13 @@ export const theme = createTheme({
       main: '#d7a94b',
     },
     success: {
-      main: '#1a9e5c',
+      main: '#0f7a43',
     },
     warning: {
-      main: '#d97706',
+      main: '#a45a00',
     },
     error: {
-      main: '#d9534f',
+      main: '#b52822',
     },
     background: {
       default: '#f0f4fa',
@@ -67,7 +67,7 @@ export const theme = createTheme({
           fontSize: '0.6875rem',
           textTransform: 'uppercase',
           letterSpacing: '0.7px',
-          color: '#6c7f92',
+          color: '#5a6d80',
         },
       },
     },

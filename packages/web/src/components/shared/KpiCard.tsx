@@ -10,10 +10,10 @@ interface KpiCardProps {
 }
 
 const subtitleStyles = {
-  up: { bg: 'rgba(26,158,92,.1)', color: '#1a9e5c', border: 'rgba(26,158,92,.25)' },
-  down: { bg: 'rgba(217,83,79,.1)', color: '#d9534f', border: 'rgba(217,83,79,.25)' },
+  up: { bg: 'rgba(26,158,92,.1)', color: '#0f7a43', border: 'rgba(26,158,92,.25)' },
+  down: { bg: 'rgba(217,83,79,.1)', color: '#b52822', border: 'rgba(217,83,79,.25)' },
   neutral: { bg: 'rgba(0,91,159,.1)', color: '#005b9f', border: 'rgba(0,91,159,.25)' },
-  warn: { bg: 'rgba(217,119,6,.1)', color: '#d97706', border: 'rgba(217,119,6,.25)' },
+  warn: { bg: 'rgba(217,119,6,.1)', color: '#a45a00', border: 'rgba(217,119,6,.25)' },
 };
 
 export default function KpiCard({ value, label, subtitle, subtitleType = 'neutral', accentColor }: KpiCardProps) {
@@ -44,7 +44,7 @@ export default function KpiCard({ value, label, subtitle, subtitleType = 'neutra
       >
         {value}
       </Typography>
-      <Typography sx={{ fontSize: 11, color: '#6c7f92', mt: .6 }}>
+      <Typography sx={{ fontSize: 11, color: '#5a6d80', mt: .6 }}>
         {label}
       </Typography>
       {subtitle && (

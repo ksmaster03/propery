@@ -103,7 +103,7 @@ export default function Topbar({ onMenuClick, showMenuButton }: TopbarProps) {
             <MenuItem key={o.id} value={o.id} sx={{ fontSize: 11.5 }}>
               <Box>
                 <Typography sx={{ fontSize: 11.5, fontWeight: 600 }}>{locale === 'th' ? o.nameTh : o.nameEn || o.nameTh}</Typography>
-                <Typography sx={{ fontSize: 10, color: '#6c7f92' }}>{o.orgCode} · {o.taxId || '-'}</Typography>
+                <Typography sx={{ fontSize: 10, color: '#5a6d80' }}>{o.orgCode} · {o.taxId || '-'}</Typography>
               </Box>
             </MenuItem>
           ))}

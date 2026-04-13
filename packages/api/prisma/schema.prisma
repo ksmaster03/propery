@@ -40,6 +40,32 @@ enum ContractStatus {
   CANCELLED          // ยกเลิก
 }
 
+// สถานะการคืนเงินประกัน
+enum DepositRefundStatus {
+  PENDING    // รอดำเนินการ
+  APPROVED   // อนุมัติแล้ว
+  PAID       // จ่ายคืนแล้ว
+  REJECTED   // ปฏิเสธ (หักทั้งหมด)
+  PARTIAL    // คืนบางส่วน
+}
+
+// ประเภทมิเตอร์สาธารณูปโภค
+enum MeterType {
+  ELECTRIC   // มิเตอร์ไฟฟ้า
+  WATER      // มิเตอร์น้ำ
+  GAS        // มิเตอร์แก๊ส
+}
+
+// สกุลเงิน (multi-currency support)
+enum Currency {
+  THB
+  USD
+  EUR
+  GBP
+  JPY
+  CNY
+}
+
 // สถานะใบแจ้งหนี้
 enum BillStatus {
   DRAFT          // ร่าง
@@ -931,4 +957,149 @@ model TmDepartment {
   children  TmDepartment[] @relation("DepartmentHierarchy")
 
   @@map("m_department")
+}
+
+// ============================================================
+// BUSINESS: การยกเลิกสัญญาก่อนกำหนด (Contract Termination)
+// ============================================================
+
+model TtContractTermination {
+  id                Int      @id @default(autoincrement())
+  contractId        Int      @unique @map("contract_id")
+  terminationDate   DateTime @map("termination_date") @db.Date
+  reason            String   @map("reason") @db.VarChar(500)
+  reasonCategory    String?  @map("reason_category") @db.VarChar(50)
+  // คำนวณค่าปรับ
+  monthsRemaining   Int      @map("months_remaining")
+  baseRent          Decimal  @map("base_rent") @db.Decimal(14, 2)
+  penaltyAmount     Decimal  @map("penalty_amount") @db.Decimal(14, 2)
+  penaltyRate       Decimal  @default(3) @map("penalty_rate") @db.Decimal(5, 2)
+  // หลักประกัน
+  depositForfeited  Boolean  @default(false) @map("deposit_forfeited")
+  // สถานะ
+  status            String   @default("PENDING") @map("status") @db.VarChar(20)
+  approvedBy        String?  @map("approved_by") @db.VarChar(50)
+  approvedAt        DateTime? @map("approved_at") @db.Timestamptz()
+  notes             String?  @map("notes") @db.Text
+  createdBy         String?  @map("created_by") @db.VarChar(50)
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  @@index([contractId])
+  @@map("t_contract_termination")
+}
+
+// ============================================================
+// BUSINESS: การคืนเงินประกัน (Deposit Refund)
+// ============================================================
+
+model TtDepositRefund {
+  id              Int      @id @default(autoincrement())
+  contractId      Int      @map("contract_id")
+  depositAmount   Decimal  @map("deposit_amount") @db.Decimal(14, 2)
+  // รายการหัก
+  damageDeduction   Decimal? @map("damage_deduction") @db.Decimal(14, 2)
+  cleaningDeduction Decimal? @map("cleaning_deduction") @db.Decimal(14, 2)
+  unpaidBills       Decimal? @map("unpaid_bills") @db.Decimal(14, 2)
+  otherDeduction    Decimal? @map("other_deduction") @db.Decimal(14, 2)
+  totalDeduction    Decimal  @map("total_deduction") @db.Decimal(14, 2)
+  refundAmount      Decimal  @map("refund_amount") @db.Decimal(14, 2)
+  // การจ่ายคืน
+  status            DepositRefundStatus @default(PENDING) @map("status")
+  paymentMethod     String?  @map("payment_method") @db.VarChar(30)
+  bankAccount       String?  @map("bank_account") @db.VarChar(100)
+  paidAt            DateTime? @map("paid_at") @db.Timestamptz()
+  paymentRef        String?  @map("payment_ref") @db.VarChar(100)
+  notes             String?  @map("notes") @db.Text
+  createdBy         String?  @map("created_by") @db.VarChar(50)
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt         DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  @@index([contractId])
+  @@index([status])
+  @@map("t_deposit_refund")
+}
+
+// ============================================================
+// BUSINESS: บันทึกมิเตอร์สาธารณูปโภค (Utility Meter Reading)
+// ============================================================
+
+model TtMeterReading {
+  id           Int       @id @default(autoincrement())
+  unitId       Int       @map("unit_id")
+  contractId   Int?      @map("contract_id")
+  meterType    MeterType @map("meter_type")
+  meterNumber  String    @map("meter_number") @db.VarChar(50)
+  // ค่ามิเตอร์
+  readingDate  DateTime  @map("reading_date") @db.Date
+  previousValue Decimal  @map("previous_value") @db.Decimal(12, 2)
+  currentValue  Decimal  @map("current_value") @db.Decimal(12, 2)
+  consumption   Decimal  @map("consumption") @db.Decimal(12, 2)
+  // ค่าใช้จ่าย
+  rate          Decimal  @map("rate") @db.Decimal(10, 4)
+  amount        Decimal  @map("amount") @db.Decimal(14, 2)
+  // สถานะ
+  billed        Boolean  @default(false) @map("billed")
+  billId        Int?     @map("bill_id")
+  notes         String?  @map("notes") @db.VarChar(500)
+  readBy        String?  @map("read_by") @db.VarChar(50)
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  @@index([unitId])
+  @@index([contractId])
+  @@index([readingDate])
+  @@map("t_meter_reading")
+}
+
+// ============================================================
+// BUSINESS: ยอดขายจาก POS (สำหรับสัญญา Revenue Sharing)
+// ============================================================
+
+model TtPosSale {
+  id            Int       @id @default(autoincrement())
+  contractId    Int       @map("contract_id")
+  saleDate      DateTime  @map("sale_date") @db.Date
+  // ยอดขาย
+  grossSales    Decimal   @map("gross_sales") @db.Decimal(14, 2)
+  discount      Decimal?  @map("discount") @db.Decimal(14, 2)
+  vat           Decimal?  @map("vat") @db.Decimal(14, 2)
+  netSales      Decimal   @map("net_sales") @db.Decimal(14, 2)
+  transactions  Int       @default(0) @map("transactions")
+  // Source
+  source        String    @default("MANUAL") @map("source") @db.VarChar(30)
+  posRefId      String?   @map("pos_ref_id") @db.VarChar(100)
+  // Verification
+  verified      Boolean   @default(false) @map("verified")
+  verifiedBy    String?   @map("verified_by") @db.VarChar(50)
+  verifiedAt    DateTime? @map("verified_at") @db.Timestamptz()
+  // Multi-currency
+  currency      Currency  @default(THB) @map("currency")
+  exchangeRate  Decimal?  @default(1) @map("exchange_rate") @db.Decimal(12, 6)
+  notes         String?   @map("notes") @db.VarChar(500)
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt     DateTime  @updatedAt @map("updated_at") @db.Timestamptz()
+
+  @@unique([contractId, saleDate])
+  @@index([contractId])
+  @@index([saleDate])
+  @@map("t_pos_sale")
+}
+
+// ============================================================
+// BUSINESS: อัตราแลกเปลี่ยน (Currency Exchange Rates)
+// ============================================================
+
+model TmExchangeRate {
+  id           Int      @id @default(autoincrement())
+  fromCurrency Currency @map("from_currency")
+  toCurrency   Currency @map("to_currency")
+  rate         Decimal  @map("rate") @db.Decimal(12, 6)
+  effectiveDate DateTime @map("effective_date") @db.Date
+  source       String?  @map("source") @db.VarChar(50)
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  @@unique([fromCurrency, toCurrency, effectiveDate])
+  @@index([effectiveDate])
+  @@map("m_exchange_rate")
 }

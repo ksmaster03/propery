@@ -29,7 +29,7 @@ describe('KpiCard Component', () => {
 
   it('ไม่แสดง subtitle เมื่อไม่ได้ระบุ', () => {
     render(
-      <KpiCard value={9} label="พื้นที่ว่าง" accentColor="#1a9e5c" />
+      <KpiCard value={9} label="พื้นที่ว่าง" accentColor="#0f7a43" />
     );
 
     expect(screen.getByText('9')).toBeInTheDocument();

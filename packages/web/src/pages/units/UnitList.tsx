@@ -32,8 +32,8 @@ const fallbackUnits = Array.from({ length: 48 }, (_, i) => {
 
 const statusConfig: Record<string, { color: string; bg: string; border: string }> = {
   LEASED: { color: '#005b9f', bg: 'rgba(0,91,159,.1)', border: 'rgba(0,91,159,.25)' },
-  VACANT: { color: '#1a9e5c', bg: 'rgba(26,158,92,.1)', border: 'rgba(26,158,92,.25)' },
-  RESERVED: { color: '#d97706', bg: 'rgba(217,119,6,.1)', border: 'rgba(217,119,6,.25)' },
+  VACANT: { color: '#0f7a43', bg: 'rgba(26,158,92,.1)', border: 'rgba(26,158,92,.25)' },
+  RESERVED: { color: '#a45a00', bg: 'rgba(217,119,6,.1)', border: 'rgba(217,119,6,.25)' },
   MAINTENANCE: { color: '#9e9e9e', bg: 'rgba(158,158,158,.1)', border: 'rgba(158,158,158,.25)' },
 };
 
@@ -78,7 +78,7 @@ export default function UnitList() {
         }
       />
 
-      <Box sx={{ flex: 1, overflow: 'auto', p: 2.75 }}>
+      <Box tabIndex={0} sx={{ flex: 1, overflow: "auto", p: 2.75, "&:focus-visible": { outline: "2px solid #005b9f", outlineOffset: -2 } }}>
         {/* ค้นหาและ filter */}
         <Box sx={{ display: 'flex', gap: 1, mb: 2, alignItems: 'center' }}>
           <TextField
@@ -90,7 +90,7 @@ export default function UnitList() {
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
-                  <span className="material-icons-outlined" style={{ fontSize: 18, color: '#6c7f92' }}>search</span>
+                  <span className="material-icons-outlined" style={{ fontSize: 18, color: '#5a6d80' }}>search</span>
                 </InputAdornment>
               ),
             }}
@@ -160,7 +160,7 @@ export default function UnitList() {
                       {unit.currentTenant ? (
                         <Box>
                           <Typography sx={{ fontSize: 11.5, fontWeight: 600 }}>{unit.currentShop}</Typography>
-                          <Typography sx={{ fontSize: 10.5, color: '#6c7f92' }}>{unit.currentTenant}</Typography>
+                          <Typography sx={{ fontSize: 10.5, color: '#5a6d80' }}>{unit.currentTenant}</Typography>
                         </Box>
                       ) : (
                         <Typography sx={{ fontSize: 11, color: '#9e9e9e' }}>—</Typography>
@@ -171,7 +171,7 @@ export default function UnitList() {
                       <IconButton size="small" sx={{ color: '#005b9f' }}>
                         <span className="material-icons-outlined" style={{ fontSize: 18 }}>edit</span>
                       </IconButton>
-                      <IconButton size="small" sx={{ color: '#6c7f92' }}>
+                      <IconButton size="small" sx={{ color: '#5a6d80' }}>
                         <span className="material-icons-outlined" style={{ fontSize: 18 }}>visibility</span>
                       </IconButton>
                     </TableCell>

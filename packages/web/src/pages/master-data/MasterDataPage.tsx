@@ -42,7 +42,7 @@ export default function MasterDataPage() {
             sx={{
               '& .MuiTab-root': {
                 minHeight: 48, textTransform: 'none', fontSize: 12.5, fontWeight: 600,
-                gap: .5, color: '#6c7f92',
+                gap: .5, color: '#5a6d80',
                 '&.Mui-selected': { color: '#005b9f' },
               },
             }}
@@ -59,7 +59,7 @@ export default function MasterDataPage() {
         </Paper>
 
         {/* Tab content */}
-        <Box sx={{ flex: 1, overflow: 'auto', p: { xs: 1.5, md: 2.75 } }}>
+        <Box tabIndex={0} sx={{ flex: 1, overflow: 'auto', p: { xs: 1.5, md: 2.75 }, '&:focus-visible': { outline: '2px solid #005b9f', outlineOffset: -2 } }}>
           {tabs[tab].component}
         </Box>
       </Box>

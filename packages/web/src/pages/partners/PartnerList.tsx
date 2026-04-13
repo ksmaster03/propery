@@ -88,7 +88,7 @@ export default function PartnerList() {
         }
       />
 
-      <Box sx={{ flex: 1, overflow: 'auto', p: 2.75 }}>
+      <Box tabIndex={0} sx={{ flex: 1, overflow: "auto", p: 2.75, "&:focus-visible": { outline: "2px solid #005b9f", outlineOffset: -2 } }}>
         {/* ค้นหาและ filter */}
         <Box sx={{ display: 'flex', gap: 1, mb: 2, alignItems: 'center' }}>
           <TextField
@@ -100,7 +100,7 @@ export default function PartnerList() {
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
-                  <span className="material-icons-outlined" style={{ fontSize: 18, color: '#6c7f92' }}>search</span>
+                  <span className="material-icons-outlined" style={{ fontSize: 18, color: '#5a6d80' }}>search</span>
                 </InputAdornment>
               ),
             }}
@@ -143,7 +143,7 @@ export default function PartnerList() {
                   </TableCell>
                   <TableCell>
                     <Typography sx={{ fontSize: 12, fontWeight: 600 }}>{p.nameTh}</Typography>
-                    {p.nameEn && <Typography sx={{ fontSize: 10.5, color: '#6c7f92' }}>{p.nameEn}</Typography>}
+                    {p.nameEn && <Typography sx={{ fontSize: 10.5, color: '#5a6d80' }}>{p.nameEn}</Typography>}
                   </TableCell>
                   <TableCell sx={{ fontSize: 12 }}>{p.shopNameTh}</TableCell>
                   <TableCell>
@@ -170,7 +170,7 @@ export default function PartnerList() {
                       sx={{
                         fontSize: 10, fontWeight: 700, height: 20, minWidth: 28,
                         bgcolor: p.contractCount > 0 ? 'rgba(26,158,92,.1)' : 'rgba(158,158,158,.1)',
-                        color: p.contractCount > 0 ? '#1a9e5c' : '#9e9e9e',
+                        color: p.contractCount > 0 ? '#0f7a43' : '#9e9e9e',
                         border: `1px solid ${p.contractCount > 0 ? 'rgba(26,158,92,.25)' : 'rgba(158,158,158,.25)'}`,
                       }}
                     />
@@ -179,7 +179,7 @@ export default function PartnerList() {
                     <IconButton size="small" sx={{ color: '#005b9f' }}>
                       <span className="material-icons-outlined" style={{ fontSize: 18 }}>edit</span>
                     </IconButton>
-                    <IconButton size="small" sx={{ color: '#6c7f92' }}>
+                    <IconButton size="small" sx={{ color: '#5a6d80' }}>
                       <span className="material-icons-outlined" style={{ fontSize: 18 }}>visibility</span>
                     </IconButton>
                   </TableCell>

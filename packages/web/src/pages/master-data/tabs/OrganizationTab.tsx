@@ -76,7 +76,7 @@ export default function OrganizationTab() {
           <Typography sx={{ fontSize: 14, fontWeight: 700 }}>
             {locale === 'th' ? 'หน่วยงาน / องค์กร' : 'Organizations'}
           </Typography>
-          <Typography sx={{ fontSize: 11, color: '#6c7f92', mt: .2 }}>
+          <Typography sx={{ fontSize: 11, color: '#5a6d80', mt: .2 }}>
             {locale === 'th'
               ? 'กำหนดหน่วยงานที่ใช้ระบบนี้ — ชื่อองค์กร, เลขภาษี, %แบ่งรายได้'
               : 'Define organizations using this system — name, tax ID, revenue split %'}
@@ -89,7 +89,7 @@ export default function OrganizationTab() {
       </Box>
 
       {isLoading ? (
-        <Box sx={{ p: 4, textAlign: 'center', color: '#6c7f92' }}>{locale === 'th' ? 'กำลังโหลด...' : 'Loading...'}</Box>
+        <Box sx={{ p: 4, textAlign: 'center', color: '#5a6d80' }}>{locale === 'th' ? 'กำลังโหลด...' : 'Loading...'}</Box>
       ) : orgs.length === 0 ? (
         <Alert severity="info" sx={{ m: 2, fontSize: 11 }}>
           {locale === 'th' ? 'ยังไม่มีหน่วยงาน' : 'No organizations yet'}
@@ -126,7 +126,7 @@ export default function OrganizationTab() {
                     </Box>
                     <Box>
                       <Typography sx={{ fontSize: 12, fontWeight: 700 }}>{org.nameTh}</Typography>
-                      {org.nameEn && <Typography sx={{ fontSize: 10.5, color: '#6c7f92' }}>{org.nameEn}</Typography>}
+                      {org.nameEn && <Typography sx={{ fontSize: 10.5, color: '#5a6d80' }}>{org.nameEn}</Typography>}
                     </Box>
                     {org.isDefault && (
                       <Chip label={locale === 'th' ? 'เริ่มต้น' : 'Default'} size="small" sx={{ fontSize: 9, height: 18, bgcolor: 'rgba(215,169,75,.15)', color: '#b2832d' }} />
@@ -136,7 +136,7 @@ export default function OrganizationTab() {
                 <TableCell sx={{ fontSize: 11, fontFamily: "'IBM Plex Mono', monospace" }}>{org.taxId || '—'}</TableCell>
                 <TableCell>
                   <Typography sx={{ fontSize: 11 }}>{org.phone || '—'}</Typography>
-                  <Typography sx={{ fontSize: 10, color: '#6c7f92' }}>{org.email || '—'}</Typography>
+                  <Typography sx={{ fontSize: 10, color: '#5a6d80' }}>{org.email || '—'}</Typography>
                 </TableCell>
                 <TableCell align="center">
                   <Typography sx={{ fontSize: 10, fontFamily: "'IBM Plex Mono', monospace" }}>
@@ -150,7 +150,7 @@ export default function OrganizationTab() {
                     sx={{
                       fontSize: 10, fontWeight: 700, height: 20,
                       bgcolor: org.isActive ? 'rgba(26,158,92,.1)' : '#f4f8fc',
-                      color: org.isActive ? '#1a9e5c' : '#6c7f92',
+                      color: org.isActive ? '#0f7a43' : '#5a6d80',
                     }}
                   />
                 </TableCell>
@@ -158,7 +158,7 @@ export default function OrganizationTab() {
                   <IconButton size="small" onClick={() => handleEdit(org)} sx={{ color: '#005b9f' }}>
                     <span className="material-icons-outlined" style={{ fontSize: 18 }}>edit</span>
                   </IconButton>
-                  <IconButton size="small" onClick={() => handleDelete(org.id)} sx={{ color: '#d9534f' }}>
+                  <IconButton size="small" onClick={() => handleDelete(org.id)} sx={{ color: '#b52822' }}>
                     <span className="material-icons-outlined" style={{ fontSize: 18 }}>delete</span>
                   </IconButton>
                 </TableCell>
@@ -175,7 +175,7 @@ export default function OrganizationTab() {
         </DialogTitle>
         <DialogContent sx={{ pt: '20px !important' }}>
           {/* ข้อมูลพื้นฐาน */}
-          <Typography sx={{ fontSize: 11, fontWeight: 700, color: '#6c7f92', textTransform: 'uppercase', letterSpacing: .5, mb: 1, mt: 1 }}>
+          <Typography sx={{ fontSize: 11, fontWeight: 700, color: '#5a6d80', textTransform: 'uppercase', letterSpacing: .5, mb: 1, mt: 1 }}>
             {locale === 'th' ? 'ข้อมูลพื้นฐาน' : 'Basic Info'}
           </Typography>
           <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 2, mb: 2 }}>
@@ -188,7 +188,7 @@ export default function OrganizationTab() {
           </Box>
 
           {/* ติดต่อ */}
-          <Typography sx={{ fontSize: 11, fontWeight: 700, color: '#6c7f92', textTransform: 'uppercase', letterSpacing: .5, mb: 1 }}>
+          <Typography sx={{ fontSize: 11, fontWeight: 700, color: '#5a6d80', textTransform: 'uppercase', letterSpacing: .5, mb: 1 }}>
             {locale === 'th' ? 'ติดต่อ' : 'Contact'}
           </Typography>
           <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mb: 2 }}>
@@ -199,7 +199,7 @@ export default function OrganizationTab() {
           </Box>
 
           {/* Revenue split */}
-          <Typography sx={{ fontSize: 11, fontWeight: 700, color: '#6c7f92', textTransform: 'uppercase', letterSpacing: .5, mb: 1 }}>
+          <Typography sx={{ fontSize: 11, fontWeight: 700, color: '#5a6d80', textTransform: 'uppercase', letterSpacing: .5, mb: 1 }}>
             {locale === 'th' ? 'สัดส่วนการแบ่งรายได้ (%)' : 'Revenue Split (%)'}
           </Typography>
           <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 2, mb: 1 }}>
