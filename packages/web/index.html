@@ -11,29 +11,50 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 
-    <!-- Google Fonts: Noto Sans Thai (primary ไทย) + Prompt + IBM Plex + Sarabun + Mono -->
+    <!-- Google Fonts: โหลดเฉพาะที่ใช้จริง (Noto Sans Thai + IBM Plex Mono) -->
+    <!-- ลด weight เหลือเท่าที่ใช้จริงใน UI — 400/500/700 -->
+    <!-- ใช้ media=print onload trick เพื่อไม่ block render -->
     <link
-      href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700;800&family=Prompt:wght@300;400;500;600;700&family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap"
+      rel="preload"
+      as="style"
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap"
+    />
+    <link
       rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap"
+      media="print"
+      onload="this.media='all'"
     />
 
-    <!-- Google Material Symbols (ใหม่) + Material Icons (classic) -->
+    <!-- Material Icons: ใช้เฉพาะ Outlined + Round (async เช่นเดียวกัน) -->
     <link
-      href="https://fonts.googleapis.com/icon?family=Material+Icons|Material+Icons+Outlined|Material+Icons+Round|Material+Icons+Two+Tone|Material+Icons+Sharp"
-      rel="stylesheet"
+      rel="preload"
+      as="style"
+      href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined|Material+Icons+Round"
     />
     <link
-      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0&family=Material+Symbols+Sharp:opsz,wght,FILL,GRAD@24,400,0,0"
       rel="stylesheet"
+      href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined|Material+Icons+Round"
+      media="print"
+      onload="this.media='all'"
     />
+
+    <!-- Fallback สำหรับเบราว์เซอร์ที่ disable JS -->
+    <noscript>
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;700&display=swap" />
+      <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" />
+    </noscript>
 
     <!-- บังคับ font ที่ระดับ html/body กันไม่ให้ fallback เป็น system font (Segoe UI) -->
     <style>
       html, body, #root {
-        font-family: 'Noto Sans Thai', 'IBM Plex Sans Thai', 'Sarabun', 'Prompt', sans-serif !important;
+        font-family: 'Noto Sans Thai', system-ui, -apple-system, 'Segoe UI', sans-serif;
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
         text-rendering: optimizeLegibility;
+        margin: 0;
+        padding: 0;
+        background: #f0f4fa;
       }
     </style>
   </head>

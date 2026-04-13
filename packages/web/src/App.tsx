@@ -3,14 +3,14 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { ThemeProvider, CssBaseline, Box, CircularProgress } from '@mui/material';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { theme } from './lib/theme';
-import AppShell from './components/layout/AppShell';
 import ProtectedRoute from './components/ProtectedRoute';
 
 // Login โหลดทันที (entry point)
 import LoginPage from './pages/auth/LoginPage';
 
 // === Lazy load pages เพื่อลด initial bundle ===
-// Dashboard lazy load ด้วย — กัน chart-vendor โดน bundle เข้า Login
+// AppShell + Dashboard lazy — ถ้าผู้ใช้ยังไม่ login จะไม่โหลด layout chunks
+const AppShell = lazy(() => import('./components/layout/AppShell'));
 const Dashboard = lazy(() => import('./pages/dashboard/Dashboard'));
 const FloorPlan = lazy(() => import('./pages/floor-plan/FloorPlan'));
 const UnitList = lazy(() => import('./pages/units/UnitList'));
@@ -59,7 +59,9 @@ export default function App() {
             <Route
               element={
                 <ProtectedRoute>
-                  <AppShell />
+                  <Suspense fallback={<PageLoading />}>
+                    <AppShell />
+                  </Suspense>
                 </ProtectedRoute>
               }
             >

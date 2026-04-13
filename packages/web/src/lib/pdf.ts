@@ -1,8 +1,6 @@
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
-
 // === Helper สำหรับสร้าง PDF จาก HTML element ===
-// ใช้สำหรับ Contract preview, Receipt, Bill
+// ใช้ dynamic import เพื่อไม่ให้ jsPDF/html2canvas เข้า initial bundle
+// จะโหลด pdf-vendor chunk เฉพาะตอนผู้ใช้กดปุ่มสร้าง PDF
 
 export async function generatePdfFromElement(
   elementId: string,
@@ -11,6 +9,12 @@ export async function generatePdfFromElement(
 ): Promise<void> {
   const el = document.getElementById(elementId);
   if (!el) throw new Error(`Element with id "${elementId}" not found`);
+
+  // โหลด libs ตอนเรียกใช้งานเท่านั้น
+  const [{ default: jsPDF }, { default: html2canvas }] = await Promise.all([
+    import('jspdf'),
+    import('html2canvas'),
+  ]);
 
   // Render element เป็น canvas
   const canvas = await html2canvas(el, {
@@ -60,11 +64,14 @@ export async function generatePdfFromElement(
 }
 
 // === สร้าง PDF จาก data structure (ไม่ต้องมี HTML) ===
-export function generateSimplePdf(
+export async function generateSimplePdf(
   title: string,
   rows: [string, string][],
   filename: string
-): void {
+): Promise<void> {
+  // โหลด jsPDF lazy
+  const { default: jsPDF } = await import('jspdf');
+
   const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const pageWidth = pdf.internal.pageSize.getWidth();
 
