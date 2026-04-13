@@ -71,5 +71,11 @@ export const theme = createTheme({
         },
       },
     },
+    // Default aria-label สำหรับ Select ที่ไม่ได้อยู่ใน FormControl — ผ่าน axe aria-input-field-name
+    MuiSelect: {
+      defaultProps: {
+        inputProps: { 'aria-label': 'เลือก' },
+      },
+    },
   },
 });

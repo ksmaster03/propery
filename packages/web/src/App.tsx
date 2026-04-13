@@ -10,10 +10,8 @@ import ProtectedRoute from './components/ProtectedRoute';
 import LoginPage from './pages/auth/LoginPage';
 
 // === Lazy load pages เพื่อลด initial bundle ===
-// Dashboard โหลดทันที (landing page)
-import Dashboard from './pages/dashboard/Dashboard';
-
-// หน้าอื่นๆ lazy load
+// Dashboard lazy load ด้วย — กัน chart-vendor โดน bundle เข้า Login
+const Dashboard = lazy(() => import('./pages/dashboard/Dashboard'));
 const FloorPlan = lazy(() => import('./pages/floor-plan/FloorPlan'));
 const UnitList = lazy(() => import('./pages/units/UnitList'));
 const PartnerList = lazy(() => import('./pages/partners/PartnerList'));
@@ -65,7 +63,7 @@ export default function App() {
                 </ProtectedRoute>
               }
             >
-              <Route index element={<Dashboard />} />
+              <Route index element={<Suspense fallback={<PageLoading />}><Dashboard /></Suspense>} />
               <Route path="/floor-plan" element={<Suspense fallback={<PageLoading />}><FloorPlan /></Suspense>} />
               <Route path="/units" element={<Suspense fallback={<PageLoading />}><UnitList /></Suspense>} />
               <Route path="/partners" element={<Suspense fallback={<PageLoading />}><PartnerList /></Suspense>} />
