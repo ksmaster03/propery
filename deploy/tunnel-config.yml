@@ -1,0 +1,14 @@
+# === Cloudflare Tunnel config สำหรับ doa-property ===
+# รันใน docker container พร้อม credentials file mounted
+
+tunnel: 3c0fe053-1890-457d-bbeb-661ec24d471e
+credentials-file: /etc/cloudflared/credentials.json
+
+# Ingress rules — route subdomains ไปที่ service ต่างๆ
+ingress:
+  # หน้าเว็บหลัก → doa-web service (nginx)
+  - hostname: doa.growgenius.co.th
+    service: http://doa-web:80
+
+  # Fallback
+  - service: http_status:404

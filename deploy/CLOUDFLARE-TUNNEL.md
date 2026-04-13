@@ -1,66 +1,102 @@
 # Cloudflare Tunnel Setup Guide
 
-ขั้นตอนสร้าง Tunnel เชื่อม `propery.toptierdigital.space` กับ EC2
+> **Production Live:** **https://doa.growgenius.co.th** ✅
 
-## 1. สร้าง Tunnel ใน Cloudflare Zero Trust
+## การตั้งค่าปัจจุบัน
 
-1. เข้า https://one.dash.cloudflare.com
-2. เลือก **Networks → Tunnels → Create a tunnel**
-3. เลือก **Cloudflared**
-4. ตั้งชื่อ: `doa-property`
-5. คลิก **Save tunnel**
-6. Copy **Tunnel token** (ยาวๆ เริ่มด้วย `eyJ...`)
+| ค่า | Value |
+|-----|-------|
+| **Tunnel Name** | `doa-property` |
+| **Tunnel ID** | `3c0fe053-1890-457d-bbeb-661ec24d471e` |
+| **Domain** | `doa.growgenius.co.th` |
+| **Route Service** | `http://doa-web:80` |
+| **Protocol** | QUIC (auto) |
+| **Connections** | 4 edge (bkk06 x2, sin07, sin11) |
 
-## 2. Public Hostname — เชื่อม domain กับ service
+## ไฟล์บน EC2
 
-ใน tab **Public Hostname**:
-- **Subdomain:** `propery`
-- **Domain:** `toptierdigital.space`
-- **Path:** (ว่าง)
-- **Service:**
-  - Type: `HTTP`
-  - URL: `doa-web:80`
-
-คลิก **Save hostname**
-
-## 3. ติดตั้ง Token บน EC2
-
-SSH เข้า EC2 และเพิ่ม token ใน `.env`:
-
-```bash
-ssh -i deploy/doa-property.pem ec2-user@43.210.173.149
-
-cd /opt/doa
-sudo nano .env
-# เพิ่มบรรทัด:
-# CLOUDFLARE_TUNNEL_TOKEN=eyJhIjoiXXXXXXXX...
-
-sudo docker compose up -d cloudflared
-sudo docker compose logs -f cloudflared
+```
+/opt/doa/cloudflared/
+├── credentials.json    # Tunnel credentials (chmod 644)
+└── config.yml          # Ingress rules
 ```
 
-เมื่อเห็น `Connection registered connIndex=0` แปลว่า tunnel ใช้งานได้แล้ว
+```yaml
+# /opt/doa/cloudflared/config.yml
+tunnel: 3c0fe053-1890-457d-bbeb-661ec24d471e
+credentials-file: /etc/cloudflared/credentials.json
 
-## 4. ทดสอบ
+ingress:
+  - hostname: doa.growgenius.co.th
+    service: http://doa-web:80
+  - service: http_status:404
+```
 
-เปิด https://propery.toptierdigital.space — จะเห็นหน้า Login
+## Override docker-compose
+
+```yaml
+# /opt/doa/docker-compose.override.yml
+services:
+  cloudflared:
+    command: tunnel --no-autoupdate --config /etc/cloudflared/config.yml run
+    volumes:
+      - /opt/doa/cloudflared:/etc/cloudflared:ro
+```
+
+## คำสั่งจัดการ
+
+```bash
+# Start / Stop / Restart tunnel
+ssh -i deploy/doa-property.pem ec2-user@43.210.173.149
+sudo docker compose -f /opt/doa/docker-compose.yml -f /opt/doa/docker-compose.override.yml restart cloudflared
+
+# ดู logs
+sudo docker logs doa-cloudflared -f
+
+# ดูสถานะ
+sudo docker ps | grep cloudflared
+```
+
+---
+
+## วิธีสร้างใหม่ (ถ้าต้องใช้ domain อื่น)
+
+### 1. สร้าง Tunnel
+
+```bash
+# ต้องรัน cloudflared tunnel login ก่อน สำหรับ domain ใหม่
+cloudflared tunnel login
+
+# สร้าง tunnel
+cloudflared tunnel create <tunnel-name>
+# → จะได้ tunnel ID และ credentials file ใน ~/.cloudflared/<id>.json
+
+# สร้าง DNS CNAME
+cloudflared tunnel route dns --overwrite-dns <tunnel-id> <hostname>
+```
+
+### 2. Deploy ไป EC2
+
+```bash
+# Copy credentials + config
+scp -i deploy/doa-property.pem ~/.cloudflared/<id>.json ec2-user@43.210.173.149:/tmp/
+scp -i deploy/doa-property.pem deploy/tunnel-config.yml ec2-user@43.210.173.149:/tmp/
+
+ssh -i deploy/doa-property.pem ec2-user@43.210.173.149
+sudo mkdir -p /opt/doa/cloudflared
+sudo mv /tmp/<id>.json /opt/doa/cloudflared/credentials.json
+sudo mv /tmp/tunnel-config.yml /opt/doa/cloudflared/config.yml
+sudo chmod 644 /opt/doa/cloudflared/credentials.json
+```
+
+### 3. Start tunnel
+
+```bash
+cd /opt/doa
+sudo docker compose up -d cloudflared
+```
 
 ## Credentials (Demo)
 - Admin: `admin` / `admin123`
-- Tenant: `0105562001234` / `tenant123`
-
-## โครงสร้างที่ deploy
-
-```
-EC2 t3.small (43.210.173.149) — Bangkok ap-southeast-7
-  └─ Docker Compose
-      ├─ doa-db          PostgreSQL 16 (port 5432 internal)
-      ├─ doa-api         Express + Prisma (port 3001 internal)
-      ├─ doa-web         React + Nginx (port 80 → host 8080)
-      └─ doa-cloudflared Cloudflare Tunnel → propery.toptierdigital.space
-```
-
-Security:
-- Port 22 (SSH) เปิด
-- Port 8080 ไม่ publish ออก internet (แค่ host-internal)
-- ไม่มี ingress HTTP/HTTPS — เข้าผ่าน Cloudflare Tunnel เท่านั้น
+- Operator: `operator1` / `operator123`
+- Tenant Portal: `0105562001234` / `tenant123`

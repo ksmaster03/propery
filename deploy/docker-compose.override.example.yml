@@ -1,0 +1,18 @@
+# === Override สำหรับ production ใช้ cloudflared แบบ config file + credentials ===
+# copy เป็น docker-compose.override.yml แล้วแก้ path volumes ให้ตรง
+
+services:
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: doa-cloudflared
+    restart: unless-stopped
+    # override command ของ cloudflared จาก main compose ที่ใช้ token
+    # ใช้ config file + credentials file แทน
+    command: tunnel --no-autoupdate --config /etc/cloudflared/config.yml run
+    volumes:
+      # Mount config.yml + credentials.json (ต้อง chmod 644)
+      - /opt/doa/cloudflared:/etc/cloudflared:ro
+    depends_on:
+      - web
+    networks:
+      - doa-net
