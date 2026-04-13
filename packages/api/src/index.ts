@@ -10,13 +10,19 @@ import partnerRoutes from './routes/partner/partner.routes.js';
 import contractRoutes from './routes/contract/contract.routes.js';
 import billingRoutes from './routes/billing/billing.routes.js';
 import masterRoutes from './routes/master/master.routes.js';
+import uploadRoutes from './routes/upload/upload.routes.js';
+import floorplanRoutes from './routes/floorplan/floorplan.routes.js';
+import reportRoutes from './routes/report/report.routes.js';
+import portalRoutes from './routes/portal/portal.routes.js';
+import { orgContext } from './middleware/org-context.js';
 
 const app = express();
 
 // === Middleware พื้นฐาน ===
 app.use(cors({ origin: env.CORS_ORIGIN, credentials: true }));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '10mb' })); // รองรับ SVG content ขนาดใหญ่
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(orgContext); // อ่าน X-Organization-Id header
 
 // === Health Check ===
 app.get('/api/health', (_req, res) => {
@@ -33,11 +39,10 @@ app.use('/api/partners', authGuard, partnerRoutes);
 app.use('/api/contracts', authGuard, contractRoutes);
 app.use('/api/bills', authGuard, billingRoutes);
 app.use('/api/master', authGuard, masterRoutes);
-
-// TODO: Phase 5-6
-// app.use('/api/receipts', authGuard, receiptRoutes);
-// app.use('/api/reports', authGuard, reportRoutes);
-// app.use('/api/portal', portalRoutes);
+app.use('/api/upload', authGuard, uploadRoutes);
+app.use('/api/floorplans', authGuard, floorplanRoutes);
+app.use('/api/reports', authGuard, reportRoutes);
+app.use('/api/portal', authGuard, portalRoutes);
 
 // === จัดการ Error กลาง ===
 app.use(errorHandler);

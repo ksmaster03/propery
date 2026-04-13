@@ -29,6 +29,8 @@ export default defineConfig({
           'mui-vendor': ['@mui/material', '@mui/icons-material', '@emotion/react', '@emotion/styled'],
           // Chart.js
           'chart-vendor': ['chart.js', 'react-chartjs-2'],
+          // PDF libs (ขนาดใหญ่)
+          'pdf-vendor': ['jspdf', 'html2canvas'],
           // State + query + forms
           'state-vendor': ['zustand', '@tanstack/react-query', 'react-hook-form', 'zod', '@hookform/resolvers', 'axios'],
         },

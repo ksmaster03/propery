@@ -128,3 +128,41 @@ export interface Department {
   sortOrder: number;
   isActive: boolean;
 }
+
+// === Floor Plan SVG hooks ===
+export interface FloorplanSvg {
+  id: number;
+  airportId: number;
+  buildingCode: string | null;
+  floorCode: string | null;
+  name: string;
+  svgContent: string;
+  canvasWidth: number;
+  canvasHeight: number;
+  uploadedAt: string;
+  isActive: boolean;
+}
+
+export function useFloorplan(airportId?: number, buildingCode?: string, floorCode?: string) {
+  return useQuery({
+    queryKey: ['floorplans', airportId, buildingCode, floorCode],
+    queryFn: async (): Promise<FloorplanSvg[]> => {
+      const { data } = await api.get('/floorplans', {
+        params: { airportId, buildingCode, floorCode },
+      });
+      return data.data || [];
+    },
+    enabled: !!airportId,
+  });
+}
+
+export function useSaveFloorplan() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: Partial<FloorplanSvg>) => {
+      const { data } = await api.post('/floorplans', payload);
+      return data.data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['floorplans'] }),
+  });
+}

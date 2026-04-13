@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../../lib/prisma.js';
+import { adminOnly } from '../../middleware/permissions.js';
 
 const router = Router();
 
@@ -49,8 +50,8 @@ function createCrudRouter(modelName: keyof typeof prisma, defaultSort: string = 
     }
   });
 
-  // POST / — สร้างใหม่
-  r.post('/', async (req: Request, res: Response) => {
+  // POST / — สร้างใหม่ (เฉพาะ ADMIN)
+  r.post('/', adminOnly, async (req: Request, res: Response) => {
     try {
       const data = await (prisma[modelName] as any).create({
         data: req.body,
@@ -66,8 +67,8 @@ function createCrudRouter(modelName: keyof typeof prisma, defaultSort: string = 
     }
   });
 
-  // PUT /:id — แก้ไข
-  r.put('/:id', async (req: Request, res: Response) => {
+  // PUT /:id — แก้ไข (เฉพาะ ADMIN)
+  r.put('/:id', adminOnly, async (req: Request, res: Response) => {
     try {
       const { id, createdAt, updatedAt, ...updateData } = req.body;
       const data = await (prisma[modelName] as any).update({
@@ -81,8 +82,8 @@ function createCrudRouter(modelName: keyof typeof prisma, defaultSort: string = 
     }
   });
 
-  // DELETE /:id — ลบแบบ soft (ตั้ง isActive = false)
-  r.delete('/:id', async (req: Request, res: Response) => {
+  // DELETE /:id — ลบแบบ soft (เฉพาะ ADMIN)
+  r.delete('/:id', adminOnly, async (req: Request, res: Response) => {
     try {
       const data = await (prisma[modelName] as any).update({
         where: { id: Number(req.params.id) },

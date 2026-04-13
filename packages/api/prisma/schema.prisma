@@ -130,6 +130,7 @@ model TmUser {
   passwordHash         String    @map("password_hash") @db.VarChar(255)
   email                String?   @map("email") @db.VarChar(100)
   fullName             String?   @map("full_name") @db.VarChar(200)
+  organizationId       Int?      @map("organization_id")
   departmentCode       String?   @map("department_code") @db.VarChar(50)
   role                 String    @default("OPERATOR") @map("role") @db.VarChar(20)
   isActive             Boolean   @default(true) @map("is_active")
@@ -141,6 +142,7 @@ model TmUser {
 
   auditLogs TtAuditLog[]
 
+  @@index([organizationId])
   @@map("m_user")
 }
 
@@ -168,22 +170,25 @@ model TmPermission {
 
 // ท่าอากาศยาน
 model TmAirport {
-  id            Int      @id @default(autoincrement())
-  airportCode   String   @unique @map("airport_code") @db.VarChar(10)
-  airportNameTh String   @map("airport_name_th") @db.VarChar(200)
-  airportNameEn String?  @map("airport_name_en") @db.VarChar(200)
-  province      String?  @map("province") @db.VarChar(100)
-  region        String?  @map("region") @db.VarChar(50)
-  isActive      Boolean  @default(true) @map("is_active")
-  createdBy     String?  @map("created_by") @db.VarChar(50)
-  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz()
-  updatedBy     String?  @map("updated_by") @db.VarChar(50)
-  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+  id             Int      @id @default(autoincrement())
+  airportCode    String   @unique @map("airport_code") @db.VarChar(10)
+  airportNameTh  String   @map("airport_name_th") @db.VarChar(200)
+  airportNameEn  String?  @map("airport_name_en") @db.VarChar(200)
+  organizationId Int?     @map("organization_id")
+  province       String?  @map("province") @db.VarChar(100)
+  region         String?  @map("region") @db.VarChar(50)
+  isActive       Boolean  @default(true) @map("is_active")
+  createdBy      String?  @map("created_by") @db.VarChar(50)
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedBy      String?  @map("updated_by") @db.VarChar(50)
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz()
 
-  buildings TmBuilding[]
-  units     TmUnit[]
-  contracts TtContract[]
+  buildings   TmBuilding[]
+  units       TmUnit[]
+  contracts   TtContract[]
+  floorplans  TmFloorplanSvg[]
 
+  @@index([organizationId])
   @@map("m_airport")
 }
 
@@ -881,6 +886,30 @@ model TmDocumentType {
   updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz()
 
   @@map("m_document_type")
+}
+
+// ============================================================
+// MASTER DATA: Floor Plan SVG (เก็บไฟล์แปลนที่ upload)
+// ============================================================
+
+model TmFloorplanSvg {
+  id            Int      @id @default(autoincrement())
+  airportId     Int      @map("airport_id")
+  buildingCode  String?  @map("building_code") @db.VarChar(20)
+  floorCode     String?  @map("floor_code") @db.VarChar(20)
+  name          String   @map("name") @db.VarChar(200)
+  svgContent    String   @map("svg_content") @db.Text
+  canvasWidth   Int      @default(960) @map("canvas_width")
+  canvasHeight  Int      @default(640) @map("canvas_height")
+  uploadedBy    String?  @map("uploaded_by") @db.VarChar(50)
+  uploadedAt    DateTime @default(now()) @map("uploaded_at") @db.Timestamptz()
+  isActive      Boolean  @default(true) @map("is_active")
+
+  airport TmAirport @relation(fields: [airportId], references: [id])
+
+  @@unique([airportId, buildingCode, floorCode])
+  @@index([airportId])
+  @@map("m_floorplan_svg")
 }
 
 // ============================================================

@@ -1,12 +1,15 @@
 import { useState } from 'react';
 import {
   Box, Paper, Typography, TextField, Select, MenuItem, Button,
-  Radio, RadioGroup, FormControlLabel, Alert, Chip, Divider,
+  Radio, RadioGroup, FormControlLabel, Alert, Chip, Divider, CircularProgress,
   Table, TableHead, TableBody, TableRow, TableCell,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import PageHeader from '../../components/shared/PageHeader';
 import { useTranslation } from '../../lib/i18n';
+import { useMaster, BusinessCategory, DocumentType, PaymentMethod } from '../../api/master-hooks';
+import api from '../../api/client';
+import { generateSimplePdf } from '../../lib/pdf';
 
 // === กำหนดขั้นตอน Wizard ===
 const steps = [
@@ -31,6 +34,14 @@ export default function ContractCreate() {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [contractType, setContractType] = useState<'FIXED_RENT' | 'REVENUE_SHARING' | 'CONSIGNMENT' | 'REAL_ESTATE'>('FIXED_RENT');
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string>('');
+  const [createdContractNo, setCreatedContractNo] = useState<string>('');
+
+  // === Master data จาก API ===
+  const { data: businessCats = [] } = useMaster<BusinessCategory>('business-categories');
+  const { data: docTypes = [] } = useMaster<DocumentType>('document-types');
+  const { data: paymentMethods = [] } = useMaster<PaymentMethod>('payment-methods');
 
   // === ข้อมูลสัญญาทั้งหมด ===
   const [formData, setFormData] = useState({
@@ -68,6 +79,61 @@ export default function ContractCreate() {
   const goNext = () => setCurrentStep(Math.min(6, currentStep + 1));
   const goBack = () => setCurrentStep(Math.max(1, currentStep - 1));
   const goTo = (step: number) => setCurrentStep(step);
+
+  // บันทึกสัญญาเข้า DB — เรียกก่อนไปหน้า Step 6
+  const handleSaveContract = async () => {
+    setSaving(true);
+    setSaveError('');
+    try {
+      const payload: any = {
+        contractType,
+        airportId: 1, // TODO: resolve from formData.airportId code → DB id
+        unitId: 1,    // TODO: resolve from formData.unitCode → DB id
+        partnerId: 1, // TODO: auto-create partner ถ้ายังไม่มี
+        startDate: formData.startDate,
+        endDate: formData.endDate,
+        durationMonths: 36,
+        paymentDueDay: formData.paymentDueDay,
+        latePenaltyRate: Number(formData.latePenaltyRate),
+      };
+
+      // ข้อมูลตามประเภทสัญญา
+      if (contractType === 'FIXED_RENT') {
+        payload.fixedRent = { monthlyRent: Number(formData.monthlyRent) };
+      } else if (contractType === 'REVENUE_SHARING') {
+        payload.revShare = {
+          magAmount: Number(formData.magAmount),
+          revenueSharePct: Number(formData.revenueSharePct),
+          calcMethod: 'HIGHER_OF_MAG_OR_SHARE',
+        };
+      } else if (contractType === 'CONSIGNMENT') {
+        payload.consignment = {
+          commissionPct: Number(formData.commissionPct),
+        };
+      } else if (contractType === 'REAL_ESTATE') {
+        payload.realEstate = { subType: 'LAND_ONLY' };
+      }
+
+      // หลักประกัน
+      payload.deposit = {
+        depositType: formData.depositType,
+        calculatedAmount: Number(formData.depositAmount),
+        approvedAmount: Number(formData.depositAmount),
+      };
+
+      const { data } = await api.post('/contracts', payload);
+      if (data.success) {
+        setCreatedContractNo(data.data.contractNo);
+        goNext();
+      } else {
+        setSaveError(data.error || 'ไม่สามารถบันทึกสัญญาได้');
+      }
+    } catch (err: any) {
+      setSaveError(err.response?.data?.error || err.message || 'Network error');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <>
@@ -147,12 +213,13 @@ export default function ContractCreate() {
                 </Select>
                 <TextField size="small" label={locale === 'th' ? 'อาคาร/ชั้น/โซน' : 'Building/Floor/Zone'} value={formData.building} InputProps={{ readOnly: true }} sx={{ bgcolor: '#f4f8fc' }} />
                 <TextField size="small" label={locale === 'th' ? 'ขนาดพื้นที่ (ตร.ม.)' : 'Area (sqm)'} value={formData.areaSqm} InputProps={{ readOnly: true }} sx={{ bgcolor: '#f4f8fc' }} />
-                <Select size="small" value={formData.purpose} onChange={(e) => setFormData({ ...formData, purpose: e.target.value })}>
-                  <MenuItem value="ร้านอาหาร">{locale === 'th' ? 'ร้านอาหาร' : 'Restaurant'}</MenuItem>
-                  <MenuItem value="ร้านค้าปลีก">{locale === 'th' ? 'ร้านค้าปลีก' : 'Retail'}</MenuItem>
-                  <MenuItem value="ร้านกาแฟ">{locale === 'th' ? 'ร้านกาแฟ' : 'Coffee Shop'}</MenuItem>
-                  <MenuItem value="ร้านยา">{locale === 'th' ? 'ร้านยา' : 'Pharmacy'}</MenuItem>
-                  <MenuItem value="ของที่ระลึก">{locale === 'th' ? 'ของที่ระลึก' : 'Souvenir'}</MenuItem>
+                <Select size="small" value={formData.purpose} onChange={(e) => setFormData({ ...formData, purpose: e.target.value })} displayEmpty>
+                  <MenuItem value="" disabled>{locale === 'th' ? '— เลือกวัตถุประสงค์ —' : '— Select purpose —'}</MenuItem>
+                  {businessCats.filter((c) => c.isActive).map((cat) => (
+                    <MenuItem key={cat.id} value={cat.nameTh}>
+                      {locale === 'th' ? cat.nameTh : (cat.nameEn || cat.nameTh)}
+                    </MenuItem>
+                  ))}
                 </Select>
                 <TextField size="small" label={locale === 'th' ? 'เลขมิเตอร์ไฟฟ้า' : 'Electric Meter No.'} value={formData.meterNumber} onChange={(e) => setFormData({ ...formData, meterNumber: e.target.value })} />
               </Box>
@@ -324,28 +391,31 @@ export default function ContractCreate() {
                 <TextField size="small" label={locale === 'th' ? 'จำนวนเงินประกัน (บาท)' : 'Deposit Amount (THB)'} value={formData.depositAmount} onChange={(e) => setFormData({ ...formData, depositAmount: e.target.value })} helperText={locale === 'th' ? 'คำนวณจากค่าเช่า 3 เดือน' : 'Calculated as 3 months rent'} />
               </Box>
 
-              {/* Upload เอกสาร */}
+              {/* Upload เอกสาร — ดึงรายการเอกสารจาก master data */}
               <Typography sx={{ fontSize: 12, fontWeight: 700, color: '#6c7f92', mb: 1, textTransform: 'uppercase', letterSpacing: .5 }}>
                 {locale === 'th' ? '📎 เอกสารประกอบ' : '📎 Supporting Documents'}
               </Typography>
               <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1 }}>
-                {[
-                  { key: 'ID_CARD', th: 'สำเนาบัตรประชาชน', en: 'ID Card Copy' },
-                  { key: 'COMPANY_CERTIFICATE', th: 'หนังสือรับรองบริษัท', en: 'Company Certificate' },
-                  { key: 'VAT_REGISTRATION', th: 'ภ.พ.20', en: 'VAT Registration' },
-                  { key: 'BANK_GUARANTEE_LETTER', th: 'หนังสือค้ำประกันธนาคาร', en: 'Bank Guarantee Letter' },
-                ].map((doc) => (
+                {docTypes.filter((d) => d.isActive).map((doc) => (
                   <Box
-                    key={doc.key}
+                    key={doc.id}
                     sx={{
-                      p: 1.5, border: '1px dashed rgba(22,63,107,.25)', borderRadius: 1,
+                      p: 1.5, border: `1px dashed ${doc.required ? 'rgba(217,83,79,.3)' : 'rgba(22,63,107,.25)'}`, borderRadius: 1,
                       display: 'flex', alignItems: 'center', gap: 1, cursor: 'pointer',
                       '&:hover': { borderColor: '#005b9f', bgcolor: 'rgba(0,91,159,.04)' },
                     }}
                   >
-                    <span className="material-icons-outlined" style={{ fontSize: 22, color: '#6c7f92' }}>upload_file</span>
-                    <Typography sx={{ fontSize: 12, flex: 1 }}>{locale === 'th' ? doc.th : doc.en}</Typography>
-                    <Button size="small" variant="outlined" sx={{ fontSize: 10 }}>{locale === 'th' ? 'เลือกไฟล์' : 'Choose'}</Button>
+                    <span className="material-icons-outlined" style={{ fontSize: 22, color: doc.required ? '#d9534f' : '#6c7f92' }}>upload_file</span>
+                    <Box sx={{ flex: 1 }}>
+                      <Typography sx={{ fontSize: 12 }}>
+                        {locale === 'th' ? doc.nameTh : (doc.nameEn || doc.nameTh)}
+                        {doc.required && <span style={{ color: '#d9534f', marginLeft: 4 }}>*</span>}
+                      </Typography>
+                    </Box>
+                    <Button size="small" variant="outlined" component="label" sx={{ fontSize: 10 }}>
+                      {locale === 'th' ? 'เลือกไฟล์' : 'Choose'}
+                      <input type="file" hidden accept=".pdf,.jpg,.jpeg,.png" />
+                    </Button>
                   </Box>
                 ))}
               </Box>
@@ -375,7 +445,7 @@ export default function ContractCreate() {
 
                 <Box sx={{ display: 'grid', gridTemplateColumns: '140px 1fr', gap: 1, fontSize: 12 }}>
                   {[
-                    [locale === 'th' ? 'เลขสัญญา' : 'Contract No.', 'CTR-2569-AUTO'],
+                    [locale === 'th' ? 'เลขสัญญา' : 'Contract No.', createdContractNo || (locale === 'th' ? '(สร้างเมื่อบันทึก)' : '(generated on save)')],
                     [locale === 'th' ? 'ประเภทสัญญา' : 'Type', contractTypes.find((c) => c.value === contractType)?.[locale === 'th' ? 'labelTh' : 'labelEn'] || ''],
                     [locale === 'th' ? 'ผู้ให้เช่า' : 'Lessor', locale === 'th' ? 'กรมท่าอากาศยาน' : 'Department of Airports'],
                     [locale === 'th' ? 'ผู้เช่า' : 'Lessee', formData.tenantName],
@@ -416,7 +486,7 @@ export default function ContractCreate() {
                 {locale === 'th' ? 'สัญญาอยู่ในสถานะรออนุมัติจากหัวหน้า' : 'Contract is pending supervisor approval'}
               </Typography>
 
-              <Chip label="CTR-2569-AUTO" sx={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 14, fontWeight: 700, color: '#005b9f', bgcolor: 'rgba(0,91,159,.08)', border: '1px solid rgba(0,91,159,.25)', py: 2, px: 1, mb: 3 }} />
+              <Chip label={createdContractNo || 'CTR-XXXX-XXX'} sx={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 14, fontWeight: 700, color: '#005b9f', bgcolor: 'rgba(0,91,159,.08)', border: '1px solid rgba(0,91,159,.25)', py: 2, px: 1, mb: 3 }} />
 
               {/* Workflow Progress */}
               <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center', mb: 3, flexWrap: 'wrap' }}>
@@ -443,7 +513,26 @@ export default function ContractCreate() {
               </Box>
 
               <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
-                <Button variant="contained" size="large">
+                <Button
+                  variant="contained" size="large"
+                  onClick={() => {
+                    const rows: [string, string][] = [
+                      ['เลขสัญญา / Contract No.', createdContractNo || 'CTR-XXXX-XXX'],
+                      ['ประเภทสัญญา / Type', contractType],
+                      ['ผู้ให้เช่า / Lessor', 'กรมท่าอากาศยาน'],
+                      ['ผู้เช่า / Lessee', formData.tenantName],
+                      ['เลขภาษี / Tax ID', formData.taxId],
+                      ['พื้นที่เช่า / Unit', `${formData.unitCode} (${formData.areaSqm} sqm)`],
+                      ['วัตถุประสงค์ / Purpose', formData.purpose],
+                      ['วันที่เริ่ม / Start', formData.startDate],
+                      ['วันที่สิ้นสุด / End', formData.endDate],
+                      ['ค่าเช่ารายเดือน / Monthly Rent', `THB ${Number(formData.monthlyRent).toLocaleString()}`],
+                      ['ค่ามัดจำ / Deposit', `THB ${Number(formData.depositAmount).toLocaleString()}`],
+                      ['ค่าปรับล่าช้า / Late Penalty', `${formData.latePenaltyRate}% / year`],
+                    ];
+                    generateSimplePdf('Commercial Lease Contract / สัญญาเช่า', rows, `${createdContractNo || 'contract'}.pdf`);
+                  }}
+                >
                   <span className="material-icons-outlined" style={{ fontSize: 18, marginRight: 6 }}>picture_as_pdf</span>
                   {locale === 'th' ? 'ดาวน์โหลด PDF' : 'Download PDF'}
                 </Button>
@@ -454,14 +543,34 @@ export default function ContractCreate() {
             </Box>
           )}
 
+          {/* แสดง error จาก API */}
+          {saveError && (
+            <Alert severity="error" sx={{ mt: 2, fontSize: 12 }}>
+              {saveError}
+            </Alert>
+          )}
+
           {/* ปุ่ม Navigation */}
           {currentStep < 6 && (
             <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 3, pt: 2, borderTop: '1px solid rgba(22,63,107,.08)' }}>
-              <Button variant="outlined" disabled={currentStep === 1} onClick={goBack}>
+              <Button variant="outlined" disabled={currentStep === 1 || saving} onClick={goBack}>
                 ← {t('common.back')}
               </Button>
-              <Button variant="contained" onClick={goNext}>
-                {currentStep === 5 ? (locale === 'th' ? 'ลงนาม' : 'Sign') : t('common.next')} →
+              <Button
+                variant="contained"
+                disabled={saving}
+                onClick={currentStep === 5 ? handleSaveContract : goNext}
+              >
+                {saving ? (
+                  <>
+                    <CircularProgress size={16} sx={{ color: '#fff', mr: 1 }} />
+                    {locale === 'th' ? 'กำลังบันทึก...' : 'Saving...'}
+                  </>
+                ) : (
+                  <>
+                    {currentStep === 5 ? (locale === 'th' ? '✍️ ลงนามและบันทึก' : '✍️ Sign & Save') : t('common.next')} →
+                  </>
+                )}
               </Button>
             </Box>
           )}

@@ -7,11 +7,15 @@ const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
-// แนบ Access Token ทุก request
+// แนบ Access Token + Organization ID ทุก request
 api.interceptors.request.use((config) => {
-  const token = useAuthStore.getState().accessToken;
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+  const state = useAuthStore.getState();
+  if (state.accessToken) {
+    config.headers.Authorization = `Bearer ${state.accessToken}`;
+  }
+  // Multi-tenant — ส่ง active org id ไปพร้อม request
+  if (state.activeOrgId) {
+    config.headers['X-Organization-Id'] = String(state.activeOrgId);
   }
   return config;
 });

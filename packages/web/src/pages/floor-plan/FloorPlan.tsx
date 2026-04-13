@@ -6,6 +6,7 @@ import PageHeader from '../../components/shared/PageHeader';
 import { useTranslation } from '../../lib/i18n';
 import api from '../../api/client';
 import { useUnits } from '../../api/hooks';
+import { useMaster, ZoneType } from '../../api/master-hooks';
 
 // === Types ===
 interface ZoneDraft {
@@ -15,7 +16,9 @@ interface ZoneDraft {
   w: number;
   h: number;
   bookerName: string;
-  zoneType: 'booth' | 'retail' | 'event' | 'lounge';
+  zoneType: string; // code จาก master data (BOOTH, RETAIL, ...)
+  zoneColor?: string; // เก็บไว้ตอน render
+  zoneLabel?: string;
   ratePerSqm: number;
   startDate: string;
   endDate: string;
@@ -23,13 +26,18 @@ interface ZoneDraft {
   unitId?: number;
 }
 
-// สีตามประเภท
-const zoneColors = {
-  booth: { fill: 'rgba(0,91,159,.18)', stroke: '#005b9f', labelTh: 'คูหา', labelEn: 'Booth' },
-  retail: { fill: 'rgba(26,158,92,.18)', stroke: '#1a9e5c', labelTh: 'ร้านค้า', labelEn: 'Retail' },
-  event: { fill: 'rgba(217,119,6,.18)', stroke: '#d97706', labelTh: 'พื้นที่กิจกรรม', labelEn: 'Event' },
-  lounge: { fill: 'rgba(124,58,237,.18)', stroke: '#7c3aed', labelTh: 'Lounge', labelEn: 'Lounge' },
-};
+// สีตามประเภท (fallback — ถ้า master data ไม่ load จะใช้ตัวนี้)
+const FALLBACK_ZONE_COLOR = { fill: 'rgba(0,91,159,.18)', stroke: '#005b9f' };
+
+// แปลงสี hex เป็น rgba(.18) สำหรับ fill
+function hexToFill(hex: string | null | undefined) {
+  if (!hex) return FALLBACK_ZONE_COLOR.fill;
+  const h = hex.replace('#', '');
+  const r = parseInt(h.substring(0, 2), 16);
+  const g = parseInt(h.substring(2, 4), 16);
+  const b = parseInt(h.substring(4, 6), 16);
+  return `rgba(${r},${g},${b},.18)`;
+}
 
 // สีตามสถานะของ unit เดิม (จาก DB)
 const unitStatusColors: Record<string, { fill: string; stroke: string }> = {
@@ -68,10 +76,17 @@ export default function FloorPlan() {
   const { data: apiData, refetch } = useUnits({});
   const apiUnits = apiData?.data || [];
 
+  // === Master data: zone types ===
+  const { data: zoneTypes = [] } = useMaster<ZoneType>('zone-types');
+
   // === Booking form ===
   const [bookerName, setBookerName] = useState('');
-  const [zoneType, setZoneType] = useState<ZoneDraft['zoneType']>('booth');
+  const [zoneType, setZoneType] = useState<string>('BOOTH');
   const [ratePerSqm, setRatePerSqm] = useState(3500);
+
+  // เมื่อ master data โหลดเสร็จ — ตั้ง default zone type + rate
+  const activeZoneTypes = zoneTypes.filter((z) => z.isActive);
+  const selectedZoneType = activeZoneTypes.find((z) => z.code === zoneType) || activeZoneTypes[0];
   const [startDate, setStartDate] = useState(() => {
     const d = new Date();
     d.setDate(d.getDate() + 1);
@@ -189,6 +204,8 @@ export default function FloorPlan() {
       return;
     }
 
+    const zt = activeZoneTypes.find((z) => z.code === zoneType);
+
     const newDraft: ZoneDraft = {
       id: `draft-${Date.now()}`,
       x: currentRect.x / GRID_SIZE,
@@ -197,6 +214,8 @@ export default function FloorPlan() {
       h: currentRect.h / GRID_SIZE,
       bookerName,
       zoneType,
+      zoneColor: zt?.color || '#005b9f',
+      zoneLabel: zt ? (locale === 'th' ? zt.nameTh : (zt.nameEn || zt.nameTh)) : zoneType,
       ratePerSqm,
       startDate,
       endDate,
@@ -208,7 +227,7 @@ export default function FloorPlan() {
     // พยายามบันทึกลง DB (graceful fallback ถ้า API ไม่มี)
     try {
       const unitCount = apiUnits.length + draftZones.length + 1;
-      const unitCode = `${zoneType.charAt(0).toUpperCase()}-${String(unitCount).padStart(3, '0')}`;
+      const unitCode = `${zoneType.charAt(0)}-${String(unitCount).padStart(3, '0')}`;
 
       const payload = {
         unitCode,
@@ -216,7 +235,7 @@ export default function FloorPlan() {
         airportId: 1, // TODO: resolve from airportId string
         areaSqm: newDraft.w * newDraft.h,
         status: 'RESERVED',
-        purpose: zoneColors[zoneType].labelTh,
+        purpose: zt?.nameTh || zoneType,
         fpCoordX: newDraft.x,
         fpCoordY: newDraft.y,
         fpWidth: newDraft.w,
@@ -327,11 +346,22 @@ export default function FloorPlan() {
               />
 
               <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1 }}>
-                <Select size="small" value={zoneType} onChange={(e) => setZoneType(e.target.value as ZoneDraft['zoneType'])}>
-                  <MenuItem value="booth">{locale === 'th' ? 'คูหา' : 'Booth'}</MenuItem>
-                  <MenuItem value="retail">{locale === 'th' ? 'ร้านค้า' : 'Retail'}</MenuItem>
-                  <MenuItem value="event">{locale === 'th' ? 'กิจกรรม' : 'Event'}</MenuItem>
-                  <MenuItem value="lounge">Lounge</MenuItem>
+                <Select
+                  size="small"
+                  value={zoneType}
+                  onChange={(e) => {
+                    const newType = e.target.value;
+                    setZoneType(newType);
+                    // อัปเดต rate ตาม default ของ master
+                    const zt = activeZoneTypes.find((z) => z.code === newType);
+                    if (zt?.defaultRate) setRatePerSqm(Number(zt.defaultRate));
+                  }}
+                >
+                  {activeZoneTypes.map((zt) => (
+                    <MenuItem key={zt.id} value={zt.code}>
+                      {locale === 'th' ? zt.nameTh : (zt.nameEn || zt.nameTh)}
+                    </MenuItem>
+                  ))}
                 </Select>
                 <TextField
                   size="small" type="number"
@@ -516,16 +546,17 @@ export default function FloorPlan() {
                 })}
 
                 {/* Draft zones (ใหม่จากการวาด) */}
-                {draftZones.map((zone, i) => {
+                {draftZones.map((zone) => {
                   const x = zone.x * GRID_SIZE;
                   const y = zone.y * GRID_SIZE;
                   const w = zone.w * GRID_SIZE;
                   const h = zone.h * GRID_SIZE;
-                  const c = zoneColors[zone.zoneType];
+                  const stroke = zone.zoneColor || '#005b9f';
+                  const fill = hexToFill(stroke);
                   return (
                     <g key={zone.id}>
-                      <rect x={x} y={y} width={w} height={h} fill={c.fill} stroke={c.stroke} strokeWidth="2" rx="4" strokeDasharray={zone.saved ? '0' : '4 2'} />
-                      <text x={x + 6} y={y + 16} fontSize="11" fontWeight="700" fill={c.stroke}>
+                      <rect x={x} y={y} width={w} height={h} fill={fill} stroke={stroke} strokeWidth="2" rx="4" strokeDasharray={zone.saved ? '0' : '4 2'} />
+                      <text x={x + 6} y={y + 16} fontSize="11" fontWeight="700" fill={stroke}>
                         {zone.bookerName}
                       </text>
                       <text x={x + 6} y={y + 30} fontSize="9" fill="#6c7f92" fontFamily="'IBM Plex Mono',monospace">
@@ -573,13 +604,15 @@ export default function FloorPlan() {
                 {locale === 'th' ? 'ยังไม่มีการจอง — ลากบนแปลนเพื่อจอง' : 'No drafts — drag on plan to book'}
               </Alert>
             )}
-            {mode === 'edit' && draftZones.map((zone, i) => (
-              <Paper key={zone.id} elevation={0} sx={{ p: 1.25, border: `1px solid ${zoneColors[zone.zoneType].stroke}40`, bgcolor: `${zoneColors[zone.zoneType].stroke}08` }}>
+            {mode === 'edit' && draftZones.map((zone, i) => {
+              const stroke = zone.zoneColor || '#005b9f';
+              return (
+              <Paper key={zone.id} elevation={0} sx={{ p: 1.25, border: `1px solid ${stroke}40`, bgcolor: `${stroke}08` }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: .5 }}>
                   <Chip
-                    label={`#${i + 1} ${locale === 'th' ? zoneColors[zone.zoneType].labelTh : zoneColors[zone.zoneType].labelEn}`}
+                    label={`#${i + 1} ${zone.zoneLabel || zone.zoneType}`}
                     size="small"
-                    sx={{ fontSize: 9, fontWeight: 700, height: 20, bgcolor: `${zoneColors[zone.zoneType].stroke}20`, color: zoneColors[zone.zoneType].stroke }}
+                    sx={{ fontSize: 9, fontWeight: 700, height: 20, bgcolor: `${stroke}20`, color: stroke }}
                   />
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: .5 }}>
                     {zone.saved && (
@@ -598,7 +631,8 @@ export default function FloorPlan() {
                   {zone.startDate} → {zone.endDate}
                 </Typography>
               </Paper>
-            ))}
+              );
+            })}
 
             {/* Existing units (view mode) */}
             {mode === 'view' && apiUnits.length === 0 && (
