@@ -28,7 +28,6 @@ const navGroups: NavGroup[] = [
     titleKey: 'nav.commercial',
     items: [
       { icon: 'map', labelKey: 'nav.floorplan', path: '/floor-plan' },
-      { icon: 'edit_square', labelKey: 'nav.floorplanEditor', path: '/floor-plan/editor' },
       { icon: 'space_dashboard', labelKey: 'nav.units', path: '/units', badge: '48', badgeColor: 'blue' },
     ],
   },

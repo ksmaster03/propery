@@ -1,413 +1,635 @@
-import { useState, useRef } from 'react';
-import { Box, Paper, Typography, Select, MenuItem, Chip, Divider, Button } from '@mui/material';
+import { useState, useRef, MouseEvent as ReactMouseEvent, useEffect } from 'react';
+import {
+  Box, Paper, Typography, Button, TextField, Select, MenuItem, Divider, Chip, Alert, IconButton, Tabs, Tab,
+} from '@mui/material';
 import PageHeader from '../../components/shared/PageHeader';
 import { useTranslation } from '../../lib/i18n';
+import api from '../../api/client';
+import { useUnits } from '../../api/hooks';
 
-// ข้อมูล mock สำหรับ Floor Plan — จะเปลี่ยนเป็น API จริงภายหลัง
-const mockZones = generateMockZones();
-
-function generateMockZones() {
-  const tenants: Record<string, { tenant: string; shop: string; contract: string; rent: number; daysLeft: number }> = {
-    'A-101': { tenant: 'บริษัท ฟู้ดแลนด์ จำกัด', shop: 'ครัวไทย', contract: 'CTR-2566-001', rent: 65000, daysLeft: 14 },
-    'A-102': { tenant: 'บริษัท ไทยฟู้ด จำกัด', shop: 'ข้าวแกงป้าแจ่ม', contract: 'CTR-2566-005', rent: 48000, daysLeft: 180 },
-    'A-103': { tenant: 'นาง สมหญิง รักดี', shop: 'ก๋วยเตี๋ยวนายเฮง', contract: 'CTR-2566-006', rent: 42000, daysLeft: 210 },
-    'B-201': { tenant: 'นาย สมศักดิ์ วงศ์ทอง', shop: 'The Brew Coffee', contract: 'CTR-2566-002', rent: 80000, daysLeft: 28 },
-    'B-202': { tenant: 'บริษัท สตาร์บัคส์ จำกัด', shop: 'Starbucks', contract: 'CTR-2566-007', rent: 120000, daysLeft: 350 },
-    'C-305': { tenant: 'บริษัท คิวเอ็ม จำกัด', shop: 'QuickMart', contract: 'CTR-2566-003', rent: 85000, daysLeft: 45 },
-    'A-112': { tenant: 'บริษัท อินนิก้า จำกัด', shop: 'SouvThai', contract: 'CTR-2566-004', rent: 45000, daysLeft: 67 },
-  };
-
-  const zones: any[] = [];
-
-  // โซน A — ร้านอาหาร (2 แถว x 8 ยูนิต)
-  for (let i = 0; i < 16; i++) {
-    const code = `A-${101 + i}`;
-    const isLeased = i < 10;
-    const isReserved = i >= 10 && i < 13;
-    const t = tenants[code];
-    const daysLeft = t?.daysLeft ?? null;
-
-    zones.push({
-      id: i + 1,
-      unitCode: code,
-      unitNameTh: `คูหา ${code}`,
-      status: isLeased ? 'LEASED' : isReserved ? 'RESERVED' : 'VACANT',
-      areaSqm: 45 + Math.round(Math.random() * 60),
-      purpose: 'ร้านอาหาร',
-      x: 30 + (i % 8) * 105,
-      y: 70 + Math.floor(i / 8) * 95,
-      width: 95,
-      height: 80,
-      fillColor: isLeased
-        ? (daysLeft !== null && daysLeft <= 30 ? '#fce4ec' : '#e3f2fd')
-        : isReserved ? '#fff8e1' : '#e8f5e9',
-      strokeColor: isLeased
-        ? (daysLeft !== null && daysLeft <= 30 ? '#d9534f' : '#005b9f')
-        : isReserved ? '#d97706' : '#1a9e5c',
-      tenant: t?.tenant || null,
-      shopName: t?.shop || null,
-      contractNo: t?.contract || null,
-      monthlyRent: t?.rent || null,
-      daysLeft,
-      zoneNameTh: 'โซน A (ร้านอาหาร)',
-      floorNameTh: 'ชั้น 1',
-    });
-  }
-
-  // โซน B — ร้านค้า (2 แถว x 8 ยูนิต)
-  for (let i = 0; i < 16; i++) {
-    const code = `B-${201 + i}`;
-    const isLeased = i < 12;
-    const isReserved = i >= 12 && i < 14;
-    const t = tenants[code];
-    const daysLeft = t?.daysLeft ?? null;
-
-    zones.push({
-      id: i + 17,
-      unitCode: code,
-      unitNameTh: `คูหา ${code}`,
-      status: isLeased ? 'LEASED' : isReserved ? 'RESERVED' : 'VACANT',
-      areaSqm: 30 + Math.round(Math.random() * 40),
-      purpose: 'ร้านค้า',
-      x: 30 + (i % 8) * 105,
-      y: 300 + Math.floor(i / 8) * 95,
-      width: 95,
-      height: 80,
-      fillColor: isLeased
-        ? (daysLeft !== null && daysLeft <= 30 ? '#fce4ec' : '#e3f2fd')
-        : isReserved ? '#fff8e1' : '#e8f5e9',
-      strokeColor: isLeased
-        ? (daysLeft !== null && daysLeft <= 30 ? '#d9534f' : '#005b9f')
-        : isReserved ? '#d97706' : '#1a9e5c',
-      tenant: t?.tenant || null,
-      shopName: t?.shop || null,
-      contractNo: t?.contract || null,
-      monthlyRent: t?.rent || null,
-      daysLeft,
-      zoneNameTh: 'โซน B (ร้านค้า)',
-      floorNameTh: 'ชั้น 1',
-    });
-  }
-
-  // โซน C — บริการ (2 คอลัมน์ x 8 ยูนิต)
-  for (let i = 0; i < 16; i++) {
-    const code = `C-${301 + i}`;
-    const isLeased = i < 12;
-    const t = tenants[code];
-    const daysLeft = t?.daysLeft ?? null;
-
-    zones.push({
-      id: i + 33,
-      unitCode: code,
-      unitNameTh: `คูหา ${code}`,
-      status: isLeased ? 'LEASED' : 'VACANT',
-      areaSqm: 20 + Math.round(Math.random() * 30),
-      purpose: 'บริการ',
-      x: 30 + (i % 8) * 105,
-      y: 540 + Math.floor(i / 8) * 95,
-      width: 95,
-      height: 80,
-      fillColor: isLeased
-        ? (daysLeft !== null && daysLeft <= 30 ? '#fce4ec' : '#e3f2fd')
-        : '#e8f5e9',
-      strokeColor: isLeased
-        ? (daysLeft !== null && daysLeft <= 30 ? '#d9534f' : '#005b9f')
-        : '#1a9e5c',
-      tenant: t?.tenant || null,
-      shopName: t?.shop || null,
-      contractNo: t?.contract || null,
-      monthlyRent: t?.rent || null,
-      daysLeft,
-      zoneNameTh: 'โซน C (บริการ)',
-      floorNameTh: 'ชั้น 1',
-    });
-  }
-
-  return zones;
+// === Types ===
+interface ZoneDraft {
+  id: string;
+  x: number; // grid units
+  y: number;
+  w: number;
+  h: number;
+  bookerName: string;
+  zoneType: 'booth' | 'retail' | 'event' | 'lounge';
+  ratePerSqm: number;
+  startDate: string;
+  endDate: string;
+  saved?: boolean; // true = synced กับ DB แล้ว
+  unitId?: number;
 }
 
-const formatMoney = (n: number) => new Intl.NumberFormat('th-TH').format(n);
-
-// คำนวณสรุป
-const summary = {
-  total: mockZones.length,
-  leased: mockZones.filter((z) => z.status === 'LEASED').length,
-  vacant: mockZones.filter((z) => z.status === 'VACANT').length,
-  reserved: mockZones.filter((z) => z.status === 'RESERVED').length,
+// สีตามประเภท
+const zoneColors = {
+  booth: { fill: 'rgba(0,91,159,.18)', stroke: '#005b9f', labelTh: 'คูหา', labelEn: 'Booth' },
+  retail: { fill: 'rgba(26,158,92,.18)', stroke: '#1a9e5c', labelTh: 'ร้านค้า', labelEn: 'Retail' },
+  event: { fill: 'rgba(217,119,6,.18)', stroke: '#d97706', labelTh: 'พื้นที่กิจกรรม', labelEn: 'Event' },
+  lounge: { fill: 'rgba(124,58,237,.18)', stroke: '#7c3aed', labelTh: 'Lounge', labelEn: 'Lounge' },
 };
 
-export default function FloorPlan() {
-  const { t, locale } = useTranslation();
-  const [selectedZone, setSelectedZone] = useState<typeof mockZones[0] | null>(null);
-  const [hoveredZone, setHoveredZone] = useState<string | null>(null);
+// สีตามสถานะของ unit เดิม (จาก DB)
+const unitStatusColors: Record<string, { fill: string; stroke: string }> = {
+  VACANT: { fill: 'rgba(26,158,92,.15)', stroke: '#1a9e5c' },
+  LEASED: { fill: 'rgba(0,91,159,.18)', stroke: '#005b9f' },
+  RESERVED: { fill: 'rgba(217,119,6,.18)', stroke: '#d97706' },
+  MAINTENANCE: { fill: 'rgba(108,127,146,.15)', stroke: '#6c7f92' },
+};
 
-  const legendItems = [
-    { key: 'floorplan.vacant', color: '#1a9e5c', bg: '#e8f5e9' },
-    { key: 'floorplan.leased', color: '#005b9f', bg: '#e3f2fd' },
-    { key: 'floorplan.reserved', color: '#d97706', bg: '#fff8e1' },
-    { key: 'floorplan.overdue', color: '#d9534f', bg: '#fce4ec' },
-    { key: 'floorplan.maintenance', color: '#9e9e9e', bg: '#f5f5f5' },
+const GRID_SIZE = 24; // 1 ช่อง = 24px = 1 เมตร
+
+export default function FloorPlan() {
+  const { locale } = useTranslation();
+  const canvasRef = useRef<HTMLDivElement>(null);
+
+  // === State: Airport / Building / Floor selector ===
+  const [airportId, setAirportId] = useState<string>('DMK');
+  const [buildingId, setBuildingId] = useState<string>('T1');
+  const [floorId, setFloorId] = useState<string>('F1');
+
+  // === SVG Floor plan ===
+  const [floorplanSvg, setFloorplanSvg] = useState<string | null>(null);
+  const [floorplanFilename, setFloorplanFilename] = useState<string>('');
+  const canvasSize = { width: 960, height: 640 };
+
+  // === View mode: ดูอย่างเดียว หรือ edit ===
+  const [mode, setMode] = useState<'view' | 'edit'>('view');
+
+  // === Drawing state ===
+  const [drawing, setDrawing] = useState<{ x: number; y: number } | null>(null);
+  const [currentRect, setCurrentRect] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
+  const [draftZones, setDraftZones] = useState<ZoneDraft[]>([]);
+  const [savingZone, setSavingZone] = useState(false);
+
+  // === โหลด units เดิมจาก API (ใช้ fallback ถ้า offline) ===
+  const { data: apiData, refetch } = useUnits({});
+  const apiUnits = apiData?.data || [];
+
+  // === Booking form ===
+  const [bookerName, setBookerName] = useState('');
+  const [zoneType, setZoneType] = useState<ZoneDraft['zoneType']>('booth');
+  const [ratePerSqm, setRatePerSqm] = useState(3500);
+  const [startDate, setStartDate] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    return d.toISOString().slice(0, 10);
+  });
+  const [endDate, setEndDate] = useState(() => {
+    const d = new Date();
+    d.setMonth(d.getMonth() + 36);
+    return d.toISOString().slice(0, 10);
+  });
+
+  // === Upload SVG handler ===
+  const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const content = ev.target?.result as string;
+      if (file.type === 'image/svg+xml' || file.name.endsWith('.svg')) {
+        setFloorplanSvg(content);
+      } else {
+        // PNG/JPG — wrap เป็น SVG
+        setFloorplanSvg(
+          `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${canvasSize.width} ${canvasSize.height}"><image href="${content}" width="${canvasSize.width}" height="${canvasSize.height}" preserveAspectRatio="xMidYMid meet" /></svg>`
+        );
+      }
+      setFloorplanFilename(file.name);
+      // เก็บใน localStorage ต่อ airport+floor key — demo persistence
+      try {
+        localStorage.setItem(`doa-floorplan-${airportId}-${floorId}`, content.substring(0, 500000)); // จำกัดขนาด
+      } catch {}
+    };
+
+    if (file.type === 'image/svg+xml' || file.name.endsWith('.svg')) {
+      reader.readAsText(file);
+    } else {
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // === Load saved floorplan from localStorage เมื่อเปลี่ยน airport/floor ===
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(`doa-floorplan-${airportId}-${floorId}`);
+      if (saved) {
+        setFloorplanSvg(saved);
+        setFloorplanFilename(`saved-${airportId}-${floorId}`);
+      } else {
+        setFloorplanSvg(null);
+        setFloorplanFilename('');
+      }
+    } catch {}
+  }, [airportId, floorId]);
+
+  // === Helpers ===
+  const snap = (val: number) => Math.round(val / GRID_SIZE) * GRID_SIZE;
+
+  const getMousePos = (e: ReactMouseEvent<HTMLDivElement>) => {
+    const rect = canvasRef.current!.getBoundingClientRect();
+    return { x: snap(e.clientX - rect.left), y: snap(e.clientY - rect.top) };
+  };
+
+  // === Drawing handlers ===
+  const handleMouseDown = (e: ReactMouseEvent<HTMLDivElement>) => {
+    if (mode !== 'edit') return;
+    const pos = getMousePos(e);
+    setDrawing(pos);
+    setCurrentRect({ x: pos.x, y: pos.y, w: 0, h: 0 });
+  };
+
+  const handleMouseMove = (e: ReactMouseEvent<HTMLDivElement>) => {
+    if (!drawing || mode !== 'edit') return;
+    const pos = getMousePos(e);
+    const x = Math.min(drawing.x, pos.x);
+    const y = Math.min(drawing.y, pos.y);
+    const w = Math.max(GRID_SIZE, Math.abs(pos.x - drawing.x));
+    const h = Math.max(GRID_SIZE, Math.abs(pos.y - drawing.y));
+    setCurrentRect({ x, y, w, h });
+  };
+
+  const handleMouseUp = () => {
+    setDrawing(null);
+  };
+
+  // === Selection calc ===
+  const selection = currentRect && currentRect.w >= GRID_SIZE && currentRect.h >= GRID_SIZE
+    ? {
+        widthM: currentRect.w / GRID_SIZE,
+        heightM: currentRect.h / GRID_SIZE,
+        areaSqm: (currentRect.w / GRID_SIZE) * (currentRect.h / GRID_SIZE),
+        totalPrice: (currentRect.w / GRID_SIZE) * (currentRect.h / GRID_SIZE) * ratePerSqm,
+      }
+    : null;
+
+  // === Collision check กับ zones เดิม + draft ===
+  const hasCollision = (rect: { x: number; y: number; w: number; h: number }) => {
+    // check กับ draft zones
+    const draftCollide = draftZones.some((z) => {
+      const zx = z.x * GRID_SIZE, zy = z.y * GRID_SIZE, zw = z.w * GRID_SIZE, zh = z.h * GRID_SIZE;
+      return rect.x < zx + zw && rect.x + rect.w > zx && rect.y < zy + zh && rect.y + rect.h > zy;
+    });
+    // check กับ existing units (ใช้ floorplan coords ถ้ามี)
+    // สำหรับ demo — ข้าม check กับ DB units เพราะอาจไม่มี SVG coords
+    return draftCollide;
+  };
+
+  const currentCollision = currentRect ? hasCollision(currentRect) : false;
+
+  // === Save zone → POST /api/units ===
+  const handleConfirm = async () => {
+    if (!currentRect || !selection || currentCollision) return;
+    if (!bookerName.trim()) {
+      alert(locale === 'th' ? 'กรุณากรอกชื่อผู้จอง' : 'Please enter booker name');
+      return;
+    }
+
+    const newDraft: ZoneDraft = {
+      id: `draft-${Date.now()}`,
+      x: currentRect.x / GRID_SIZE,
+      y: currentRect.y / GRID_SIZE,
+      w: currentRect.w / GRID_SIZE,
+      h: currentRect.h / GRID_SIZE,
+      bookerName,
+      zoneType,
+      ratePerSqm,
+      startDate,
+      endDate,
+      saved: false,
+    };
+
+    setSavingZone(true);
+
+    // พยายามบันทึกลง DB (graceful fallback ถ้า API ไม่มี)
+    try {
+      const unitCount = apiUnits.length + draftZones.length + 1;
+      const unitCode = `${zoneType.charAt(0).toUpperCase()}-${String(unitCount).padStart(3, '0')}`;
+
+      const payload = {
+        unitCode,
+        unitNameTh: bookerName,
+        airportId: 1, // TODO: resolve from airportId string
+        areaSqm: newDraft.w * newDraft.h,
+        status: 'RESERVED',
+        purpose: zoneColors[zoneType].labelTh,
+        fpCoordX: newDraft.x,
+        fpCoordY: newDraft.y,
+        fpWidth: newDraft.w,
+        fpHeight: newDraft.h,
+      };
+
+      const { data } = await api.post('/units', payload);
+      if (data.success) {
+        newDraft.saved = true;
+        newDraft.unitId = data.data.id;
+        refetch();
+      }
+    } catch (err) {
+      // บันทึกไม่ได้ก็ยังเก็บเป็น draft
+      console.warn('Save to DB failed, keeping as draft:', err);
+    }
+
+    setDraftZones([...draftZones, newDraft]);
+    setCurrentRect(null);
+    setSavingZone(false);
+  };
+
+  const handleClear = () => setCurrentRect(null);
+  const handleDeleteDraft = (id: string) => setDraftZones(draftZones.filter((z) => z.id !== id));
+
+  const formatMoney = (n: number) => new Intl.NumberFormat('th-TH').format(Math.round(n));
+
+  // === Dropdown options ===
+  const airportOptions = [
+    { value: 'DMK', labelTh: 'ท่าอากาศยานดอนเมือง', labelEn: 'Don Mueang' },
+    { value: 'CNX', labelTh: 'ท่าอากาศยานเชียงใหม่', labelEn: 'Chiang Mai' },
+    { value: 'HKT', labelTh: 'ท่าอากาศยานภูเก็ต', labelEn: 'Phuket' },
+    { value: 'HDY', labelTh: 'ท่าอากาศยานหาดใหญ่', labelEn: 'Hat Yai' },
+  ];
+  const buildingOptions = [
+    { value: 'T1', labelTh: 'อาคารผู้โดยสาร 1', labelEn: 'Terminal 1' },
+    { value: 'T2', labelTh: 'อาคารผู้โดยสาร 2', labelEn: 'Terminal 2' },
+  ];
+  const floorOptions = [
+    { value: 'F1', labelTh: 'ชั้น 1', labelEn: 'Floor 1' },
+    { value: 'F2', labelTh: 'ชั้น 2', labelEn: 'Floor 2' },
+    { value: 'F3', labelTh: 'ชั้น 3', labelEn: 'Floor 3' },
   ];
 
   return (
     <>
       <PageHeader
         icon="🗺️"
-        title={t('floorplan.title')}
-        subtitle={t('floorplan.subtitle')}
+        title={locale === 'th' ? 'แผนผังพื้นที่เชิงพาณิชย์' : 'Commercial Floor Plan'}
+        subtitle={locale === 'th' ? 'อัปโหลดแปลน + กำหนดพื้นที่เช่า' : 'Upload plan + define rental areas'}
         actions={
-          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-            <Select size="small" defaultValue="DMK" sx={{ minWidth: 180, fontSize: 12 }}>
-              <MenuItem value="DMK">{locale === 'th' ? 'ท่าอากาศยานดอนเมือง' : 'Don Mueang Airport'}</MenuItem>
-              <MenuItem value="CNX">{locale === 'th' ? 'ท่าอากาศยานเชียงใหม่' : 'Chiang Mai Airport'}</MenuItem>
-              <MenuItem value="HKT">{locale === 'th' ? 'ท่าอากาศยานภูเก็ต' : 'Phuket Airport'}</MenuItem>
-            </Select>
-            <Select size="small" defaultValue="F1" sx={{ minWidth: 120, fontSize: 12 }}>
-              <MenuItem value="F1">{locale === 'th' ? 'ชั้น 1' : 'Floor 1'}</MenuItem>
-              <MenuItem value="F2">{locale === 'th' ? 'ชั้น 2' : 'Floor 2'}</MenuItem>
-              <MenuItem value="F3">{locale === 'th' ? 'ชั้น 3' : 'Floor 3'}</MenuItem>
-            </Select>
+          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+            <Button
+              variant={mode === 'view' ? 'contained' : 'outlined'}
+              size="small"
+              onClick={() => setMode('view')}
+              sx={{ fontSize: 11 }}
+            >
+              <span className="material-icons-outlined" style={{ fontSize: 16, marginRight: 4 }}>visibility</span>
+              {locale === 'th' ? 'ดูแผนผัง' : 'View'}
+            </Button>
+            <Button
+              variant={mode === 'edit' ? 'contained' : 'outlined'}
+              size="small"
+              onClick={() => setMode('edit')}
+              sx={{ fontSize: 11 }}
+            >
+              <span className="material-icons-outlined" style={{ fontSize: 16, marginRight: 4 }}>edit</span>
+              {locale === 'th' ? 'วาดพื้นที่' : 'Draw'}
+            </Button>
+            <Button
+              variant="outlined"
+              size="small"
+              component="label"
+              sx={{ fontSize: 11 }}
+            >
+              <span className="material-icons-outlined" style={{ fontSize: 16, marginRight: 4 }}>upload_file</span>
+              {locale === 'th' ? 'อัปโหลด SVG' : 'Upload SVG'}
+              <input type="file" accept=".svg,image/svg+xml,image/png,image/jpeg" hidden onChange={handleUpload} />
+            </Button>
           </Box>
         }
       />
 
-      <Box sx={{ flex: 1, overflow: 'auto', p: 2.75, display: 'flex', gap: 2 }}>
-        {/* แผนผัง SVG */}
-        <Paper
-          elevation={0}
-          sx={{
-            flex: 1, border: '1px solid rgba(22,63,107,.12)',
-            boxShadow: '0 2px 12px rgba(10,22,40,.08)', overflow: 'hidden',
-          }}
-        >
-          {/* Legend + Summary */}
-          <Box sx={{
-            px: 2.25, py: 1.5, borderBottom: '1px solid rgba(22,63,107,.08)',
-            display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap',
-            background: 'linear-gradient(180deg, rgba(0,91,159,.04), transparent)',
-          }}>
-            <Typography sx={{ fontSize: 13, fontWeight: 700, mr: 1 }}>
-              {locale === 'th' ? 'อาคารผู้โดยสาร 1 · ชั้น 1' : 'Terminal 1 · Floor 1'}
-            </Typography>
-            <Box sx={{ flex: 1 }} />
-            {legendItems.map((item) => (
-              <Box key={item.key} sx={{ display: 'flex', alignItems: 'center', gap: .6, fontSize: 10.5, color: '#6c7f92' }}>
-                <Box sx={{ width: 12, height: 12, borderRadius: .5, bgcolor: item.bg, border: `2px solid ${item.color}` }} />
-                {t(item.key)}
+      <Box sx={{
+        flex: 1, overflow: 'auto',
+        p: { xs: 1.5, md: 2.5 },
+        display: 'grid',
+        gridTemplateColumns: { xs: '1fr', lg: mode === 'edit' ? '300px 1fr 280px' : '1fr 300px' },
+        gap: 2,
+      }}>
+        {/* === Left: booking form (edit mode only) === */}
+        {mode === 'edit' && (
+          <Paper elevation={0} sx={{ border: '1px solid rgba(22,63,107,.12)', boxShadow: '0 2px 12px rgba(10,22,40,.08)' }}>
+            <Box sx={{ px: 2.25, py: 1.5, borderBottom: '1px solid rgba(22,63,107,.08)', background: 'linear-gradient(180deg, rgba(0,91,159,.04), transparent)' }}>
+              <Typography sx={{ fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1 }}>
+                <span className="material-icons-outlined" style={{ fontSize: 18, color: '#005b9f' }}>edit_note</span>
+                {locale === 'th' ? 'ข้อมูลการจอง' : 'Booking Info'}
+              </Typography>
+            </Box>
+            <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+              <TextField
+                size="small" fullWidth
+                label={locale === 'th' ? 'ชื่อผู้จอง / หน่วยงาน' : 'Booker / Organization'}
+                value={bookerName}
+                onChange={(e) => setBookerName(e.target.value)}
+                placeholder={locale === 'th' ? 'เช่น บริษัท ฟู้ดแลนด์ จำกัด' : 'e.g. Foodland Co., Ltd.'}
+              />
+
+              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1 }}>
+                <Select size="small" value={zoneType} onChange={(e) => setZoneType(e.target.value as ZoneDraft['zoneType'])}>
+                  <MenuItem value="booth">{locale === 'th' ? 'คูหา' : 'Booth'}</MenuItem>
+                  <MenuItem value="retail">{locale === 'th' ? 'ร้านค้า' : 'Retail'}</MenuItem>
+                  <MenuItem value="event">{locale === 'th' ? 'กิจกรรม' : 'Event'}</MenuItem>
+                  <MenuItem value="lounge">Lounge</MenuItem>
+                </Select>
+                <TextField
+                  size="small" type="number"
+                  label={locale === 'th' ? 'บาท/ตร.ม.' : 'THB/sqm'}
+                  value={ratePerSqm}
+                  onChange={(e) => setRatePerSqm(Number(e.target.value))}
+                />
               </Box>
-            ))}
+
+              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1 }}>
+                <TextField size="small" type="date" label={locale === 'th' ? 'เริ่ม' : 'Start'} InputLabelProps={{ shrink: true }} value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+                <TextField size="small" type="date" label={locale === 'th' ? 'สิ้นสุด' : 'End'} InputLabelProps={{ shrink: true }} value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+              </Box>
+
+              <Divider />
+
+              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1 }}>
+                <Button
+                  variant="contained" size="small"
+                  disabled={!selection || currentCollision || savingZone}
+                  onClick={handleConfirm}
+                  sx={{ fontSize: 11 }}
+                >
+                  {savingZone ? (locale === 'th' ? 'กำลังบันทึก...' : 'Saving...') : (locale === 'th' ? 'ยืนยัน' : 'Confirm')}
+                </Button>
+                <Button variant="outlined" size="small" onClick={handleClear} sx={{ fontSize: 11 }}>
+                  {locale === 'th' ? 'ล้างเลือก' : 'Clear'}
+                </Button>
+              </Box>
+
+              <Typography sx={{ fontSize: 10, color: '#6c7f92', lineHeight: 1.5 }}>
+                {locale === 'th'
+                  ? '1 ช่อง = 1 เมตร ระบบ snap grid อัตโนมัติและตรวจ collision'
+                  : '1 cell = 1m, auto grid snap and collision detection'}
+              </Typography>
+            </Box>
+          </Paper>
+        )}
+
+        {/* === Center: Canvas === */}
+        <Paper elevation={0} sx={{ border: '1px solid rgba(22,63,107,.12)', boxShadow: '0 2px 12px rgba(10,22,40,.08)', display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
+          {/* Airport/Building/Floor selector */}
+          <Box sx={{ px: 2, py: 1.25, borderBottom: '1px solid rgba(22,63,107,.08)', display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center', bgcolor: '#f8fafc' }}>
+            <Select size="small" value={airportId} onChange={(e) => setAirportId(e.target.value)} sx={{ fontSize: 12, minWidth: 160 }}>
+              {airportOptions.map((a) => (
+                <MenuItem key={a.value} value={a.value}>{locale === 'th' ? a.labelTh : a.labelEn}</MenuItem>
+              ))}
+            </Select>
+            <Select size="small" value={buildingId} onChange={(e) => setBuildingId(e.target.value)} sx={{ fontSize: 12, minWidth: 140 }}>
+              {buildingOptions.map((b) => (
+                <MenuItem key={b.value} value={b.value}>{locale === 'th' ? b.labelTh : b.labelEn}</MenuItem>
+              ))}
+            </Select>
+            <Select size="small" value={floorId} onChange={(e) => setFloorId(e.target.value)} sx={{ fontSize: 12, minWidth: 100 }}>
+              {floorOptions.map((f) => (
+                <MenuItem key={f.value} value={f.value}>{locale === 'th' ? f.labelTh : f.labelEn}</MenuItem>
+              ))}
+            </Select>
+            {floorplanFilename && (
+              <Chip
+                size="small"
+                label={floorplanFilename}
+                onDelete={() => { setFloorplanSvg(null); setFloorplanFilename(''); }}
+                sx={{ fontSize: 10, ml: 'auto' }}
+              />
+            )}
           </Box>
 
-          {/* สรุป KPI */}
-          <Box sx={{ display: 'flex', gap: 1.5, px: 2.25, py: 1.5, borderBottom: '1px solid rgba(22,63,107,.06)' }}>
-            {[
-              { label: locale === 'th' ? 'ทั้งหมด' : 'Total', value: summary.total, color: '#005b9f' },
-              { label: t('floorplan.leased'), value: summary.leased, color: '#0f73b8' },
-              { label: t('floorplan.vacant'), value: summary.vacant, color: '#1a9e5c' },
-              { label: t('floorplan.reserved'), value: summary.reserved, color: '#d97706' },
-            ].map((s) => (
-              <Box key={s.label} sx={{
-                px: 2, py: 1, borderRadius: 1.5,
-                border: '1px solid rgba(22,63,107,.08)', bgcolor: '#fff',
-                display: 'flex', alignItems: 'center', gap: 1,
-              }}>
-                <Typography sx={{ fontSize: 20, fontWeight: 700, fontFamily: "'IBM Plex Mono', monospace", color: s.color }}>
-                  {s.value}
+          {/* Stats bar (edit mode) */}
+          {mode === 'edit' && (
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }, gap: 1, p: 1.5, borderBottom: '1px solid rgba(22,63,107,.08)', bgcolor: '#f8fafc' }}>
+              <Box>
+                <Typography sx={{ fontSize: 10, color: '#6c7f92' }}>{locale === 'th' ? 'ขนาด' : 'Size'}</Typography>
+                <Typography sx={{ fontSize: 14, fontWeight: 700, fontFamily: "'IBM Plex Mono', monospace", color: '#163f6b' }}>
+                  {selection ? `${selection.widthM}×${selection.heightM}m` : '—'}
                 </Typography>
-                <Typography sx={{ fontSize: 11, color: '#6c7f92' }}>{s.label}</Typography>
               </Box>
-            ))}
-          </Box>
+              <Box>
+                <Typography sx={{ fontSize: 10, color: '#6c7f92' }}>{locale === 'th' ? 'พื้นที่' : 'Area'}</Typography>
+                <Typography sx={{ fontSize: 14, fontWeight: 700, fontFamily: "'IBM Plex Mono', monospace", color: '#163f6b' }}>
+                  {selection ? `${selection.areaSqm.toFixed(1)} sqm` : '—'}
+                </Typography>
+              </Box>
+              <Box>
+                <Typography sx={{ fontSize: 10, color: '#6c7f92' }}>{locale === 'th' ? 'ราคา' : 'Price'}</Typography>
+                <Typography sx={{ fontSize: 14, fontWeight: 700, fontFamily: "'IBM Plex Mono', monospace", color: currentCollision ? '#d9534f' : '#1a9e5c' }}>
+                  {selection ? `฿${formatMoney(selection.totalPrice)}` : '—'}
+                </Typography>
+              </Box>
+              <Box>
+                <Typography sx={{ fontSize: 10, color: '#6c7f92' }}>{locale === 'th' ? 'สถานะ' : 'Status'}</Typography>
+                <Chip
+                  label={currentCollision ? (locale === 'th' ? 'ชน' : 'Collide') : selection ? (locale === 'th' ? 'พร้อม' : 'OK') : '—'}
+                  size="small"
+                  sx={{
+                    fontSize: 10, fontWeight: 700, height: 22,
+                    bgcolor: currentCollision ? 'rgba(217,83,79,.1)' : selection ? 'rgba(26,158,92,.1)' : '#f4f8fc',
+                    color: currentCollision ? '#d9534f' : selection ? '#1a9e5c' : '#6c7f92',
+                    border: `1px solid ${currentCollision ? 'rgba(217,83,79,.25)' : selection ? 'rgba(26,158,92,.25)' : 'rgba(22,63,107,.12)'}`,
+                  }}
+                />
+              </Box>
+            </Box>
+          )}
 
-          {/* SVG Floor Plan */}
-          <Box sx={{ p: 2, overflow: 'auto', bgcolor: '#f8fafc' }}>
-            <svg
-              viewBox="0 0 880 720"
-              style={{ width: '100%', maxHeight: 600, border: '1px solid rgba(22,63,107,.1)', borderRadius: 12, background: '#fff' }}
+          {/* Canvas */}
+          <Box sx={{ flex: 1, overflow: 'auto', p: { xs: 1, md: 2 } }}>
+            <Box
+              ref={canvasRef}
+              onMouseDown={handleMouseDown}
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUp}
+              onMouseLeave={() => setDrawing(null)}
+              sx={{
+                position: 'relative',
+                width: canvasSize.width,
+                height: canvasSize.height,
+                border: '1px solid rgba(22,63,107,.12)',
+                borderRadius: 2,
+                overflow: 'hidden',
+                cursor: mode === 'edit' ? 'crosshair' : 'default',
+                background: `
+                  linear-gradient(rgba(0,91,159,.04) 1px, transparent 1px),
+                  linear-gradient(90deg, rgba(0,91,159,.04) 1px, transparent 1px),
+                  linear-gradient(135deg, #f5f9ff 0%, #ffffff 100%)
+                `,
+                backgroundSize: `${GRID_SIZE}px ${GRID_SIZE}px, ${GRID_SIZE}px ${GRID_SIZE}px, auto`,
+              }}
             >
-              {/* Grid พื้นหลัง */}
-              <defs>
-                <pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse">
-                  <path d="M 24 0 L 0 0 0 24" fill="none" stroke="rgba(0,91,159,.04)" strokeWidth="1" />
-                </pattern>
-              </defs>
-              <rect width="880" height="720" fill="url(#grid)" />
+              {/* Uploaded SVG background */}
+              {floorplanSvg && (
+                <Box
+                  sx={{
+                    position: 'absolute', inset: 0, pointerEvents: 'none', opacity: .7,
+                    '& svg': { width: '100%', height: '100%' },
+                    '& img': { width: '100%', height: '100%', objectFit: 'contain' },
+                  }}
+                  dangerouslySetInnerHTML={{ __html: floorplanSvg }}
+                />
+              )}
 
-              {/* เส้นขอบอาคาร */}
-              <rect x="15" y="15" width="850" height="690" fill="none" stroke="rgba(0,91,159,.2)" strokeWidth="2" rx="8" />
+              {/* Empty state */}
+              {!floorplanSvg && apiUnits.length === 0 && draftZones.length === 0 && (
+                <Box sx={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', color: '#6c7f92' }}>
+                  <span className="material-icons-outlined" style={{ fontSize: 72, opacity: .25 }}>add_photo_alternate</span>
+                  <Typography sx={{ fontSize: 13, mt: 1, fontWeight: 600 }}>
+                    {locale === 'th' ? 'ยังไม่มี Floor Plan' : 'No Floor Plan yet'}
+                  </Typography>
+                  <Typography sx={{ fontSize: 11, mt: .5 }}>
+                    {locale === 'th' ? 'กดปุ่ม "อัปโหลด SVG" ด้านบน' : 'Click "Upload SVG" button above'}
+                  </Typography>
+                </Box>
+              )}
 
-              {/* ป้ายกำกับโซน */}
-              <text x="30" y="55" fontSize="13" fontWeight="700" fill="#163f6b" fontFamily="IBM Plex Sans Thai">
-                {locale === 'th' ? 'โซน A — ร้านอาหาร / Food & Beverage' : 'Zone A — Food & Beverage'}
-              </text>
-              <text x="30" y="288" fontSize="13" fontWeight="700" fill="#163f6b" fontFamily="IBM Plex Sans Thai">
-                {locale === 'th' ? 'โซน B — ร้านค้า / Retail' : 'Zone B — Retail'}
-              </text>
-              <text x="30" y="525" fontSize="13" fontWeight="700" fill="#163f6b" fontFamily="IBM Plex Sans Thai">
-                {locale === 'th' ? 'โซน C — บริการ / Services' : 'Zone C — Services'}
-              </text>
-
-              {/* Concourse Labels */}
-              <rect x="15" y="15" width="850" height="28" fill="rgba(0,91,159,.06)" rx="8" />
-              <text x="380" y="34" fontSize="10" fill="rgba(22,63,107,.5)" textAnchor="middle" fontFamily="IBM Plex Sans Thai">
-                Main Concourse
-              </text>
-              <rect x="15" y="677" width="850" height="28" fill="rgba(0,91,159,.06)" rx="0 0 8 8" />
-              <text x="380" y="696" fontSize="10" fill="rgba(22,63,107,.5)" textAnchor="middle" fontFamily="IBM Plex Sans Thai">
-                Passenger Circulation
-              </text>
-
-              {/* แต่ละยูนิต */}
-              {mockZones.map((zone) => {
-                const isHovered = hoveredZone === zone.unitCode;
-                const isSelected = selectedZone?.unitCode === zone.unitCode;
-
-                return (
-                  <g
-                    key={zone.unitCode}
-                    onClick={() => setSelectedZone(zone)}
-                    onMouseEnter={() => setHoveredZone(zone.unitCode)}
-                    onMouseLeave={() => setHoveredZone(null)}
-                    style={{ cursor: 'pointer' }}
-                  >
-                    <rect
-                      x={zone.x} y={zone.y}
-                      width={zone.width} height={zone.height}
-                      fill={zone.fillColor}
-                      stroke={isSelected ? '#163f6b' : zone.strokeColor}
-                      strokeWidth={isSelected ? 3 : isHovered ? 2.5 : 1.5}
-                      rx="4"
-                      opacity={isHovered ? 0.85 : 1}
-                    />
-                    {/* รหัสยูนิต */}
-                    <text
-                      x={zone.x + zone.width / 2} y={zone.y + 22}
-                      textAnchor="middle" fontSize="11" fontWeight="700"
-                      fill={zone.strokeColor} fontFamily="IBM Plex Mono"
-                    >
-                      {zone.unitCode}
-                    </text>
-                    {/* ชื่อร้าน (ถ้ามี) */}
-                    {zone.shopName && (
-                      <text
-                        x={zone.x + zone.width / 2} y={zone.y + 40}
-                        textAnchor="middle" fontSize="9" fill="#3a5068"
-                        fontFamily="IBM Plex Sans Thai"
-                      >
-                        {zone.shopName.length > 12 ? zone.shopName.slice(0, 12) + '...' : zone.shopName}
+              {/* SVG zones layer */}
+              <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>
+                {/* Existing units from DB */}
+                {apiUnits.slice(0, 48).map((u, i) => {
+                  if (!u.id) return null;
+                  // ใช้ grid layout สำหรับ units ที่ไม่มี coords
+                  const cols = 8;
+                  const x = 30 + (i % cols) * 105;
+                  const y = 70 + Math.floor(i / cols) * 95;
+                  const w = 95, h = 80;
+                  const color = unitStatusColors[u.status] || unitStatusColors.VACANT;
+                  return (
+                    <g key={`db-${u.id}`}>
+                      <rect x={x} y={y} width={w} height={h} fill={color.fill} stroke={color.stroke} strokeWidth="2" rx="4" />
+                      <text x={x + w / 2} y={y + 22} textAnchor="middle" fontSize="11" fontWeight="700" fill={color.stroke} fontFamily="'IBM Plex Mono',monospace">
+                        {u.unitCode}
                       </text>
-                    )}
-                    {/* พื้นที่ */}
-                    <text
-                      x={zone.x + zone.width / 2} y={zone.y + 56}
-                      textAnchor="middle" fontSize="8" fill="#6c7f92"
-                      fontFamily="IBM Plex Mono"
-                    >
-                      {zone.areaSqm} {t('floorplan.sqm')}
-                    </text>
-                    {/* badge สถานะ */}
-                    {zone.daysLeft !== null && zone.daysLeft <= 30 && (
-                      <>
-                        <rect x={zone.x + zone.width - 28} y={zone.y + 4} width={24} height={14} rx="7" fill="#d9534f" />
-                        <text x={zone.x + zone.width - 16} y={zone.y + 14} textAnchor="middle" fontSize="8" fill="#fff" fontWeight="700">
-                          {zone.daysLeft}d
+                      {u.currentShop && (
+                        <text x={x + w / 2} y={y + 40} textAnchor="middle" fontSize="9" fill="#3a5068">
+                          {u.currentShop.length > 12 ? u.currentShop.slice(0, 12) + '…' : u.currentShop}
                         </text>
-                      </>
-                    )}
+                      )}
+                      <text x={x + w / 2} y={y + 56} textAnchor="middle" fontSize="8" fill="#6c7f92" fontFamily="'IBM Plex Mono',monospace">
+                        {u.areaSqm} sqm
+                      </text>
+                    </g>
+                  );
+                })}
+
+                {/* Draft zones (ใหม่จากการวาด) */}
+                {draftZones.map((zone, i) => {
+                  const x = zone.x * GRID_SIZE;
+                  const y = zone.y * GRID_SIZE;
+                  const w = zone.w * GRID_SIZE;
+                  const h = zone.h * GRID_SIZE;
+                  const c = zoneColors[zone.zoneType];
+                  return (
+                    <g key={zone.id}>
+                      <rect x={x} y={y} width={w} height={h} fill={c.fill} stroke={c.stroke} strokeWidth="2" rx="4" strokeDasharray={zone.saved ? '0' : '4 2'} />
+                      <text x={x + 6} y={y + 16} fontSize="11" fontWeight="700" fill={c.stroke}>
+                        {zone.bookerName}
+                      </text>
+                      <text x={x + 6} y={y + 30} fontSize="9" fill="#6c7f92" fontFamily="'IBM Plex Mono',monospace">
+                        {zone.w}×{zone.h}m {zone.saved ? '✓' : '(draft)'}
+                      </text>
+                    </g>
+                  );
+                })}
+
+                {/* Current selection */}
+                {currentRect && currentRect.w >= GRID_SIZE && currentRect.h >= GRID_SIZE && (
+                  <g>
+                    <rect
+                      x={currentRect.x} y={currentRect.y}
+                      width={currentRect.w} height={currentRect.h}
+                      fill={currentCollision ? 'rgba(217,83,79,.28)' : 'rgba(240,173,78,.32)'}
+                      stroke={currentCollision ? '#d9534f' : '#d7a94b'}
+                      strokeWidth="2.5" strokeDasharray="6 4" rx="4"
+                    />
+                    <text x={currentRect.x + 6} y={currentRect.y + 18} fontSize="11" fontWeight="700" fill={currentCollision ? '#d9534f' : '#b2832d'}>
+                      {currentCollision ? (locale === 'th' ? 'ทับพื้นที่!' : 'Collision!') : (locale === 'th' ? 'กำลังเลือก' : 'Selecting')}
+                    </text>
                   </g>
-                );
-              })}
-            </svg>
+                )}
+              </svg>
+            </Box>
           </Box>
         </Paper>
 
-        {/* แผงรายละเอียดด้านขวา */}
-        <Paper
-          elevation={0}
-          sx={{
-            width: 280, flexShrink: 0,
-            border: '1px solid rgba(22,63,107,.12)',
-            boxShadow: '0 2px 12px rgba(10,22,40,.08)',
-            display: 'flex', flexDirection: 'column',
-          }}
-        >
-          <Box sx={{
-            px: 2, py: 1.5, borderBottom: '1px solid rgba(22,63,107,.08)',
-            background: 'linear-gradient(180deg, rgba(0,91,159,.04), transparent)',
-          }}>
-            <Typography sx={{ fontSize: 13, fontWeight: 700 }}>
-              {t('floorplan.zoneInfo')}
+        {/* === Right: Info/List panel === */}
+        <Paper elevation={0} sx={{ border: '1px solid rgba(22,63,107,.12)', boxShadow: '0 2px 12px rgba(10,22,40,.08)', display: 'flex', flexDirection: 'column' }}>
+          <Box sx={{ px: 2, py: 1.5, borderBottom: '1px solid rgba(22,63,107,.08)', background: 'linear-gradient(180deg, rgba(0,91,159,.04), transparent)' }}>
+            <Typography sx={{ fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1 }}>
+              <span className="material-icons-outlined" style={{ fontSize: 18, color: '#005b9f' }}>list_alt</span>
+              {mode === 'edit'
+                ? `${locale === 'th' ? 'พื้นที่วาดใหม่' : 'Drafts'} (${draftZones.length})`
+                : `${locale === 'th' ? 'พื้นที่ทั้งหมด' : 'All Units'} (${apiUnits.length})`}
             </Typography>
           </Box>
 
-          <Box sx={{ p: 2, flex: 1, overflow: 'auto' }}>
-            {selectedZone ? (
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                {/* รหัสและสถานะ */}
+          <Box sx={{ p: 1.5, display: 'flex', flexDirection: 'column', gap: 1, overflow: 'auto', maxHeight: 560 }}>
+            {/* Draft list */}
+            {mode === 'edit' && draftZones.length === 0 && (
+              <Alert severity="info" sx={{ fontSize: 11 }}>
+                {locale === 'th' ? 'ยังไม่มีการจอง — ลากบนแปลนเพื่อจอง' : 'No drafts — drag on plan to book'}
+              </Alert>
+            )}
+            {mode === 'edit' && draftZones.map((zone, i) => (
+              <Paper key={zone.id} elevation={0} sx={{ p: 1.25, border: `1px solid ${zoneColors[zone.zoneType].stroke}40`, bgcolor: `${zoneColors[zone.zoneType].stroke}08` }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: .5 }}>
+                  <Chip
+                    label={`#${i + 1} ${locale === 'th' ? zoneColors[zone.zoneType].labelTh : zoneColors[zone.zoneType].labelEn}`}
+                    size="small"
+                    sx={{ fontSize: 9, fontWeight: 700, height: 20, bgcolor: `${zoneColors[zone.zoneType].stroke}20`, color: zoneColors[zone.zoneType].stroke }}
+                  />
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: .5 }}>
+                    {zone.saved && (
+                      <Chip size="small" label="✓" sx={{ height: 18, fontSize: 9, bgcolor: 'rgba(26,158,92,.15)', color: '#1a9e5c' }} />
+                    )}
+                    <IconButton size="small" onClick={() => handleDeleteDraft(zone.id)} sx={{ color: '#d9534f' }}>
+                      <span className="material-icons-outlined" style={{ fontSize: 16 }}>delete</span>
+                    </IconButton>
+                  </Box>
+                </Box>
+                <Typography sx={{ fontSize: 12, fontWeight: 700 }}>{zone.bookerName}</Typography>
+                <Typography sx={{ fontSize: 10, color: '#6c7f92', fontFamily: "'IBM Plex Mono', monospace" }}>
+                  {zone.w}×{zone.h}m · {(zone.w * zone.h).toFixed(1)}sqm · ฿{formatMoney(zone.w * zone.h * zone.ratePerSqm)}
+                </Typography>
+                <Typography sx={{ fontSize: 9, color: '#6c7f92', mt: .3 }}>
+                  {zone.startDate} → {zone.endDate}
+                </Typography>
+              </Paper>
+            ))}
+
+            {/* Existing units (view mode) */}
+            {mode === 'view' && apiUnits.length === 0 && (
+              <Alert severity="info" sx={{ fontSize: 11 }}>
+                {locale === 'th' ? 'ยังไม่มียูนิตในระบบ' : 'No units in database'}
+              </Alert>
+            )}
+            {mode === 'view' && apiUnits.slice(0, 20).map((u) => (
+              <Paper key={u.id} elevation={0} sx={{ p: 1.25, border: '1px solid rgba(22,63,107,.12)', '&:hover': { bgcolor: '#f4f8fc' } }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Typography sx={{ fontSize: 18, fontWeight: 700, fontFamily: "'IBM Plex Mono', monospace", color: '#163f6b' }}>
-                    {selectedZone.unitCode}
+                  <Typography sx={{ fontSize: 12, fontWeight: 700, fontFamily: "'IBM Plex Mono', monospace", color: '#005b9f' }}>
+                    {u.unitCode}
                   </Typography>
                   <Chip
-                    label={t(`status.${selectedZone.status.toLowerCase()}`)}
+                    label={u.status}
                     size="small"
                     sx={{
-                      fontSize: 10, fontWeight: 700, height: 22,
-                      bgcolor: selectedZone.fillColor,
-                      color: selectedZone.strokeColor,
-                      border: `1px solid ${selectedZone.strokeColor}`,
+                      fontSize: 9, fontWeight: 700, height: 20,
+                      bgcolor: unitStatusColors[u.status]?.fill || '#f4f8fc',
+                      color: unitStatusColors[u.status]?.stroke || '#6c7f92',
                     }}
                   />
                 </Box>
-
-                <Typography sx={{ fontSize: 12, color: '#6c7f92' }}>
-                  {selectedZone.unitNameTh} · {selectedZone.zoneNameTh}
+                {u.currentShop && (
+                  <Typography sx={{ fontSize: 11, fontWeight: 600, mt: .3 }}>{u.currentShop}</Typography>
+                )}
+                <Typography sx={{ fontSize: 10, color: '#6c7f92', fontFamily: "'IBM Plex Mono', monospace", mt: .2 }}>
+                  {u.areaSqm} sqm · {u.purpose || '—'}
                 </Typography>
-
-                <Divider />
-
-                {/* รายละเอียด */}
-                {[
-                  { label: t('floorplan.area'), value: `${selectedZone.areaSqm} ${t('floorplan.sqm')}` },
-                  { label: locale === 'th' ? 'วัตถุประสงค์' : 'Purpose', value: selectedZone.purpose },
-                  { label: locale === 'th' ? 'ชั้น' : 'Floor', value: selectedZone.floorNameTh },
-                  ...(selectedZone.tenant ? [
-                    { label: t('floorplan.tenant'), value: selectedZone.tenant },
-                    { label: t('floorplan.shopName'), value: selectedZone.shopName },
-                    { label: t('floorplan.contract'), value: selectedZone.contractNo },
-                    { label: t('floorplan.rent'), value: selectedZone.monthlyRent ? `฿${formatMoney(selectedZone.monthlyRent)}` : '-' },
-                    { label: t('floorplan.daysLeft'), value: selectedZone.daysLeft !== null ? `${selectedZone.daysLeft} ${t('floorplan.days')}` : '-' },
-                  ] : []),
-                ].map((row) => (
-                  <Box key={row.label} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', py: .5, borderBottom: '1px solid rgba(22,63,107,.06)' }}>
-                    <Typography sx={{ fontSize: 11, color: '#6c7f92' }}>{row.label}</Typography>
-                    <Typography sx={{ fontSize: 11.5, fontWeight: 600, color: '#17324a', textAlign: 'right', maxWidth: 150 }}>
-                      {row.value}
-                    </Typography>
-                  </Box>
-                ))}
-
-                <Box sx={{ mt: 1, display: 'flex', gap: 1 }}>
-                  {selectedZone.status === 'VACANT' && (
-                    <Button variant="contained" size="small" fullWidth sx={{ fontSize: 11 }}>
-                      <span className="material-icons-outlined" style={{ fontSize: 16, mr: 4 }}>add_circle</span>
-                      {locale === 'th' ? 'สร้างสัญญา' : 'Create Contract'}
-                    </Button>
-                  )}
-                  <Button variant="outlined" size="small" fullWidth sx={{ fontSize: 11 }}>
-                    <span className="material-icons-outlined" style={{ fontSize: 16, mr: 4 }}>edit</span>
-                    {t('common.edit')}
-                  </Button>
-                </Box>
-              </Box>
-            ) : (
-              <Box sx={{ textAlign: 'center', py: 6, color: '#6c7f92' }}>
-                <span className="material-icons-outlined" style={{ fontSize: 48, opacity: .3 }}>touch_app</span>
-                <Typography sx={{ fontSize: 12, mt: 1 }}>
-                  {locale === 'th' ? 'คลิกที่ยูนิตบน Floor Plan เพื่อดูรายละเอียด' : 'Click a unit on the Floor Plan to see details'}
-                </Typography>
-              </Box>
-            )}
+              </Paper>
+            ))}
           </Box>
         </Paper>
       </Box>
