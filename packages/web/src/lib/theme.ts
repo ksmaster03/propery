@@ -30,7 +30,8 @@ export const theme = createTheme({
     },
   },
   typography: {
-    fontFamily: "'IBM Plex Sans Thai', 'Sarabun', sans-serif",
+    // ใช้ Noto Sans Thai เป็นหลัก (Google แนะนำสำหรับ Thai, มี glyphs ครบทุก weight)
+    fontFamily: "'Noto Sans Thai', 'IBM Plex Sans Thai', 'Sarabun', 'Prompt', sans-serif",
     fontSize: 13,
     h1: { fontSize: '1.5rem', fontWeight: 700 },
     h2: { fontSize: '1.25rem', fontWeight: 700 },

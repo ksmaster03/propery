@@ -7,25 +7,35 @@
     <meta name="description" content="ระบบบริหารสัญญาเช่าพื้นที่เชิงพาณิชย์ กรมท่าอากาศยาน" />
     <title>DOA · ระบบบริหารสัญญาเช่าพื้นที่เชิงพาณิชย์</title>
 
-    <!-- Preconnect ให้โหลดเร็วขึ้น -->
+    <!-- Preconnect — ให้โหลด font เร็วขึ้น -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 
-    <!-- Google Fonts: IBM Plex Sans Thai + Sarabun (fallback) + Plex Mono -->
+    <!-- Google Fonts: Noto Sans Thai (primary ไทย) + Prompt + IBM Plex + Sarabun + Mono -->
     <link
-      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700;800&family=Prompt:wght@300;400;500;600;700&family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap"
       rel="stylesheet"
     />
 
-    <!-- Google Material Symbols (new) + Material Icons (legacy classic) -->
+    <!-- Google Material Symbols (ใหม่) + Material Icons (classic) -->
     <link
       href="https://fonts.googleapis.com/icon?family=Material+Icons|Material+Icons+Outlined|Material+Icons+Round|Material+Icons+Two+Tone|Material+Icons+Sharp"
       rel="stylesheet"
     />
     <link
-      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0"
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0&family=Material+Symbols+Sharp:opsz,wght,FILL,GRAD@24,400,0,0"
       rel="stylesheet"
     />
+
+    <!-- บังคับ font ที่ระดับ html/body กันไม่ให้ fallback เป็น system font (Segoe UI) -->
+    <style>
+      html, body, #root {
+        font-family: 'Noto Sans Thai', 'IBM Plex Sans Thai', 'Sarabun', 'Prompt', sans-serif !important;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        text-rendering: optimizeLegibility;
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>

@@ -7,6 +7,10 @@ export default {
   },
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['Noto Sans Thai', 'IBM Plex Sans Thai', 'Sarabun', 'sans-serif'],
+        mono: ['IBM Plex Mono', 'monospace'],
+      },
       colors: {
         primary: {
           DEFAULT: '#005b9f',
