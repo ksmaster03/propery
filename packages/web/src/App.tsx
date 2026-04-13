@@ -7,6 +7,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import LoginPage from './pages/auth/LoginPage';
 import Dashboard from './pages/dashboard/Dashboard';
 import FloorPlan from './pages/floor-plan/FloorPlan';
+import FloorPlanEditor from './pages/floor-plan/FloorPlanEditor';
 import UnitList from './pages/units/UnitList';
 import PartnerList from './pages/partners/PartnerList';
 import ContractList from './pages/contracts/ContractList';
@@ -47,6 +48,7 @@ export default function App() {
             >
               <Route index element={<Dashboard />} />
               <Route path="/floor-plan" element={<FloorPlan />} />
+              <Route path="/floor-plan/editor" element={<FloorPlanEditor />} />
               <Route path="/units" element={<UnitList />} />
               <Route path="/partners" element={<PartnerList />} />
               <Route path="/contracts" element={<ContractList />} />

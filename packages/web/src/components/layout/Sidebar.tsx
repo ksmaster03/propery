@@ -28,6 +28,7 @@ const navGroups: NavGroup[] = [
     titleKey: 'nav.commercial',
     items: [
       { icon: 'map', labelKey: 'nav.floorplan', path: '/floor-plan' },
+      { icon: 'edit_square', labelKey: 'nav.floorplanEditor', path: '/floor-plan/editor' },
       { icon: 'space_dashboard', labelKey: 'nav.units', path: '/units', badge: '48', badgeColor: 'blue' },
     ],
   },
@@ -82,10 +83,19 @@ const badgeStyles: Record<string, { bg: string; color: string; border: string }>
   green: { bg: 'rgba(26,158,92,.1)', color: '#1a9e5c', border: 'rgba(26,158,92,.25)' },
 };
 
-export default function Sidebar() {
+interface SidebarProps {
+  onNavigate?: () => void;
+}
+
+export default function Sidebar({ onNavigate }: SidebarProps = {}) {
   const location = useLocation();
   const navigate = useNavigate();
   const { t } = useTranslation();
+
+  const handleClick = (path: string) => {
+    navigate(path);
+    onNavigate?.();
+  };
 
   return (
     <Box
@@ -116,7 +126,7 @@ export default function Sidebar() {
             return (
               <Box
                 key={item.path}
-                onClick={() => navigate(item.path)}
+                onClick={() => handleClick(item.path)}
                 sx={{
                   display: 'flex', alignItems: 'center', gap: 1,
                   py: .875, px: 1.25, borderRadius: 1,

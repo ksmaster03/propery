@@ -8,7 +8,7 @@ export type Locale = 'th' | 'en';
 const translations: Record<Locale, Record<string, string>> = {
   th: {
     // === Topbar ===
-    'app.title': 'ระบบบริหารสัญญาเช่าพื้นที่เชิงพาณิช��์',
+    'app.title': 'ระบบบริหารสัญญาเช่าพื้นที่เชิงพาณิชย์',
     'app.subtitle': 'กรมท่าอากาศยาน · Department of Airports · DOA',
     'app.adminMode': 'โหมดเจ้าหน้าที่',
     'app.tenantMode': 'Portal ผู้เช่า',
@@ -17,9 +17,10 @@ const translations: Record<Locale, Record<string, string>> = {
 
     // === Sidebar ===
     'nav.overview': 'ภาพรวม',
-    'nav.dashboard': 'Dashboard รายรั��',
+    'nav.dashboard': 'Dashboard รายรับ',
     'nav.commercial': 'พื้นที่เชิงพาณิชย์',
     'nav.floorplan': 'แผนผังพื้นที่ (Floor Plan)',
+    'nav.floorplanEditor': 'แผนผัง — อัปโหลด/กำหนดพื้นที่',
     'nav.units': 'รายการพื้นที่เช่า',
     'nav.contracts': 'สัญญาเช่า',
     'nav.contractList': 'รายการสัญญา',
@@ -27,11 +28,11 @@ const translations: Record<Locale, Record<string, string>> = {
     'nav.contractRenew': 'ต่ออายุสัญญา',
     'nav.tenants': 'ผู้เช่า / คู่ค้า',
     'nav.partnerMaster': 'ฐานข้อมูลผู้เช่า',
-    'nav.finance': 'การเงิ���',
+    'nav.finance': 'การเงิน',
     'nav.billing': 'ใบชำระค่าเช่า',
     'nav.receipt': 'ใบเสร็จรับเงิน',
     'nav.reports': 'รายงาน',
-    'nav.reportRevenue': 'รายงานรายได���',
+    'nav.reportRevenue': 'รายงานรายได้',
     'nav.reportArea': 'วิเคราะห์พื้นที่',
     'nav.data': 'ข้อมูล',
     'nav.importExport': 'นำเข้า/ส่งออกข้อมูล',
@@ -172,6 +173,7 @@ const translations: Record<Locale, Record<string, string>> = {
     'nav.dashboard': 'Revenue Dashboard',
     'nav.commercial': 'Commercial Area',
     'nav.floorplan': 'Floor Plan',
+    'nav.floorplanEditor': 'Floor Plan — Upload/Draw',
     'nav.units': 'Rental Units',
     'nav.contracts': 'Lease Contracts',
     'nav.contractList': 'Contract List',

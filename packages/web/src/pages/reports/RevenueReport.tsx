@@ -51,10 +51,10 @@ export default function RevenueReport() {
     }],
   };
 
-  // กราฟรายรับตา���สนามบิน
+  // กราฟรายรับตามสนามบิน
   const airportData = {
     labels: locale === 'th'
-      ? ['ดอนเมือง', 'เชียงใหม่', 'ภูเก็ต', 'หาดใหญ่', '���ระบี่']
+      ? ['ดอนเมือง', 'เชียงใหม่', 'ภูเก็ต', 'หาดใหญ่', 'กระบี่']
       : ['Don Mueang', 'Chiang Mai', 'Phuket', 'Hat Yai', 'Krabi'],
     datasets: [{
       label: locale === 'th' ? 'รายรับ (ล้านบาท)' : 'Revenue (M THB)',

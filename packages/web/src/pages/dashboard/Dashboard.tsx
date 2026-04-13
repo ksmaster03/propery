@@ -120,7 +120,7 @@ export default function Dashboard() {
 
       <Box sx={{ flex: 1, overflow: 'auto', p: 2.75 }}>
         {/* KPI Cards */}
-        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 1.5, mb: 1.75 }}>
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr 1fr', sm: 'repeat(3, 1fr)', md: 'repeat(5, 1fr)' }, gap: 1.5, mb: 1.75 }}>
           <KpiCard
             value={kpi.totalUnits}
             label="พื้นที่ทั้งหมด (ยูนิต)"
@@ -159,7 +159,7 @@ export default function Dashboard() {
         </Box>
 
         {/* กราฟรายรับ + สัญญาใกล้หมดอายุ */}
-        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.75, mb: 1.75 }}>
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 1.75, mb: 1.75 }}>
           {/* กราฟรายรับรายเดือน */}
           <Paper elevation={0} sx={{ border: '1px solid rgba(22,63,107,.12)', boxShadow: '0 2px 12px rgba(10,22,40,.08)' }}>
             <Box sx={{ px: 2.25, py: 1.4, borderBottom: '1px solid rgba(22,63,107,.08)', display: 'flex', alignItems: 'center', gap: 1, background: 'linear-gradient(180deg, rgba(0,91,159,.04), transparent)' }}>
@@ -240,7 +240,7 @@ export default function Dashboard() {
         </Box>
 
         {/* แถวที่ 3: แบ่งรายได้ + สถานะชำระ + ข้อมูลรวม */}
-        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 1.5, mb: 1.75 }}>
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', lg: '1fr 1fr 1fr' }, gap: 1.5, mb: 1.75 }}>
           {/* การแบ่งรายได้ */}
           <Paper elevation={0} sx={{ border: '1px solid rgba(22,63,107,.12)', boxShadow: '0 2px 12px rgba(10,22,40,.08)' }}>
             <Box sx={{ px: 2.25, py: 1.4, borderBottom: '1px solid rgba(22,63,107,.08)', background: 'linear-gradient(180deg, rgba(0,91,159,.04), transparent)' }}>

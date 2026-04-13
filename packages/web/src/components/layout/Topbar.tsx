@@ -1,14 +1,21 @@
-import { Box, Typography, Chip, Button, Avatar, Divider, IconButton, Menu, MenuItem } from '@mui/material';
+import { Box, Typography, Button, Avatar, Divider, IconButton, Menu, MenuItem, useMediaQuery, useTheme } from '@mui/material';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../lib/auth-store';
 import { useTranslation } from '../../lib/i18n';
 
 // แถบด้านบน — ชื่อระบบ, สลับโหมด, สลับภาษา, โปรไฟล์
-export default function Topbar() {
+interface TopbarProps {
+  onMenuClick?: () => void;
+  showMenuButton?: boolean;
+}
+
+export default function Topbar({ onMenuClick, showMenuButton }: TopbarProps) {
   const { user, mode, setMode, logout } = useAuthStore();
   const { t, locale, setLocale } = useTranslation();
   const navigate = useNavigate();
+  const theme = useTheme();
+  const isSmall = useMediaQuery(theme.breakpoints.down('sm')); // < 600px
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
   return (
@@ -17,27 +24,34 @@ export default function Topbar() {
         height: 56, flexShrink: 0,
         background: 'linear-gradient(90deg, #163f6b 0%, #0f73b8 52%, #0d6099 100%)',
         borderBottom: '2px solid #d7a94b',
-        display: 'flex', alignItems: 'center', px: 2.5, gap: 1.5,
+        display: 'flex', alignItems: 'center', px: { xs: 1.5, md: 2.5 }, gap: { xs: 1, md: 1.5 },
         boxShadow: '0 4px 16px rgba(0,91,159,.20)', zIndex: 100,
       }}
     >
+      {/* Hamburger menu — เฉพาะ mobile */}
+      {showMenuButton && (
+        <IconButton onClick={onMenuClick} sx={{ color: '#fff', p: 1 }}>
+          <span className="material-icons-outlined" style={{ fontSize: 24 }}>menu</span>
+        </IconButton>
+      )}
+
       {/* โลโก้ */}
       <Box sx={{
         width: 36, height: 36, borderRadius: '50%',
         background: 'rgba(255,255,255,.95)', display: 'flex',
         alignItems: 'center', justifyContent: 'center',
-        boxShadow: '0 2px 8px rgba(0,0,0,.15)',
+        boxShadow: '0 2px 8px rgba(0,0,0,.15)', flexShrink: 0,
       }}>
         <span className="material-icons-round" style={{ fontSize: 20, color: '#163f6b' }}>flight</span>
       </Box>
 
-      <Divider orientation="vertical" sx={{ height: 28, borderColor: 'rgba(255,255,255,.2)' }} />
+      <Divider orientation="vertical" sx={{ height: 28, borderColor: 'rgba(255,255,255,.2)', display: { xs: 'none', sm: 'block' } }} />
 
-      <Box>
-        <Typography sx={{ fontSize: 14, fontWeight: 700, color: '#fff', letterSpacing: .2 }}>
+      <Box sx={{ minWidth: 0, display: { xs: isSmall ? 'none' : 'block', sm: 'block' } }}>
+        <Typography sx={{ fontSize: { xs: 12, md: 14 }, fontWeight: 700, color: '#fff', letterSpacing: .2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
           {t('app.title')}
         </Typography>
-        <Typography sx={{ fontSize: 10, color: 'rgba(255,255,255,.6)', mt: .1 }}>
+        <Typography sx={{ fontSize: 10, color: 'rgba(255,255,255,.6)', mt: .1, display: { xs: 'none', md: 'block' } }}>
           {t('app.subtitle')}
         </Typography>
       </Box>
@@ -72,7 +86,7 @@ export default function Topbar() {
         </Button>
       </Box>
 
-      {/* ปุ่มสลับโหมด */}
+      {/* ปุ่มสลับโหมด — ซ่อนบน mobile */}
       <Button
         size="small"
         onClick={() => { setMode('admin'); navigate('/'); }}
@@ -82,6 +96,7 @@ export default function Topbar() {
           color: mode === 'admin' ? '#163f6b' : 'rgba(255,255,255,.85)',
           background: mode === 'admin' ? '#d7a94b' : 'rgba(255,255,255,.1)',
           '&:hover': { background: '#d7a94b', color: '#163f6b' },
+          display: { xs: 'none', md: 'inline-flex' },
         }}
       >
         {t('topbar.officer')}
@@ -95,12 +110,13 @@ export default function Topbar() {
           color: mode === 'tenant' ? '#163f6b' : 'rgba(255,255,255,.85)',
           background: mode === 'tenant' ? '#d7a94b' : 'rgba(255,255,255,.1)',
           '&:hover': { background: '#d7a94b', color: '#163f6b' },
+          display: { xs: 'none', md: 'inline-flex' },
         }}
       >
         {t('topbar.tenant')}
       </Button>
 
-      <Divider orientation="vertical" sx={{ height: 28, borderColor: 'rgba(255,255,255,.2)' }} />
+      <Divider orientation="vertical" sx={{ height: 28, borderColor: 'rgba(255,255,255,.2)', display: { xs: 'none', md: 'block' } }} />
 
       {/* โปรไฟล์ + เมนู */}
       <Box
@@ -121,7 +137,9 @@ export default function Topbar() {
         }}>
           {user?.username?.substring(0, 2).toUpperCase() || 'AD'}
         </Avatar>
-        {user?.username || 'Admin'}
+        <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+          {user?.username || 'Admin'}
+        </Box>
         <span className="material-icons-round" style={{ fontSize: 16, opacity: .7 }}>expand_more</span>
       </Box>
 

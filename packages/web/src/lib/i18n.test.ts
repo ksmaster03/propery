@@ -37,7 +37,7 @@ describe('i18n System', () => {
     });
   });
 
-  describe('คำแ��ลครบถ้วน', () => {
+  describe('คำแปลครบถ้วน', () => {
     const importantKeys = [
       'app.title', 'app.subtitle',
       'nav.dashboard', 'nav.floorplan', 'nav.units',
