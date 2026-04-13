@@ -3,6 +3,8 @@ import { ThemeProvider, CssBaseline } from '@mui/material';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { theme } from './lib/theme';
 import AppShell from './components/layout/AppShell';
+import ProtectedRoute from './components/ProtectedRoute';
+import LoginPage from './pages/auth/LoginPage';
 import Dashboard from './pages/dashboard/Dashboard';
 import FloorPlan from './pages/floor-plan/FloorPlan';
 import UnitList from './pages/units/UnitList';
@@ -32,38 +34,33 @@ export default function App() {
         <CssBaseline />
         <BrowserRouter>
           <Routes>
-            <Route element={<AppShell />}>
-              {/* Phase 1 — Dashboard */}
-              <Route index element={<Dashboard />} />
+            {/* Public — หน้า Login */}
+            <Route path="/login" element={<LoginPage />} />
 
-              {/* Phase 2 — พื้นที่ + ผู้เช่า */}
+            {/* Protected — ต้อง login ก่อนเข้า */}
+            <Route
+              element={
+                <ProtectedRoute>
+                  <AppShell />
+                </ProtectedRoute>
+              }
+            >
+              <Route index element={<Dashboard />} />
               <Route path="/floor-plan" element={<FloorPlan />} />
               <Route path="/units" element={<UnitList />} />
               <Route path="/partners" element={<PartnerList />} />
-
-              {/* Phase 3 — สัญญาเช่า */}
               <Route path="/contracts" element={<ContractList />} />
               <Route path="/contracts/create" element={<ContractCreate />} />
               <Route path="/contracts/renew" element={<ContractRenew />} />
-
-              {/* Phase 4 — การเงิน */}
               <Route path="/billing" element={<BillingPage />} />
               <Route path="/receipts" element={<ReceiptPage />} />
-
-              {/* Phase 5 — รายงาน + ข้อมูล */}
               <Route path="/reports/revenue" element={<RevenueReport />} />
               <Route path="/reports/area" element={<AreaReport />} />
               <Route path="/import-export" element={<ImportExport />} />
               <Route path="/data-cleansing" element={<DataCleansing />} />
-
-              {/* Phase 6 — ระบบ */}
               <Route path="/templates" element={<TemplatePage />} />
               <Route path="/settings" element={<SettingsPage />} />
-
-              {/* Tenant Portal */}
               <Route path="/portal" element={<TenantPortal />} />
-
-              {/* Profile */}
               <Route path="/profile" element={<ProfilePage />} />
             </Route>
           </Routes>

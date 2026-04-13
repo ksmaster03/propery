@@ -1,12 +1,11 @@
 import { test, expect } from '@playwright/test';
+import { setMockAuth } from './helpers';
 
 // === Smoke tests ครอบคลุมทุกหน้า — ตรวจ render + ไม่มี error ===
 
-// รีเซ็ต locale เป็นไทยก่อนทุก test — ป้องกัน state รั่วจาก test อื่น
+// ตั้ง auth + locale ก่อนทุก test — ป้องกัน state รั่วจาก test อื่น
 test.beforeEach(async ({ context }) => {
-  await context.addInitScript(() => {
-    window.localStorage.setItem('doa-locale', JSON.stringify({ state: { locale: 'th' }, version: 0 }));
-  });
+  await setMockAuth(context);
 });
 
 test.describe('Billing & Receipt', () => {

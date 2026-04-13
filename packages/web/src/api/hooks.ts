@@ -70,3 +70,112 @@ export function useRevenueChart(year?: number) {
     },
   });
 }
+
+// === Units ===
+export interface Unit {
+  id: number;
+  unitCode: string;
+  unitNameTh: string | null;
+  areaSqm: number;
+  status: 'VACANT' | 'LEASED' | 'RESERVED' | 'MAINTENANCE';
+  purpose: string | null;
+  zoneCode?: string;
+  zoneNameTh?: string;
+  airportCode: string;
+  airportNameTh: string;
+  currentTenant?: string | null;
+  currentShop?: string | null;
+  currentContractNo?: string | null;
+}
+
+export function useUnits(params?: { airportId?: number; status?: string; search?: string; page?: number }) {
+  return useQuery({
+    queryKey: ['units', 'list', params],
+    queryFn: async (): Promise<{ data: Unit[]; total: number }> => {
+      const { data } = await api.get('/units', { params });
+      return { data: data.data, total: data.total };
+    },
+  });
+}
+
+// === Partners ===
+export interface Partner {
+  id: number;
+  partnerCode: string;
+  partnerType: 'INDIVIDUAL' | 'JURISTIC';
+  nameTh: string;
+  nameEn?: string | null;
+  shopNameTh?: string | null;
+  taxId: string;
+  contactPerson?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  contractCount: number;
+}
+
+export function usePartners(params?: { search?: string; type?: string; page?: number }) {
+  return useQuery({
+    queryKey: ['partners', 'list', params],
+    queryFn: async (): Promise<{ data: Partner[]; total: number }> => {
+      const { data } = await api.get('/partners', { params });
+      return { data: data.data, total: data.total };
+    },
+  });
+}
+
+// === Contracts ===
+export interface Contract {
+  id: number;
+  contractNo: string;
+  contractType: 'FIXED_RENT' | 'REVENUE_SHARING' | 'CONSIGNMENT' | 'REAL_ESTATE';
+  contractStatus: string;
+  airportCode: string;
+  unitCode: string;
+  areaSqm: number;
+  partnerName: string;
+  shopName: string | null;
+  startDate: string;
+  endDate: string;
+  durationMonths: number | null;
+  daysLeft: number;
+  monthlyRent: number | null;
+  currentStepNo: number;
+}
+
+export function useContracts(params?: { airportId?: number; status?: string; type?: string; search?: string; page?: number }) {
+  return useQuery({
+    queryKey: ['contracts', 'list', params],
+    queryFn: async (): Promise<{ data: Contract[]; total: number }> => {
+      const { data } = await api.get('/contracts', { params });
+      return { data: data.data, total: data.total };
+    },
+  });
+}
+
+// === Bills ===
+export interface Bill {
+  id: number;
+  billNo: string;
+  contractNo: string;
+  unitCode: string;
+  partnerName: string;
+  shopName: string | null;
+  billingMonth: string;
+  dueDate: string;
+  status: 'DRAFT' | 'ISSUED' | 'PAID' | 'OVERDUE' | 'PARTIALLY_PAID' | 'CANCELLED';
+  rentAmount: number;
+  totalAmount: number;
+  paidAmount: number | null;
+  lateFeeAmount: number | null;
+  overdueDays: number | null;
+}
+
+export function useBills(params?: { status?: string; contractId?: number; page?: number }) {
+  return useQuery({
+    queryKey: ['bills', 'list', params],
+    queryFn: async (): Promise<{ data: Bill[]; total: number }> => {
+      const { data } = await api.get('/bills', { params });
+      return { data: data.data, total: data.total };
+    },
+  });
+}

@@ -6,9 +6,10 @@ import {
 } from '@mui/material';
 import PageHeader from '../../components/shared/PageHeader';
 import { useTranslation } from '../../lib/i18n';
+import { useUnits } from '../../api/hooks';
 
-// ข้อมูล mock — จะเปลี่ยนเป็น API จริง
-const mockUnits = Array.from({ length: 48 }, (_, i) => {
+// Fallback — ใช้ตอน offline/demo mode (ไม่มี auth token)
+const fallbackUnits = Array.from({ length: 48 }, (_, i) => {
   const zone = i < 16 ? 'A' : i < 32 ? 'B' : 'C';
   const num = zone === 'A' ? 101 + i : zone === 'B' ? 201 + (i - 16) : 301 + (i - 32);
   const statusList = ['LEASED', 'LEASED', 'LEASED', 'RESERVED', 'VACANT'] as const;
@@ -43,14 +44,25 @@ export default function UnitList() {
   const [page, setPage] = useState(1);
   const perPage = 15;
 
-  // กรองข้อมูล
-  const filtered = mockUnits.filter((u) => {
-    const matchSearch = !search || u.unitCode.toLowerCase().includes(search.toLowerCase()) || u.unitNameTh.includes(search);
-    const matchStatus = filterStatus === 'ALL' || u.status === filterStatus;
-    return matchSearch && matchStatus;
+  // เรียก API — fallback เป็น mock data ตอน offline
+  const { data: apiData } = useUnits({
+    page,
+    search: search || undefined,
+    status: filterStatus !== 'ALL' ? filterStatus : undefined,
   });
 
-  const paged = filtered.slice((page - 1) * perPage, page * perPage);
+  const sourceUnits = apiData?.data && apiData.data.length > 0 ? apiData.data : fallbackUnits;
+
+  // กรองข้อมูล (ตอนใช้ fallback — ตอนใช้ API จริง server filter ให้แล้ว)
+  const filtered = apiData?.data
+    ? sourceUnits
+    : sourceUnits.filter((u: any) => {
+        const matchSearch = !search || u.unitCode.toLowerCase().includes(search.toLowerCase()) || (u.unitNameTh && u.unitNameTh.includes(search));
+        const matchStatus = filterStatus === 'ALL' || u.status === filterStatus;
+        return matchSearch && matchStatus;
+      });
+
+  const paged = apiData?.data ? filtered : filtered.slice((page - 1) * perPage, page * perPage);
 
   return (
     <>

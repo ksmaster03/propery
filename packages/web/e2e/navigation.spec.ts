@@ -1,4 +1,9 @@
 import { test, expect } from '@playwright/test';
+import { setMockAuth } from './helpers';
+
+test.beforeEach(async ({ context }) => {
+  await setMockAuth(context);
+});
 
 test.describe('การนำทางหลัก (Navigation)', () => {
   test('เข้าหน้า Dashboard ได้', async ({ page }) => {

@@ -7,9 +7,10 @@ import {
 } from '@mui/material';
 import PageHeader from '../../components/shared/PageHeader';
 import { useTranslation } from '../../lib/i18n';
+import { usePartners } from '../../api/hooks';
 
-// ข้อมูล mock ผู้เช่า
-const mockPartners = [
+// Fallback — ใช้ตอน offline/demo mode
+const fallbackPartners = [
   { id: 1, partnerCode: 'P-001', partnerType: 'JURISTIC', nameTh: 'บริษัท ฟู้ดแลนด์ จำกัด', nameEn: 'Foodland Co., Ltd.', shopNameTh: 'ครัวไทย', taxId: '0105562001234', contactPerson: 'นาย สมศักดิ์ รุ่งเรือง', phone: '081-234-5678', email: 'somsakr@foodland.co.th', contractCount: 2 },
   { id: 2, partnerCode: 'P-002', partnerType: 'INDIVIDUAL', nameTh: 'นาย สมศักดิ์ วงศ์ทอง', nameEn: 'Somsak Wongthong', shopNameTh: 'The Brew Coffee', taxId: '1100500123456', contactPerson: 'นาย สมศักดิ์ วงศ์ทอง', phone: '089-876-5432', email: 'somsak@thebrew.com', contractCount: 1 },
   { id: 3, partnerCode: 'P-003', partnerType: 'JURISTIC', nameTh: 'บริษัท คิวเอ็ม จำกัด', nameEn: 'QM Co., Ltd.', shopNameTh: 'QuickMart', taxId: '0105563009876', contactPerson: 'นาง พิมพ์ใจ สุขสบาย', phone: '092-111-2222', email: 'pimjai@quickmart.co.th', contractCount: 1 },
@@ -26,13 +27,24 @@ export default function PartnerList() {
   const [filterType, setFilterType] = useState('ALL');
   const [addOpen, setAddOpen] = useState(false);
 
-  const filtered = mockPartners.filter((p) => {
-    const matchSearch = !search
-      || p.nameTh.includes(search) || p.shopNameTh.includes(search)
-      || p.taxId.includes(search) || p.partnerCode.toLowerCase().includes(search.toLowerCase());
-    const matchType = filterType === 'ALL' || p.partnerType === filterType;
-    return matchSearch && matchType;
+  // เรียก API — fallback เป็น mock
+  const { data: apiData } = usePartners({
+    search: search || undefined,
+    type: filterType !== 'ALL' ? filterType : undefined,
   });
+
+  const sourcePartners = apiData?.data && apiData.data.length > 0 ? apiData.data : fallbackPartners;
+
+  // ตอนใช้ API จริง server filter ให้แล้ว / ตอน fallback ต้อง filter เอง
+  const filtered = apiData?.data
+    ? sourcePartners
+    : sourcePartners.filter((p: any) => {
+        const matchSearch = !search
+          || p.nameTh.includes(search) || (p.shopNameTh && p.shopNameTh.includes(search))
+          || p.taxId.includes(search) || p.partnerCode.toLowerCase().includes(search.toLowerCase());
+        const matchType = filterType === 'ALL' || p.partnerType === filterType;
+        return matchSearch && matchType;
+      });
 
   return (
     <>

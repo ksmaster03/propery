@@ -6,9 +6,10 @@ import {
 } from '@mui/material';
 import PageHeader from '../../components/shared/PageHeader';
 import { useTranslation } from '../../lib/i18n';
+import { useBills } from '../../api/hooks';
 
-// ข้อมูล mock ใบแจ้งหนี้
-const mockBills = [
+// Fallback — ใช้ตอน offline/demo
+const fallbackBills = [
   { id: 1, billNo: 'BILL-202604-001', contractNo: 'CTR-2566-001', unitCode: 'A-101', shopName: 'ครัวไทย', partnerName: 'บริษัท ฟู้ดแลนด์ จำกัด', billingMonth: '2026-04', dueDate: '2026-04-05', status: 'OVERDUE', rentAmount: 65000, totalAmount: 78110, paidAmount: null, overdueDays: 7, lateFee: 224.15 },
   { id: 2, billNo: 'BILL-202604-002', contractNo: 'CTR-2566-002', unitCode: 'B-201', shopName: 'The Brew Coffee', partnerName: 'นาย สมศักดิ์ วงศ์ทอง', billingMonth: '2026-04', dueDate: '2026-04-05', status: 'ISSUED', rentAmount: 80000, totalAmount: 92769, paidAmount: null, overdueDays: 0, lateFee: 0 },
   { id: 3, billNo: 'BILL-202604-003', contractNo: 'CTR-2566-003', unitCode: 'C-305', shopName: 'QuickMart', partnerName: 'บริษัท คิวเอ็ม จำกัด', billingMonth: '2026-04', dueDate: '2026-04-10', status: 'ISSUED', rentAmount: 85000, totalAmount: 96835, paidAmount: null, overdueDays: 0, lateFee: 0 },
@@ -31,12 +32,22 @@ export default function BillingPage() {
   const [tab, setTab] = useState(0);
 
   const tabFilters = ['ALL', 'ISSUED', 'PAID', 'OVERDUE'];
-  const filtered = tab === 0 ? mockBills : mockBills.filter((b) => b.status === tabFilters[tab]);
 
-  // สรุปตัวเลข
-  const totalPending = mockBills.filter((b) => b.status === 'ISSUED').reduce((s, b) => s + b.totalAmount, 0);
-  const totalOverdue = mockBills.filter((b) => b.status === 'OVERDUE').reduce((s, b) => s + b.totalAmount, 0);
-  const totalPaid = mockBills.filter((b) => b.status === 'PAID').reduce((s, b) => s + (b.paidAmount || 0), 0);
+  const { data: apiData } = useBills({
+    status: tab !== 0 ? tabFilters[tab] : undefined,
+  });
+
+  const source = apiData?.data && apiData.data.length > 0 ? apiData.data : fallbackBills;
+
+  const filtered = apiData?.data
+    ? source
+    : tab === 0 ? source : source.filter((b: any) => b.status === tabFilters[tab]);
+
+  // สรุปตัวเลขจาก source ทั้งหมด (ไม่ filter tab)
+  const allBills = apiData?.data || fallbackBills;
+  const totalPending = allBills.filter((b: any) => b.status === 'ISSUED').reduce((s: number, b: any) => s + b.totalAmount, 0);
+  const totalOverdue = allBills.filter((b: any) => b.status === 'OVERDUE').reduce((s: number, b: any) => s + b.totalAmount, 0);
+  const totalPaid = allBills.filter((b: any) => b.status === 'PAID').reduce((s: number, b: any) => s + (b.paidAmount || 0), 0);
 
   return (
     <>
@@ -56,7 +67,7 @@ export default function BillingPage() {
         {/* สรุป KPI */}
         <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 1.5, mb: 2 }}>
           {[
-            { label: locale === 'th' ? 'บิลทั้งหมด' : 'Total Bills', value: mockBills.length, color: '#005b9f' },
+            { label: locale === 'th' ? 'บิลทั้งหมด' : 'Total Bills', value: allBills.length, color: '#005b9f' },
             { label: locale === 'th' ? 'รอชำระ' : 'Pending', value: `฿${formatMoney(totalPending)}`, color: '#d97706' },
             { label: locale === 'th' ? 'เกินกำหนด' : 'Overdue', value: `฿${formatMoney(totalOverdue)}`, color: '#d9534f' },
             { label: locale === 'th' ? 'ชำระแล้ว' : 'Paid', value: `฿${formatMoney(totalPaid)}`, color: '#1a9e5c' },
@@ -73,10 +84,10 @@ export default function BillingPage() {
         {/* Tabs filter */}
         <Paper elevation={0} sx={{ border: '1px solid rgba(22,63,107,.12)', boxShadow: '0 2px 12px rgba(10,22,40,.08)' }}>
           <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ px: 2, borderBottom: '1px solid rgba(22,63,107,.08)', minHeight: 40 }}>
-            <Tab label={`${t('common.all')} (${mockBills.length})`} sx={{ fontSize: 12, minHeight: 40 }} />
-            <Tab label={`${locale === 'th' ? 'รอชำระ' : 'Pending'} (${mockBills.filter((b) => b.status === 'ISSUED').length})`} sx={{ fontSize: 12, minHeight: 40 }} />
-            <Tab label={`${locale === 'th' ? 'ชำระแล้ว' : 'Paid'} (${mockBills.filter((b) => b.status === 'PAID').length})`} sx={{ fontSize: 12, minHeight: 40 }} />
-            <Tab label={`${locale === 'th' ? 'เกินกำหนด' : 'Overdue'} (${mockBills.filter((b) => b.status === 'OVERDUE').length})`} sx={{ fontSize: 12, minHeight: 40, color: '#d9534f' }} />
+            <Tab label={`${t('common.all')} (${allBills.length})`} sx={{ fontSize: 12, minHeight: 40 }} />
+            <Tab label={`${locale === 'th' ? 'รอชำระ' : 'Pending'} (${allBills.filter((b) => b.status === 'ISSUED').length})`} sx={{ fontSize: 12, minHeight: 40 }} />
+            <Tab label={`${locale === 'th' ? 'ชำระแล้ว' : 'Paid'} (${allBills.filter((b) => b.status === 'PAID').length})`} sx={{ fontSize: 12, minHeight: 40 }} />
+            <Tab label={`${locale === 'th' ? 'เกินกำหนด' : 'Overdue'} (${allBills.filter((b) => b.status === 'OVERDUE').length})`} sx={{ fontSize: 12, minHeight: 40, color: '#d9534f' }} />
           </Tabs>
 
           <Table size="small">

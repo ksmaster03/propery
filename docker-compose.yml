@@ -1,0 +1,81 @@
+# === DOA Commercial Lease Management System — Docker Compose ===
+# ใช้สำหรับ local development และ production deployment
+#
+# Services:
+#   db         - PostgreSQL 16 + persistent volume
+#   api        - Express + Prisma (port 3001 internal)
+#   web        - React + Nginx (port 80 → expose 8080 บน host)
+#   cloudflared - Cloudflare Tunnel สำหรับ domain propery.toptierdigital.space
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: doa-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:-doa}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-doa_secret}
+      POSTGRES_DB: ${DB_NAME:-doa_lease}
+    volumes:
+      - doa-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-doa}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - doa-net
+
+  api:
+    build:
+      context: .
+      dockerfile: packages/api/Dockerfile
+    container_name: doa-api
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-doa}:${DB_PASSWORD:-doa_secret}@db:5432/${DB_NAME:-doa_lease}?schema=public
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-change-me-refresh}
+      JWT_EXPIRES_IN: 15m
+      JWT_REFRESH_EXPIRES_IN: 7d
+      NODE_ENV: production
+      PORT: 3001
+      CORS_ORIGIN: ${CORS_ORIGIN:-https://propery.toptierdigital.space}
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - doa-net
+
+  web:
+    build:
+      context: .
+      dockerfile: packages/web/Dockerfile
+    container_name: doa-web
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    depends_on:
+      - api
+    networks:
+      - doa-net
+
+  # Cloudflare Tunnel — expose web ออก internet ผ่าน domain
+  # ต้องมี TUNNEL_TOKEN ใน .env
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: doa-cloudflared
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN:-}
+    depends_on:
+      - web
+    networks:
+      - doa-net
+
+volumes:
+  doa-db-data:
+    driver: local
+
+networks:
+  doa-net:
+    driver: bridge

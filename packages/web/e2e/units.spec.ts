@@ -1,7 +1,9 @@
 import { test, expect } from '@playwright/test';
+import { setMockAuth } from './helpers';
 
 test.describe('หน้ารายการพื้นที่เช่า (Units)', () => {
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ context, page }) => {
+    await setMockAuth(context);
     await page.goto('/units');
   });
 

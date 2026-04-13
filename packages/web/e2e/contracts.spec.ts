@@ -1,7 +1,9 @@
 import { test, expect } from '@playwright/test';
+import { setMockAuth } from './helpers';
 
 test.describe('Contract Create Wizard', () => {
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ context, page }) => {
+    await setMockAuth(context);
     await page.goto('/contracts/create');
   });
 
@@ -41,7 +43,8 @@ test.describe('Contract Create Wizard', () => {
 });
 
 test.describe('Contract Renewal', () => {
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ context, page }) => {
+    await setMockAuth(context);
     await page.goto('/contracts/renew');
   });
 

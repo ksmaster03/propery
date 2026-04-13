@@ -1,0 +1,16 @@
+node_modules
+**/node_modules
+**/dist
+**/build
+**/.next
+**/coverage
+**/test-results
+**/playwright-report
+**/.env
+**/.env.local
+*.log
+.git
+.gitignore
+.vscode
+.idea
+README.md

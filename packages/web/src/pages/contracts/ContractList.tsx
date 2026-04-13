@@ -6,9 +6,10 @@ import {
 } from '@mui/material';
 import PageHeader from '../../components/shared/PageHeader';
 import { useTranslation } from '../../lib/i18n';
+import { useContracts } from '../../api/hooks';
 
-// ข้อมูล mock สัญญา
-const mockContracts = [
+// Fallback — ใช้ตอน offline/demo
+const fallbackContracts = [
   { id: 1, contractNo: 'CTR-2566-001', contractType: 'FIXED_RENT', contractStatus: 'ACTIVE', unitCode: 'A-101', partnerName: 'บริษัท ฟู้ดแลนด์ จำกัด', shopName: 'ครัวไทย', startDate: '2023-04-15', endDate: '2026-04-26', monthlyRent: 65000, daysLeft: 14 },
   { id: 2, contractNo: 'CTR-2566-002', contractType: 'REVENUE_SHARING', contractStatus: 'ACTIVE', unitCode: 'B-201', partnerName: 'นาย สมศักดิ์ วงศ์ทอง', shopName: 'The Brew Coffee', startDate: '2023-04-28', endDate: '2026-05-10', monthlyRent: 80000, daysLeft: 28 },
   { id: 3, contractNo: 'CTR-2566-003', contractType: 'FIXED_RENT', contractStatus: 'ACTIVE', unitCode: 'C-305', partnerName: 'บริษัท คิวเอ็ม จำกัด', shopName: 'QuickMart', startDate: '2023-05-15', endDate: '2026-05-27', monthlyRent: 85000, daysLeft: 45 },
@@ -42,12 +43,22 @@ export default function ContractList() {
   const [filterStatus, setFilterStatus] = useState('ALL');
   const [filterType, setFilterType] = useState('ALL');
 
-  const filtered = mockContracts.filter((c) => {
-    const matchSearch = !search || c.contractNo.toLowerCase().includes(search.toLowerCase()) || c.partnerName.includes(search) || c.shopName.toLowerCase().includes(search.toLowerCase());
-    const matchStatus = filterStatus === 'ALL' || c.contractStatus === filterStatus;
-    const matchType = filterType === 'ALL' || c.contractType === filterType;
-    return matchSearch && matchStatus && matchType;
+  const { data: apiData } = useContracts({
+    search: search || undefined,
+    status: filterStatus !== 'ALL' ? filterStatus : undefined,
+    type: filterType !== 'ALL' ? filterType : undefined,
   });
+
+  const source = apiData?.data && apiData.data.length > 0 ? apiData.data : fallbackContracts;
+
+  const filtered = apiData?.data
+    ? source
+    : source.filter((c: any) => {
+        const matchSearch = !search || c.contractNo.toLowerCase().includes(search.toLowerCase()) || c.partnerName.includes(search) || (c.shopName && c.shopName.toLowerCase().includes(search.toLowerCase()));
+        const matchStatus = filterStatus === 'ALL' || c.contractStatus === filterStatus;
+        const matchType = filterType === 'ALL' || c.contractType === filterType;
+        return matchSearch && matchStatus && matchType;
+      });
 
   return (
     <>
