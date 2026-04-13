@@ -1,0 +1,774 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// ENUM — สถานะและประเภทต่างๆ ที่ใช้ทั้งระบบ
+// ============================================================
+
+// สถานะพื้นที่เช่า
+enum UnitStatus {
+  VACANT      // ว่าง
+  LEASED      // เช่าแล้ว
+  RESERVED    // จองแล้ว/รอทำสัญญา
+  MAINTENANCE // ปิดปรับปรุง
+}
+
+// ประเภทสัญญาเช่า
+enum ContractType {
+  FIXED_RENT       // ค่าเช่าคงที่
+  REVENUE_SHARING  // ปันผลประโยชน์
+  CONSIGNMENT      // ฝากขาย
+  REAL_ESTATE      // อสังหาริมทรัพย์
+}
+
+// สถานะสัญญาเช่า
+enum ContractStatus {
+  DRAFT              // ร่าง
+  PENDING_REVIEW     // รอตรวจสอบ
+  PENDING_APPROVAL   // รออนุมัติ
+  PENDING_LEGAL      // รอฝ่ายกฎหมาย
+  PENDING_SIGNATURE  // รอลงนาม
+  ACTIVE             // มีผลบังคับ
+  EXPIRED            // หมดอายุ
+  TERMINATED         // ยกเลิกก่อนกำหนด
+  CANCELLED          // ยกเลิก
+}
+
+// สถานะใบแจ้งหนี้
+enum BillStatus {
+  DRAFT          // ร่าง
+  ISSUED         // ออกแล้ว
+  PAID           // ชำระแล้ว
+  OVERDUE        // เกินกำหนด
+  PARTIALLY_PAID // ชำระบางส่วน
+  CANCELLED      // ยกเลิก
+  WRITTEN_OFF    // ตัดหนี้สูญ
+}
+
+// สถานะใบเสร็จ
+enum ReceiptStatus {
+  PENDING   // รอตรวจสอบ
+  UPLOADED  // อัปโหลดแล้ว
+  VERIFIED  // ตรวจสอบแล้ว
+  CANCELLED // ยกเลิก
+}
+
+// ประเภทผู้เช่า
+enum PartnerType {
+  INDIVIDUAL // บุคคลธรรมดา
+  JURISTIC   // นิติบุคคล
+}
+
+// ประเภทหลักประกัน
+enum DepositType {
+  CASH           // เงินสด
+  BANK_GUARANTEE // หนังสือค้ำประกัน
+  CHEQUE         // เช็ค
+}
+
+// ประเภทย่อยอสังหาริมทรัพย์
+enum RealEstateSubType {
+  LAND_ONLY         // ที่ดินอย่างเดียว
+  BUILDING_ONLY     // อาคารอย่างเดียว
+  LAND_AND_BUILDING // ที่ดินพร้อมสิ่งปลูกสร้าง
+}
+
+// วิธีคำนวณปันผลประโยชน์
+enum RevenueCalcMethod {
+  HIGHER_OF_MAG_OR_SHARE // เปรียบเทียบเอาจำนวนที่สูงกว่า
+  MAG_PLUS_EXCESS_SHARE  // MAG + ส่วนแบ่งส่วนเกิน
+  REVENUE_SHARE_ONLY     // ส่วนแบ่งรายได้อย่างเดียว
+}
+
+// ความถี่ในการรายงาน
+enum ReportingFrequency {
+  DAILY    // รายวัน
+  WEEKLY   // รายสัปดาห์
+  BIWEEKLY // ราย 2 สัปดาห์
+  MONTHLY  // รายเดือน
+}
+
+// ประเภทเอกสาร
+enum DocumentCategory {
+  ID_CARD                // สำเนาบัตรประชาชน
+  COMPANY_CERTIFICATE    // หนังสือรับรองบริษัท
+  VAT_REGISTRATION       // ภ.พ.20
+  AMENDMENT_REGISTRATION // หนังสือเปลี่ยนแปลง
+  SHAREHOLDER_LIST       // บัญชีรายชื่อผู้ถือหุ้น
+  MEMORANDUM             // หนังสือบริคณห์สนธิ
+  BANK_GUARANTEE_LETTER  // หนังสือค้ำประกันธนาคาร
+  OTHER                  // อื่นๆ
+}
+
+// ประเภทการดำเนินการ (Audit)
+enum AuditAction {
+  CREATE        // สร้าง
+  UPDATE        // แก้ไข
+  DELETE        // ลบ
+  STATUS_CHANGE // เปลี่ยนสถานะ
+  APPROVE       // อนุมัติ
+  REJECT        // ปฏิเสธ
+  SIGN          // ลงนาม
+  UPLOAD        // อัปโหลด
+  PAYMENT       // ชำระเงิน
+}
+
+// ============================================================
+// MASTER: ผู้ใช้ระบบ (เจ้าหน้าที่ DOA)
+// ============================================================
+
+model TmUser {
+  id                   Int       @id @default(autoincrement())
+  userId               String    @unique @map("user_id") @db.VarChar(50)
+  username             String    @map("username") @db.VarChar(100)
+  passwordHash         String    @map("password_hash") @db.VarChar(255)
+  email                String?   @map("email") @db.VarChar(100)
+  fullName             String?   @map("full_name") @db.VarChar(200)
+  departmentCode       String?   @map("department_code") @db.VarChar(50)
+  role                 String    @default("OPERATOR") @map("role") @db.VarChar(20)
+  isActive             Boolean   @default(true) @map("is_active")
+  phone                String?   @map("phone") @db.VarChar(20)
+  avatarUrl            String?   @map("avatar_url") @db.VarChar(500)
+  lastLoginAt          DateTime? @map("last_login_at") @db.Timestamptz()
+  createdAt            DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt            DateTime  @updatedAt @map("updated_at") @db.Timestamptz()
+
+  auditLogs TtAuditLog[]
+
+  @@map("m_user")
+}
+
+// ============================================================
+// MASTER: สิทธิ์การใช้งานตาม Role + Module
+// ============================================================
+
+model TmPermission {
+  id        Int     @id @default(autoincrement())
+  role      String  @map("role") @db.VarChar(20)
+  module    String  @map("module") @db.VarChar(50)
+  canView   Boolean @default(false) @map("can_view")
+  canCreate Boolean @default(false) @map("can_create")
+  canEdit   Boolean @default(false) @map("can_edit")
+  canDelete Boolean @default(false) @map("can_delete")
+  canExport Boolean @default(false) @map("can_export")
+
+  @@unique([role, module])
+  @@map("m_permission")
+}
+
+// ============================================================
+// MASTER: ลำดับชั้นพื้นที่ — สนามบิน > อาคาร > ชั้น > โซน > ยูนิต
+// ============================================================
+
+// ท่าอากาศยาน
+model TmAirport {
+  id            Int      @id @default(autoincrement())
+  airportCode   String   @unique @map("airport_code") @db.VarChar(10)
+  airportNameTh String   @map("airport_name_th") @db.VarChar(200)
+  airportNameEn String?  @map("airport_name_en") @db.VarChar(200)
+  province      String?  @map("province") @db.VarChar(100)
+  region        String?  @map("region") @db.VarChar(50)
+  isActive      Boolean  @default(true) @map("is_active")
+  createdBy     String?  @map("created_by") @db.VarChar(50)
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedBy     String?  @map("updated_by") @db.VarChar(50)
+  updatedAt     DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  buildings TmBuilding[]
+  units     TmUnit[]
+  contracts TtContract[]
+
+  @@map("m_airport")
+}
+
+// อาคาร
+model TmBuilding {
+  id             Int      @id @default(autoincrement())
+  buildingCode   String   @unique @map("building_code") @db.VarChar(20)
+  buildingNameTh String   @map("building_name_th") @db.VarChar(200)
+  buildingNameEn String?  @map("building_name_en") @db.VarChar(200)
+  airportId      Int      @map("airport_id")
+  totalFloors    Int?     @map("total_floors")
+  isActive       Boolean  @default(true) @map("is_active")
+  createdBy      String?  @map("created_by") @db.VarChar(50)
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedBy      String?  @map("updated_by") @db.VarChar(50)
+  updatedAt      DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  airport TmAirport @relation(fields: [airportId], references: [id])
+  floors  TmFloor[]
+
+  @@index([airportId])
+  @@map("m_building")
+}
+
+// ชั้น
+model TmFloor {
+  id          Int      @id @default(autoincrement())
+  floorCode   String   @unique @map("floor_code") @db.VarChar(20)
+  floorNameTh String   @map("floor_name_th") @db.VarChar(100)
+  floorNameEn String?  @map("floor_name_en") @db.VarChar(100)
+  floorNumber Int      @map("floor_number")
+  buildingId  Int      @map("building_id")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdBy   String?  @map("created_by") @db.VarChar(50)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedBy   String?  @map("updated_by") @db.VarChar(50)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  building TmBuilding @relation(fields: [buildingId], references: [id])
+  zones    TmZone[]
+
+  @@index([buildingId])
+  @@map("m_floor")
+}
+
+// โซน
+model TmZone {
+  id         Int      @id @default(autoincrement())
+  zoneCode   String   @unique @map("zone_code") @db.VarChar(20)
+  zoneNameTh String   @map("zone_name_th") @db.VarChar(100)
+  zoneNameEn String?  @map("zone_name_en") @db.VarChar(100)
+  floorId    Int      @map("floor_id")
+  isActive   Boolean  @default(true) @map("is_active")
+  createdBy  String?  @map("created_by") @db.VarChar(50)
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedBy  String?  @map("updated_by") @db.VarChar(50)
+  updatedAt  DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  floor TmFloor @relation(fields: [floorId], references: [id])
+  units TmUnit[]
+
+  @@index([floorId])
+  @@map("m_zone")
+}
+
+// ============================================================
+// MASTER: ยูนิตพื้นที่เช่า (หน่วยเช่า + พิกัด Floor Plan)
+// ============================================================
+
+model TmUnit {
+  id          Int        @id @default(autoincrement())
+  unitCode    String     @unique @map("unit_code") @db.VarChar(20)
+  unitNameTh  String?    @map("unit_name_th") @db.VarChar(200)
+  unitNameEn  String?    @map("unit_name_en") @db.VarChar(200)
+  airportId   Int        @map("airport_id")
+  zoneId      Int?       @map("zone_id")
+  areaSqm     Decimal?   @map("area_sqm") @db.Decimal(10, 2)
+  status      UnitStatus @default(VACANT) @map("status")
+  purpose     String?    @map("purpose") @db.VarChar(100)
+  meterNumber String?    @map("meter_number") @db.VarChar(50)
+  // พิกัดบน Floor Plan (SVG)
+  fpCoordX    Decimal?   @map("fp_coord_x") @db.Decimal(8, 2)
+  fpCoordY    Decimal?   @map("fp_coord_y") @db.Decimal(8, 2)
+  fpWidth     Decimal?   @map("fp_width") @db.Decimal(8, 2)
+  fpHeight    Decimal?   @map("fp_height") @db.Decimal(8, 2)
+  // สำหรับอสังหาริมทรัพย์ (ที่ดิน)
+  landRai     Int?       @map("land_rai")
+  landNgan    Int?       @map("land_ngan")
+  landSqWa    Decimal?   @map("land_sq_wa") @db.Decimal(8, 2)
+  titleDeedNo String?    @map("title_deed_no") @db.VarChar(50)
+  isActive    Boolean    @default(true) @map("is_active")
+  createdBy   String?    @map("created_by") @db.VarChar(50)
+  createdAt   DateTime   @default(now()) @map("created_at") @db.Timestamptz()
+  updatedBy   String?    @map("updated_by") @db.VarChar(50)
+  updatedAt   DateTime   @updatedAt @map("updated_at") @db.Timestamptz()
+
+  airport   TmAirport    @relation(fields: [airportId], references: [id])
+  zone      TmZone?      @relation(fields: [zoneId], references: [id])
+  contracts TtContract[]
+
+  @@index([airportId])
+  @@index([zoneId])
+  @@index([status])
+  @@map("m_unit")
+}
+
+// ============================================================
+// MASTER: ผู้เช่า / คู่ค้า
+// ============================================================
+
+model TmPartner {
+  id                 Int         @id @default(autoincrement())
+  partnerCode        String      @unique @map("partner_code") @db.VarChar(20)
+  partnerType        PartnerType @map("partner_type")
+  nameTh             String      @map("name_th") @db.VarChar(200)
+  nameEn             String?     @map("name_en") @db.VarChar(200)
+  shopNameTh         String?     @map("shop_name_th") @db.VarChar(200)
+  shopNameEn         String?     @map("shop_name_en") @db.VarChar(200)
+  taxId              String      @unique @map("tax_id") @db.VarChar(20)
+  contactPerson      String?     @map("contact_person") @db.VarChar(200)
+  phone              String?     @map("phone") @db.VarChar(50)
+  email              String?     @map("email") @db.VarChar(100)
+  address            String?     @map("address") @db.Text
+  isActive           Boolean     @default(true) @map("is_active")
+  createdBy          String?     @map("created_by") @db.VarChar(50)
+  createdAt          DateTime    @default(now()) @map("created_at") @db.Timestamptz()
+  updatedBy          String?     @map("updated_by") @db.VarChar(50)
+  updatedAt          DateTime    @updatedAt @map("updated_at") @db.Timestamptz()
+  // สำหรับ Tenant Portal
+  portalPasswordHash String?     @map("portal_password_hash") @db.VarChar(255)
+  portalLastLoginAt  DateTime?   @map("portal_last_login_at") @db.Timestamptz()
+
+  contracts TtContract[]
+  documents TtDocument[]
+
+  @@index([taxId])
+  @@index([partnerType])
+  @@map("m_partner")
+}
+
+// ============================================================
+// TRANSACTION: สัญญาเช่า (ตารางหลัก — รองรับ 4 ประเภท)
+// ============================================================
+
+model TtContract {
+  id                 Int            @id @default(autoincrement())
+  contractNo         String         @unique @map("contract_no") @db.VarChar(30)
+  contractType       ContractType   @map("contract_type")
+  contractStatus     ContractStatus @default(DRAFT) @map("contract_status")
+  // คู่สัญญา
+  airportId          Int            @map("airport_id")
+  unitId             Int            @map("unit_id")
+  partnerId          Int            @map("partner_id")
+  // วันที่
+  startDate          DateTime       @map("start_date") @db.Date
+  endDate            DateTime       @map("end_date") @db.Date
+  durationMonths     Int?           @map("duration_months")
+  paymentDueDay      Int            @default(5) @map("payment_due_day")
+  // ค่าใช้จ่ายร่วม
+  utilityRate        Decimal?       @map("utility_rate") @db.Decimal(8, 2)
+  commonServiceFee   Decimal?       @map("common_service_fee") @db.Decimal(12, 2)
+  latePenaltyRate    Decimal?       @default(15) @map("late_penalty_rate") @db.Decimal(5, 2)
+  alertDaysBefore    Int            @default(90) @map("alert_days_before")
+  // Workflow อนุมัติ
+  currentStepNo      Int            @default(1) @map("current_step_no")
+  approvedBy         String?        @map("approved_by") @db.VarChar(50)
+  approvedAt         DateTime?      @map("approved_at") @db.Timestamptz()
+  signedAt           DateTime?      @map("signed_at") @db.Timestamptz()
+  // ต่อสัญญา
+  previousContractId Int?           @map("previous_contract_id")
+  renewalCount       Int            @default(0) @map("renewal_count")
+  createdBy          String?        @map("created_by") @db.VarChar(50)
+  createdAt          DateTime       @default(now()) @map("created_at") @db.Timestamptz()
+  updatedBy          String?        @map("updated_by") @db.VarChar(50)
+  updatedAt          DateTime       @updatedAt @map("updated_at") @db.Timestamptz()
+
+  // ความสัมพันธ์
+  airport          TmAirport              @relation(fields: [airportId], references: [id])
+  unit             TmUnit                 @relation(fields: [unitId], references: [id])
+  partner          TmPartner              @relation(fields: [partnerId], references: [id])
+  previousContract TtContract?            @relation("ContractRenewal", fields: [previousContractId], references: [id])
+  renewedContracts TtContract[]           @relation("ContractRenewal")
+  // รายละเอียดตามประเภท (1-to-1 เฉพาะประเภทที่ตรงกัน)
+  fixedRentDetail  TtContractFixedRent?
+  revShareDetail   TtContractRevShare?
+  consignDetail    TtContractConsignment?
+  realEstateDetail TtContractRealEstate?
+  // ตารางย่อย
+  deposit          TtDeposit?
+  bills            TtBill[]
+  documents        TtDocument[]
+  approvalSteps    TtApprovalStep[]
+
+  @@index([airportId])
+  @@index([partnerId])
+  @@index([unitId])
+  @@index([contractStatus])
+  @@index([endDate])
+  @@index([contractType])
+  @@map("t_contract")
+}
+
+// ============================================================
+// TRANSACTION: รายละเอียดสัญญา — ค่าเช่าคงที่ (Fixed Rent)
+// ============================================================
+
+model TtContractFixedRent {
+  id          Int      @id @default(autoincrement())
+  contractId  Int      @unique @map("contract_id")
+  monthlyRent Decimal  @map("monthly_rent") @db.Decimal(14, 2)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  contract TtContract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  @@map("t_contract_fixed_rent")
+}
+
+// ============================================================
+// TRANSACTION: รายละเอียดสัญญา — ปันผลประโยชน์ (Revenue Sharing)
+// ============================================================
+
+model TtContractRevShare {
+  id                   Int                @id @default(autoincrement())
+  contractId           Int                @unique @map("contract_id")
+  magAmount            Decimal?           @map("mag_amount") @db.Decimal(14, 2)
+  revenueSharePct      Decimal            @map("revenue_share_pct") @db.Decimal(5, 2)
+  calcMethod           RevenueCalcMethod  @map("calc_method")
+  useTieredRate        Boolean            @default(false) @map("use_tiered_rate")
+  reportingFrequency   ReportingFrequency @default(MONTHLY) @map("reporting_frequency")
+  reportDueDay         Int?               @map("report_due_day")
+  verificationMethod   String?            @map("verification_method") @db.VarChar(100)
+  auditRightDays       Int?               @map("audit_right_days")
+  lateReportPenaltyPct Decimal?           @map("late_report_penalty_pct") @db.Decimal(5, 2)
+  createdAt            DateTime           @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt            DateTime           @updatedAt @map("updated_at") @db.Timestamptz()
+
+  contract    TtContract       @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  tieredRates TtRevShareTier[]
+
+  @@map("t_contract_rev_share")
+}
+
+// อัตราขั้นบันได (Tiered Rate)
+model TtRevShareTier {
+  id          Int      @id @default(autoincrement())
+  revShareId  Int      @map("rev_share_id")
+  tierOrder   Int      @map("tier_order")
+  revenueFrom Decimal  @map("revenue_from") @db.Decimal(14, 2)
+  revenueTo   Decimal? @map("revenue_to") @db.Decimal(14, 2)
+  sharePct    Decimal  @map("share_pct") @db.Decimal(5, 2)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz()
+
+  revShare TtContractRevShare @relation(fields: [revShareId], references: [id], onDelete: Cascade)
+
+  @@index([revShareId])
+  @@map("t_rev_share_tier")
+}
+
+// ============================================================
+// TRANSACTION: รายละเอียดสัญญา — ฝากขาย (Consignment)
+// ============================================================
+
+model TtContractConsignment {
+  id                   Int                @id @default(autoincrement())
+  contractId           Int                @unique @map("contract_id")
+  commissionPct        Decimal            @map("commission_pct") @db.Decimal(5, 2)
+  minCommissionAmount  Decimal?           @map("min_commission_amount") @db.Decimal(14, 2)
+  displaySpaceFee      Decimal?           @map("display_space_fee") @db.Decimal(14, 2)
+  productCategory      String?            @map("product_category") @db.VarChar(100)
+  settlementFrequency  ReportingFrequency @default(MONTHLY) @map("settlement_frequency")
+  inventoryPolicy      String?            @map("inventory_policy") @db.VarChar(200)
+  damageResponsibility String?            @map("damage_responsibility") @db.VarChar(200)
+  expiryPolicy         String?            @map("expiry_policy") @db.VarChar(200)
+  productGuarantee     Decimal?           @map("product_guarantee") @db.Decimal(14, 2)
+  minProductCount      Int?               @map("min_product_count")
+  createdAt            DateTime           @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt            DateTime           @updatedAt @map("updated_at") @db.Timestamptz()
+
+  contract TtContract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  @@map("t_contract_consignment")
+}
+
+// ============================================================
+// TRANSACTION: รายละเอียดสัญญา — อสังหาริมทรัพย์ (Real Estate)
+// ============================================================
+
+model TtContractRealEstate {
+  id                   Int               @id @default(autoincrement())
+  contractId           Int               @unique @map("contract_id")
+  subType              RealEstateSubType @map("sub_type")
+  // ที่ดิน
+  landRai              Int?              @map("land_rai")
+  landNgan             Int?              @map("land_ngan")
+  landSqWa             Decimal?          @map("land_sq_wa") @db.Decimal(8, 2)
+  landRentMonthly      Decimal?          @map("land_rent_monthly") @db.Decimal(14, 2)
+  titleDeedNo          String?           @map("title_deed_no") @db.VarChar(50)
+  landPurpose          String?           @map("land_purpose") @db.VarChar(100)
+  // อาคาร
+  buildingAreaSqm      Decimal?          @map("building_area_sqm") @db.Decimal(10, 2)
+  buildingRentMonthly  Decimal?          @map("building_rent_monthly") @db.Decimal(14, 2)
+  buildingName         String?           @map("building_name") @db.VarChar(200)
+  buildingFloors       Int?              @map("building_floors")
+  // เงื่อนไขเพิ่มเติม
+  escalationRule       String?           @map("escalation_rule") @db.VarChar(200)
+  keyMoney             Decimal?          @map("key_money") @db.Decimal(14, 2)
+  constructionRight    String?           @map("construction_right") @db.VarChar(200)
+  returnCondition      String?           @map("return_condition") @db.VarChar(200)
+  propertyTaxLiability String?           @map("property_tax_liability") @db.VarChar(100)
+  sublettingPolicy     String?           @map("subletting_policy") @db.VarChar(200)
+  createdAt            DateTime          @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt            DateTime          @updatedAt @map("updated_at") @db.Timestamptz()
+
+  contract TtContract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  @@map("t_contract_real_estate")
+}
+
+// ============================================================
+// TRANSACTION: หลักประกันสัญญา
+// ============================================================
+
+model TtDeposit {
+  id               Int         @id @default(autoincrement())
+  contractId       Int         @unique @map("contract_id")
+  depositType      DepositType @map("deposit_type")
+  calculatedAmount Decimal     @map("calculated_amount") @db.Decimal(14, 2)
+  approvedAmount   Decimal     @map("approved_amount") @db.Decimal(14, 2)
+  receivedDate     DateTime?   @map("received_date") @db.Date
+  returnedDate     DateTime?   @map("returned_date") @db.Date
+  returnedAmount   Decimal?    @map("returned_amount") @db.Decimal(14, 2)
+  bankGuaranteeNo  String?     @map("bank_guarantee_no") @db.VarChar(100)
+  // ค่าใช้จ่ายเพิ่มเติม (Step 4 ของ Wizard)
+  leaseFee         Decimal?    @map("lease_fee") @db.Decimal(14, 2)
+  installationFee  Decimal?    @map("installation_fee") @db.Decimal(14, 2)
+  maintenanceFee   Decimal?    @map("maintenance_fee") @db.Decimal(14, 2)
+  createdBy        String?     @map("created_by") @db.VarChar(50)
+  createdAt        DateTime    @default(now()) @map("created_at") @db.Timestamptz()
+  updatedBy        String?     @map("updated_by") @db.VarChar(50)
+  updatedAt        DateTime    @updatedAt @map("updated_at") @db.Timestamptz()
+
+  contract TtContract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  @@map("t_deposit")
+}
+
+// ============================================================
+// TRANSACTION: ใบแจ้งหนี้ค่าเช่า
+// ============================================================
+
+model TtBill {
+  id               Int        @id @default(autoincrement())
+  billNo           String     @unique @map("bill_no") @db.VarChar(30)
+  contractId       Int        @map("contract_id")
+  billingMonth     DateTime   @map("billing_month") @db.Date
+  dueDate          DateTime   @map("due_date") @db.Date
+  status           BillStatus @default(DRAFT) @map("status")
+  // รายการค่าใช้จ่าย
+  rentAmount       Decimal    @map("rent_amount") @db.Decimal(14, 2)
+  utilityAmount    Decimal?   @map("utility_amount") @db.Decimal(14, 2)
+  utilityUnits     Decimal?   @map("utility_units") @db.Decimal(10, 2)
+  commonServiceAmt Decimal?   @map("common_service_amt") @db.Decimal(14, 2)
+  otherCharges     Decimal?   @map("other_charges") @db.Decimal(14, 2)
+  otherChargesNote String?    @map("other_charges_note") @db.VarChar(500)
+  vatRate          Decimal    @default(7) @map("vat_rate") @db.Decimal(5, 2)
+  vatAmount        Decimal?   @map("vat_amount") @db.Decimal(14, 2)
+  totalAmount      Decimal    @map("total_amount") @db.Decimal(14, 2)
+  // ค่าปรับล่าช้า
+  lateFeeAmount    Decimal?   @map("late_fee_amount") @db.Decimal(14, 2)
+  overdueDays      Int?       @map("overdue_days")
+  // สำหรับสัญญา Revenue Sharing
+  reportedRevenue  Decimal?   @map("reported_revenue") @db.Decimal(14, 2)
+  revShareAmount   Decimal?   @map("rev_share_amount") @db.Decimal(14, 2)
+  // การชำระเงิน
+  paidAmount       Decimal?   @map("paid_amount") @db.Decimal(14, 2)
+  paidAt           DateTime?  @map("paid_at") @db.Timestamptz()
+  paymentRef       String?    @map("payment_ref") @db.VarChar(100)
+  // QR / Barcode สำหรับชำระเงิน
+  qrPayload        String?    @map("qr_payload") @db.Text
+  barcodeRef       String?    @map("barcode_ref") @db.VarChar(50)
+  createdBy        String?    @map("created_by") @db.VarChar(50)
+  createdAt        DateTime   @default(now()) @map("created_at") @db.Timestamptz()
+  updatedBy        String?    @map("updated_by") @db.VarChar(50)
+  updatedAt        DateTime   @updatedAt @map("updated_at") @db.Timestamptz()
+
+  contract      TtContract     @relation(fields: [contractId], references: [id])
+  receipts      TtReceipt[]
+  revenueSplits TtRevenueSplit[]
+
+  @@index([contractId])
+  @@index([billingMonth])
+  @@index([status])
+  @@index([dueDate])
+  @@map("t_bill")
+}
+
+// ============================================================
+// TRANSACTION: ใบเสร็จรับเงิน
+// ============================================================
+
+model TtReceipt {
+  id             Int           @id @default(autoincrement())
+  receiptNo      String        @unique @map("receipt_no") @db.VarChar(30)
+  billId         Int           @map("bill_id")
+  amount         Decimal       @map("amount") @db.Decimal(14, 2)
+  vatAmount      Decimal?      @map("vat_amount") @db.Decimal(14, 2)
+  totalAmount    Decimal       @map("total_amount") @db.Decimal(14, 2)
+  paymentDate    DateTime?     @map("payment_date") @db.Date
+  paymentMethod  String?       @map("payment_method") @db.VarChar(50)
+  status         ReceiptStatus @default(PENDING) @map("status")
+  receiptFileUrl String?       @map("receipt_file_url") @db.VarChar(500)
+  uploadedAt     DateTime?     @map("uploaded_at") @db.Timestamptz()
+  verifiedBy     String?       @map("verified_by") @db.VarChar(50)
+  verifiedAt     DateTime?     @map("verified_at") @db.Timestamptz()
+  createdBy      String?       @map("created_by") @db.VarChar(50)
+  createdAt      DateTime      @default(now()) @map("created_at") @db.Timestamptz()
+  updatedBy      String?       @map("updated_by") @db.VarChar(50)
+  updatedAt      DateTime      @updatedAt @map("updated_at") @db.Timestamptz()
+
+  bill TtBill @relation(fields: [billId], references: [id])
+
+  @@index([billId])
+  @@map("t_receipt")
+}
+
+// ============================================================
+// TRANSACTION: แบ่งรายได้ (กรมธนารักษ์ / กองทุนสวัสดิการ / เงินทุนหมุนเวียน)
+// ============================================================
+
+model TtRevenueSplit {
+  id                  Int      @id @default(autoincrement())
+  billId              Int      @map("bill_id")
+  totalRevenue        Decimal  @map("total_revenue") @db.Decimal(14, 2)
+  treasuryAmount      Decimal  @map("treasury_amount") @db.Decimal(14, 2)
+  treasuryPct         Decimal  @default(50) @map("treasury_pct") @db.Decimal(5, 2)
+  welfareFundAmount   Decimal  @map("welfare_fund_amount") @db.Decimal(14, 2)
+  welfareFundPct      Decimal  @default(20) @map("welfare_fund_pct") @db.Decimal(5, 2)
+  revolvingFundAmount Decimal  @map("revolving_fund_amount") @db.Decimal(14, 2)
+  revolvingFundPct    Decimal  @default(30) @map("revolving_fund_pct") @db.Decimal(5, 2)
+  periodMonth         DateTime @map("period_month") @db.Date
+  status              String   @default("PENDING") @map("status") @db.VarChar(20)
+  createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt           DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  bill TtBill @relation(fields: [billId], references: [id])
+
+  @@index([billId])
+  @@index([periodMonth])
+  @@map("t_revenue_split")
+}
+
+// ============================================================
+// TRANSACTION: รายงานยอดขาย (สำหรับสัญญา Revenue Sharing)
+// ============================================================
+
+model TtRevenueReport {
+  id              Int       @id @default(autoincrement())
+  contractId      Int       @map("contract_id")
+  reportMonth     DateTime  @map("report_month") @db.Date
+  reportedRevenue Decimal   @map("reported_revenue") @db.Decimal(14, 2)
+  verifiedRevenue Decimal?  @map("verified_revenue") @db.Decimal(14, 2)
+  source          String?   @map("source") @db.VarChar(50)
+  submittedAt     DateTime? @map("submitted_at") @db.Timestamptz()
+  verifiedBy      String?   @map("verified_by") @db.VarChar(50)
+  verifiedAt      DateTime? @map("verified_at") @db.Timestamptz()
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt       DateTime  @updatedAt @map("updated_at") @db.Timestamptz()
+
+  @@unique([contractId, reportMonth])
+  @@index([contractId])
+  @@map("t_revenue_report")
+}
+
+// ============================================================
+// TRANSACTION: เอกสารแนบ (รองรับ versioning)
+// ============================================================
+
+model TtDocument {
+  id                Int              @id @default(autoincrement())
+  contractId        Int?             @map("contract_id")
+  partnerId         Int?             @map("partner_id")
+  category          DocumentCategory @map("category")
+  fileName          String           @map("file_name") @db.VarChar(300)
+  fileUrl           String           @map("file_url") @db.VarChar(500)
+  fileSize          Int?             @map("file_size")
+  mimeType          String?          @map("mime_type") @db.VarChar(100)
+  version           Int              @default(1) @map("version")
+  isLatest          Boolean          @default(true) @map("is_latest")
+  previousVersionId Int?             @map("previous_version_id")
+  uploadedBy        String?          @map("uploaded_by") @db.VarChar(50)
+  uploadedAt        DateTime         @default(now()) @map("uploaded_at") @db.Timestamptz()
+  createdAt         DateTime         @default(now()) @map("created_at") @db.Timestamptz()
+
+  contract        TtContract?  @relation(fields: [contractId], references: [id])
+  partner         TmPartner?   @relation(fields: [partnerId], references: [id])
+  previousVersion TtDocument?  @relation("DocumentVersion", fields: [previousVersionId], references: [id])
+  newerVersions   TtDocument[] @relation("DocumentVersion")
+
+  @@index([contractId])
+  @@index([partnerId])
+  @@index([category])
+  @@map("t_document")
+}
+
+// ============================================================
+// TRANSACTION: ขั้นตอนอนุมัติสัญญา (Workflow)
+// ============================================================
+
+model TtApprovalStep {
+  id          Int       @id @default(autoincrement())
+  contractId  Int       @map("contract_id")
+  stepNo      Int       @map("step_no")
+  stepName    String    @map("step_name") @db.VarChar(100)
+  status      String    @default("PENDING") @map("status") @db.VarChar(20)
+  assignedTo  String?   @map("assigned_to") @db.VarChar(50)
+  completedBy String?   @map("completed_by") @db.VarChar(50)
+  completedAt DateTime? @map("completed_at") @db.Timestamptz()
+  remarks     String?   @map("remarks") @db.Text
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz()
+  updatedAt   DateTime  @updatedAt @map("updated_at") @db.Timestamptz()
+
+  contract TtContract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  @@unique([contractId, stepNo])
+  @@index([contractId])
+  @@map("t_approval_step")
+}
+
+// ============================================================
+// TRANSACTION: บันทึกการเปลี่ยนแปลง (Audit Trail)
+// ============================================================
+
+model TtAuditLog {
+  id        Int         @id @default(autoincrement())
+  tableName String      @map("table_name") @db.VarChar(100)
+  recordId  Int         @map("record_id")
+  action    AuditAction @map("action")
+  fieldName String?     @map("field_name") @db.VarChar(100)
+  oldValue  String?     @map("old_value") @db.Text
+  newValue  String?     @map("new_value") @db.Text
+  userId    String      @map("user_id") @db.VarChar(50)
+  ipAddress String?     @map("ip_address") @db.VarChar(50)
+  userAgent String?     @map("user_agent") @db.VarChar(500)
+  createdAt DateTime    @default(now()) @map("created_at") @db.Timestamptz()
+
+  user TmUser @relation(fields: [userId], references: [userId])
+
+  @@index([tableName, recordId])
+  @@index([userId])
+  @@index([createdAt])
+  @@map("t_audit_log")
+}
+
+// ============================================================
+// MASTER: ตั้งค่าระบบ
+// ============================================================
+
+model TmConfig {
+  id          Int      @id @default(autoincrement())
+  configKey   String   @unique @map("config_key") @db.VarChar(100)
+  configValue String   @map("config_value") @db.Text
+  description String?  @map("description") @db.VarChar(500)
+  updatedBy   String?  @map("updated_by") @db.VarChar(50)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz()
+
+  @@map("m_config")
+}
+
+// ============================================================
+// MASTER: Template เอกสารสัญญา
+// ============================================================
+
+model TmTemplate {
+  id           Int           @id @default(autoincrement())
+  templateCode String        @unique @map("template_code") @db.VarChar(50)
+  templateName String        @map("template_name") @db.VarChar(200)
+  contractType ContractType? @map("contract_type")
+  content      String        @map("content") @db.Text
+  version      Int           @default(1) @map("version")
+  isActive     Boolean       @default(true) @map("is_active")
+  createdBy    String?       @map("created_by") @db.VarChar(50)
+  createdAt    DateTime      @default(now()) @map("created_at") @db.Timestamptz()
+  updatedBy    String?       @map("updated_by") @db.VarChar(50)
+  updatedAt    DateTime      @updatedAt @map("updated_at") @db.Timestamptz()
+
+  @@map("m_template")
+}

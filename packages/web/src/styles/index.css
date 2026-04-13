@@ -1,0 +1,22 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ฟอนต์หลักของระบบ */
+body {
+  font-family: 'IBM Plex Sans Thai', 'Sarabun', sans-serif;
+  background: #f0f4fa;
+  color: #17324a;
+}
+
+/* Scrollbar สำหรับ Webkit */
+::-webkit-scrollbar {
+  width: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(22, 63, 107, 0.12);
+  border-radius: 3px;
+}

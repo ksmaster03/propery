@@ -1,0 +1,153 @@
+import { useState } from 'react';
+import { Box, Paper, Typography, TextField, Button, Avatar, Divider, Alert } from '@mui/material';
+import PageHeader from '../../components/shared/PageHeader';
+import { useAuthStore } from '../../lib/auth-store';
+import { useTranslation } from '../../lib/i18n';
+
+// หน้าแก้ไขโปรไฟล์ — ผู้ใช้สามารถแก้ไขข้อมูลส่วนตัวและเปลี่ยนรหัสผ่าน
+export default function ProfilePage() {
+  const { user } = useAuthStore();
+  const { locale } = useTranslation();
+  const [saved, setSaved] = useState(false);
+
+  const [form, setForm] = useState({
+    fullName: user?.username || '',
+    email: user?.email || '',
+    phone: '',
+    department: '',
+  });
+
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  });
+
+  const handleSave = () => {
+    // TODO: เรียก API บันทึกจริง
+    setSaved(true);
+    setTimeout(() => setSaved(false), 3000);
+  };
+
+  return (
+    <>
+      <PageHeader
+        icon="👤"
+        title={locale === 'th' ? 'แก้ไขโปรไฟล์' : 'Edit Profile'}
+        subtitle={locale === 'th' ? 'จัดการข้อมูลส่วนตัวและรหัสผ่าน' : 'Manage personal info and password'}
+      />
+
+      <Box sx={{ flex: 1, overflow: 'auto', p: 2.75 }}>
+        {saved && (
+          <Alert severity="success" sx={{ mb: 2, fontSize: 12 }}>
+            {locale === 'th' ? 'บันทึกข้อมูลเรียบร้อย' : 'Profile saved successfully'}
+          </Alert>
+        )}
+
+        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, maxWidth: 900 }}>
+          {/* ข้อมูลส่วนตัว */}
+          <Paper elevation={0} sx={{ border: '1px solid rgba(22,63,107,.12)', boxShadow: '0 2px 12px rgba(10,22,40,.08)' }}>
+            <Box sx={{ px: 2.25, py: 1.5, borderBottom: '1px solid rgba(22,63,107,.08)', background: 'linear-gradient(180deg, rgba(0,91,159,.04), transparent)' }}>
+              <Typography sx={{ fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1 }}>
+                <span className="material-icons-outlined" style={{ fontSize: 18, color: '#005b9f' }}>person</span>
+                {locale === 'th' ? 'ข้อมูลส่วนตัว' : 'Personal Information'}
+              </Typography>
+            </Box>
+            <Box sx={{ p: 2.25, display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {/* Avatar */}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+                <Avatar sx={{
+                  width: 64, height: 64, fontSize: 24, fontWeight: 700,
+                  background: 'linear-gradient(135deg, #d7a94b, #f5d080)',
+                  color: '#163f6b',
+                }}>
+                  {user?.username?.substring(0, 2).toUpperCase() || 'AD'}
+                </Avatar>
+                <Box>
+                  <Typography sx={{ fontSize: 16, fontWeight: 700 }}>{user?.username}</Typography>
+                  <Typography sx={{ fontSize: 12, color: '#6c7f92' }}>
+                    {user?.role || 'ADMIN'} · {user?.userId || 'USR-001'}
+                  </Typography>
+                  <Button size="small" variant="outlined" sx={{ mt: .5, fontSize: 10 }}>
+                    {locale === 'th' ? 'เปลี่ยนรูปภาพ' : 'Change Photo'}
+                  </Button>
+                </Box>
+              </Box>
+
+              <TextField
+                label={locale === 'th' ? 'ชื่อ-นามสกุล' : 'Full Name'}
+                size="small" fullWidth
+                value={form.fullName}
+                onChange={(e) => setForm({ ...form, fullName: e.target.value })}
+              />
+              <TextField
+                label="Email"
+                size="small" fullWidth type="email"
+                value={form.email}
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
+              />
+              <TextField
+                label={locale === 'th' ? 'เบอร์โทรศัพท์' : 'Phone'}
+                size="small" fullWidth
+                value={form.phone}
+                onChange={(e) => setForm({ ...form, phone: e.target.value })}
+              />
+              <TextField
+                label={locale === 'th' ? 'แผนก/หน่วยงาน' : 'Department'}
+                size="small" fullWidth
+                value={form.department}
+                onChange={(e) => setForm({ ...form, department: e.target.value })}
+              />
+
+              <Button variant="contained" onClick={handleSave} sx={{ mt: 1, fontSize: 12 }}>
+                <span className="material-icons-outlined" style={{ fontSize: 16, marginRight: 4 }}>save</span>
+                {locale === 'th' ? 'บันทึกข้อมูล' : 'Save Changes'}
+              </Button>
+            </Box>
+          </Paper>
+
+          {/* เปลี่ยนรหัสผ่าน */}
+          <Paper elevation={0} sx={{ border: '1px solid rgba(22,63,107,.12)', boxShadow: '0 2px 12px rgba(10,22,40,.08)' }}>
+            <Box sx={{ px: 2.25, py: 1.5, borderBottom: '1px solid rgba(22,63,107,.08)', background: 'linear-gradient(180deg, rgba(0,91,159,.04), transparent)' }}>
+              <Typography sx={{ fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 1 }}>
+                <span className="material-icons-outlined" style={{ fontSize: 18, color: '#005b9f' }}>lock</span>
+                {locale === 'th' ? 'เปลี่ยนรหัสผ่าน' : 'Change Password'}
+              </Typography>
+            </Box>
+            <Box sx={{ p: 2.25, display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <TextField
+                label={locale === 'th' ? 'รหัสผ่านปัจจุบัน' : 'Current Password'}
+                size="small" fullWidth type="password"
+                value={passwordForm.currentPassword}
+                onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
+              />
+              <TextField
+                label={locale === 'th' ? 'รหัสผ่านใหม่' : 'New Password'}
+                size="small" fullWidth type="password"
+                value={passwordForm.newPassword}
+                onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
+              />
+              <TextField
+                label={locale === 'th' ? 'ยืนยันรหัสผ่านใหม่' : 'Confirm New Password'}
+                size="small" fullWidth type="password"
+                value={passwordForm.confirmPassword}
+                onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
+              />
+
+              <Alert severity="info" sx={{ fontSize: 11 }}>
+                {locale === 'th'
+                  ? 'รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร ประกอบด้วยตัวพิมพ์ใหญ่ ตัวพิมพ์เล็ก และตัวเลข'
+                  : 'Password must be at least 8 characters with uppercase, lowercase, and numbers'}
+              </Alert>
+
+              <Button variant="contained" color="warning" sx={{ mt: 1, fontSize: 12 }}>
+                <span className="material-icons-outlined" style={{ fontSize: 16, marginRight: 4 }}>vpn_key</span>
+                {locale === 'th' ? 'เปลี่ยนรหัสผ่าน' : 'Change Password'}
+              </Button>
+            </Box>
+          </Paper>
+        </Box>
+      </Box>
+    </>
+  );
+}
