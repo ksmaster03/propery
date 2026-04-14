@@ -1,15 +1,31 @@
 import { useState, useRef, MouseEvent as ReactMouseEvent, WheelEvent as ReactWheelEvent, useEffect, useMemo } from 'react';
 import {
   Box, Paper, Typography, Button, TextField, Select, MenuItem, Divider, Chip, Alert, IconButton, ToggleButton, ToggleButtonGroup,
+  Dialog, DialogTitle, DialogContent, DialogActions, FormControl, InputLabel,
 } from '@mui/material';
 import PageHeader from '../../components/shared/PageHeader';
 import { useTranslation } from '../../lib/i18n';
 import api from '../../api/client';
 import { useUnits } from '../../api/hooks';
-import { useMaster, ZoneType, useFloorplan, useSaveFloorplan } from '../../api/master-hooks';
+import {
+  useMaster, ZoneType, useFloorplan, useSaveFloorplan, useDeleteFloorplan,
+  useAirports, useBuildings, useFloors,
+  useCreateFloor, useUpdateFloor, useDeleteFloor,
+  Airport, Building, Floor,
+} from '../../api/master-hooks';
+
+// === Custom cursors (inline SVG data URIs) ===
+// ดินสอสำหรับ freehand — 24x24, ปลายอยู่ที่ (2, 22)
+const PENCIL_CURSOR = `url("data:image/svg+xml;utf8,${encodeURIComponent(
+  `<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'><path d='M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z' fill='%23d7a94b' stroke='%23163f6b' stroke-width='.5'/></svg>`
+)}") 2 22, crosshair`;
+// หมุด/marker สำหรับ polygon — ปลายอยู่ที่ (12, 24)
+const PIN_CURSOR = `url("data:image/svg+xml;utf8,${encodeURIComponent(
+  `<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'><path d='M12 0C7.58 0 4 3.58 4 8c0 5.25 7 13 7.36 13.3a.9.9 0 0 0 1.28 0C13 21 20 13.25 20 8c0-4.42-3.58-8-8-8zm0 11a3 3 0 1 1 0-6 3 3 0 0 1 0 6z' fill='%23b52822' stroke='%23fff' stroke-width='1'/></svg>`
+)}") 12 22, crosshair`;
 
 // === Types ===
-type DrawMode = 'rect' | 'polygon' | 'freehand';
+type DrawMode = 'rect' | 'polygon' | 'freehand' | 'pan';
 type ShapeType = 'RECT' | 'POLYGON' | 'FREEHAND';
 
 interface Point { x: number; y: number } // หน่วย grid (1 = 1 เมตร)
@@ -121,10 +137,51 @@ export default function FloorPlan() {
   const { locale } = useTranslation();
   const canvasRef = useRef<HTMLDivElement>(null);
 
-  // === State: Airport / Building / Floor selector ===
-  const [airportId, setAirportId] = useState<string>('DMK');
-  const [buildingId, setBuildingId] = useState<string>('T1');
-  const [floorId, setFloorId] = useState<string>('F1');
+  // === DB-driven Airport / Building / Floor selector ===
+  const { data: airports = [] } = useAirports();
+  const [selectedAirportId, setSelectedAirportId] = useState<number | null>(null);
+  const { data: buildings = [] } = useBuildings(selectedAirportId || undefined);
+  const [selectedBuildingId, setSelectedBuildingId] = useState<number | null>(null);
+  const { data: floors = [] } = useFloors(selectedBuildingId || undefined);
+  const [selectedFloorId, setSelectedFloorId] = useState<number | null>(null);
+
+  // Auto-select first airport/building/floor เมื่อ load เสร็จ
+  useEffect(() => {
+    if (!selectedAirportId && airports.length > 0) setSelectedAirportId(airports[0].id);
+  }, [airports, selectedAirportId]);
+  useEffect(() => {
+    setSelectedBuildingId(null);
+    setSelectedFloorId(null);
+  }, [selectedAirportId]);
+  useEffect(() => {
+    if (!selectedBuildingId && buildings.length > 0) setSelectedBuildingId(buildings[0].id);
+  }, [buildings, selectedBuildingId]);
+  useEffect(() => {
+    setSelectedFloorId(null);
+  }, [selectedBuildingId]);
+  useEffect(() => {
+    if (!selectedFloorId && floors.length > 0) setSelectedFloorId(floors[0].id);
+  }, [floors, selectedFloorId]);
+
+  // หา records ปัจจุบันจาก id
+  const activeAirport = airports.find((a) => a.id === selectedAirportId);
+  const activeBuilding = buildings.find((b) => b.id === selectedBuildingId);
+  const activeFloor = floors.find((f) => f.id === selectedFloorId);
+
+  // === Floor management dialog ===
+  const [floorDialogOpen, setFloorDialogOpen] = useState(false);
+  const [floorDialogMode, setFloorDialogMode] = useState<'create' | 'edit'>('create');
+  const [floorForm, setFloorForm] = useState({
+    id: 0,
+    floorCode: '',
+    floorNameTh: '',
+    floorNameEn: '',
+    floorNumber: 1,
+  });
+  const createFloorMut = useCreateFloor();
+  const updateFloorMut = useUpdateFloor();
+  const deleteFloorMut = useDeleteFloor();
+  const deleteFloorplanMut = useDeleteFloorplan();
 
   // === SVG Floor plan ===
   const [floorplanSvg, setFloorplanSvg] = useState<string | null>(null);
@@ -140,6 +197,9 @@ export default function FloorPlan() {
   // === Zoom + Pan state ===
   const [zoom, setZoom] = useState(1);         // 0.25 .. 4
   const [pan, setPan] = useState({ x: 0, y: 0 }); // pixel offset
+  const [isPanning, setIsPanning] = useState(false);
+  const [panStart, setPanStart] = useState<{ x: number; y: number; panX: number; panY: number } | null>(null);
+  const [spaceHeld, setSpaceHeld] = useState(false); // Space key hold → temporary pan mode
 
   // === Drawing state (Rect) ===
   const [drawing, setDrawing] = useState<{ x: number; y: number } | null>(null);
@@ -193,10 +253,12 @@ export default function FloorPlan() {
     return d.toISOString().slice(0, 10);
   });
 
-  // === API hooks สำหรับ Floor Plan SVG ===
-  // TODO: ควรใช้ airport ID จาก DB จริง — ตอนนี้ใช้ 1 ทั้งหมด (DMK)
-  const airportIdNum = 1;
-  const { data: apiFloorplans = [] } = useFloorplan(airportIdNum, buildingId, floorId);
+  // === API hooks สำหรับ Floor Plan SVG — ใช้ ID จริงจาก DB ===
+  const { data: apiFloorplans = [] } = useFloorplan(
+    activeAirport?.id,
+    activeBuilding?.buildingCode,
+    activeFloor?.floorCode,
+  );
   const saveFloorplanMut = useSaveFloorplan();
 
   // โหลด SVG จาก API ตอน airport/building/floor เปลี่ยน
@@ -210,6 +272,31 @@ export default function FloorPlan() {
       setFloorplanFilename('');
     }
   }, [apiFloorplans]);
+
+  // Space key hold → temporary pan mode (ยกเว้นเมื่อ user อยู่ใน input)
+  useEffect(() => {
+    const isTextInput = (el: EventTarget | null) => {
+      const t = el as HTMLElement | null;
+      if (!t) return false;
+      const tag = t.tagName;
+      return tag === 'INPUT' || tag === 'TEXTAREA' || t.isContentEditable;
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.code === 'Space' && !spaceHeld && !isTextInput(e.target)) {
+        e.preventDefault();
+        setSpaceHeld(true);
+      }
+    };
+    const onKeyUp = (e: KeyboardEvent) => {
+      if (e.code === 'Space') setSpaceHeld(false);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('keyup', onKeyUp);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keyup', onKeyUp);
+    };
+  }, [spaceHeld]);
 
   // Auto-generate unit code ตาม zoneType + running number — ถ้า user ยังไม่ได้แก้
   useEffect(() => {
@@ -249,12 +336,16 @@ export default function FloorPlan() {
       setFloorplanSvg(svgFinal);
       setFloorplanFilename(file.name);
 
-      // บันทึกลง DB ผ่าน API
+      // บันทึกลง DB ผ่าน API — ต้องมี airport/building/floor ก่อน
+      if (!activeAirport || !activeBuilding || !activeFloor) {
+        alert(locale === 'th' ? 'กรุณาเลือกสถานที่และชั้นก่อน' : 'Please select airport/building/floor first');
+        return;
+      }
       try {
         await saveFloorplanMut.mutateAsync({
-          airportId: airportIdNum,
-          buildingCode: buildingId,
-          floorCode: floorId,
+          airportId: activeAirport.id,
+          buildingCode: activeBuilding.buildingCode,
+          floorCode: activeFloor.floorCode,
           name: file.name,
           svgContent: svgFinal,
           canvasWidth: canvasSize.width,
@@ -291,7 +382,23 @@ export default function FloorPlan() {
   const toGrid = (px: number) => px / GRID_SIZE;
 
   // === Drawing handlers ===
+  // effective mode: ถ้า spaceHeld หรือ middle click → force pan
+  const effectiveDrawMode: DrawMode = spaceHeld ? 'pan' : drawMode;
+
   const handleMouseDown = (e: ReactMouseEvent<HTMLDivElement>) => {
+    // Pan mode (toolbar pan, หรือ Space-held, หรือ middle click)
+    if (mode === 'view' || effectiveDrawMode === 'pan' || e.button === 1) {
+      const rect = canvasRef.current!.getBoundingClientRect();
+      setIsPanning(true);
+      setPanStart({
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top,
+        panX: pan.x,
+        panY: pan.y,
+      });
+      e.preventDefault();
+      return;
+    }
     if (mode !== 'edit') return;
     // Middle click / Space + click → pan (handled separately)
     if (drawMode === 'rect') {
@@ -319,6 +426,14 @@ export default function FloorPlan() {
   };
 
   const handleMouseMove = (e: ReactMouseEvent<HTMLDivElement>) => {
+    // Pan — ปรับ pan ตามการเคลื่อนที่ของเมาส์
+    if (isPanning && panStart) {
+      const rect = canvasRef.current!.getBoundingClientRect();
+      const dx = (e.clientX - rect.left) - panStart.x;
+      const dy = (e.clientY - rect.top) - panStart.y;
+      setPan({ x: panStart.panX + dx, y: panStart.panY + dy });
+      return;
+    }
     if (mode !== 'edit') return;
     if (drawMode === 'rect' && drawing) {
       const pos = getMousePos(e);
@@ -337,6 +452,11 @@ export default function FloorPlan() {
   };
 
   const handleMouseUp = () => {
+    if (isPanning) {
+      setIsPanning(false);
+      setPanStart(null);
+      return;
+    }
     if (drawMode === 'rect') {
       setDrawing(null);
     } else if (drawMode === 'freehand' && isFreehanding) {
@@ -529,7 +649,7 @@ export default function FloorPlan() {
       const payload: any = {
         unitCode,
         unitNameTh: bookerName,
-        airportId: 1, // TODO: resolve from airportId string
+        airportId: activeAirport?.id || 1,
         areaSqm: effectiveArea,
         status: 'RESERVED',
         purpose: zt?.nameTh || zoneType,
@@ -576,24 +696,100 @@ export default function FloorPlan() {
   };
   const handleDeleteDraft = (id: string) => setDraftZones(draftZones.filter((z) => z.id !== id));
 
-  const formatMoney = (n: number) => new Intl.NumberFormat('th-TH').format(Math.round(n));
+  // === Floor dialog handlers ===
+  const openCreateFloor = () => {
+    if (!activeBuilding) {
+      alert(locale === 'th' ? 'กรุณาเลือกอาคารก่อน' : 'Please select a building first');
+      return;
+    }
+    const nextNumber = (floors[floors.length - 1]?.floorNumber || 0) + 1;
+    setFloorDialogMode('create');
+    setFloorForm({
+      id: 0,
+      floorCode: `${activeBuilding.buildingCode}-F${nextNumber}`,
+      floorNameTh: `ชั้น ${nextNumber}`,
+      floorNameEn: `Floor ${nextNumber}`,
+      floorNumber: nextNumber,
+    });
+    setFloorDialogOpen(true);
+  };
+  const openEditFloor = () => {
+    if (!activeFloor) return;
+    setFloorDialogMode('edit');
+    setFloorForm({
+      id: activeFloor.id,
+      floorCode: activeFloor.floorCode,
+      floorNameTh: activeFloor.floorNameTh,
+      floorNameEn: activeFloor.floorNameEn || '',
+      floorNumber: activeFloor.floorNumber,
+    });
+    setFloorDialogOpen(true);
+  };
+  const saveFloor = async () => {
+    if (!activeBuilding) return;
+    if (!floorForm.floorCode.trim() || !floorForm.floorNameTh.trim()) {
+      alert(locale === 'th' ? 'กรุณากรอก code และชื่อชั้น' : 'Code and name required');
+      return;
+    }
+    try {
+      if (floorDialogMode === 'create') {
+        const created = await createFloorMut.mutateAsync({
+          floorCode: floorForm.floorCode,
+          floorNameTh: floorForm.floorNameTh,
+          floorNameEn: floorForm.floorNameEn || undefined,
+          floorNumber: floorForm.floorNumber,
+          buildingId: activeBuilding.id,
+        });
+        setFloorDialogOpen(false);
+        if (created?.id) setSelectedFloorId(created.id);
+      } else {
+        await updateFloorMut.mutateAsync({
+          id: floorForm.id,
+          floorCode: floorForm.floorCode,
+          floorNameTh: floorForm.floorNameTh,
+          floorNameEn: floorForm.floorNameEn || undefined,
+          floorNumber: floorForm.floorNumber,
+        });
+        setFloorDialogOpen(false);
+      }
+    } catch (err: any) {
+      alert(err.response?.data?.error || 'Error');
+    }
+  };
+  const handleDeleteFloor = async () => {
+    if (!activeFloor) return;
+    const confirmed = window.confirm(
+      locale === 'th'
+        ? `ลบชั้น "${activeFloor.floorNameTh}"?\n(ถ้ามีพื้นที่เช่าอยู่ จะทำ soft delete ให้อัตโนมัติ)`
+        : `Delete floor "${activeFloor.floorNameTh}"?\n(Soft delete if units exist)`
+    );
+    if (!confirmed) return;
+    try {
+      const result: any = await deleteFloorMut.mutateAsync(activeFloor.id);
+      if (result.warning) alert(result.warning);
+      setSelectedFloorId(null);
+    } catch (err: any) {
+      alert(err.response?.data?.error || 'Delete failed');
+    }
+  };
 
-  // === Dropdown options ===
-  const airportOptions = [
-    { value: 'DMK', labelTh: 'ท่าอากาศยานดอนเมือง', labelEn: 'Don Mueang' },
-    { value: 'CNX', labelTh: 'ท่าอากาศยานเชียงใหม่', labelEn: 'Chiang Mai' },
-    { value: 'HKT', labelTh: 'ท่าอากาศยานภูเก็ต', labelEn: 'Phuket' },
-    { value: 'HDY', labelTh: 'ท่าอากาศยานหาดใหญ่', labelEn: 'Hat Yai' },
-  ];
-  const buildingOptions = [
-    { value: 'T1', labelTh: 'อาคารผู้โดยสาร 1', labelEn: 'Terminal 1' },
-    { value: 'T2', labelTh: 'อาคารผู้โดยสาร 2', labelEn: 'Terminal 2' },
-  ];
-  const floorOptions = [
-    { value: 'F1', labelTh: 'ชั้น 1', labelEn: 'Floor 1' },
-    { value: 'F2', labelTh: 'ชั้น 2', labelEn: 'Floor 2' },
-    { value: 'F3', labelTh: 'ชั้น 3', labelEn: 'Floor 3' },
-  ];
+  // === Delete current floor plan SVG ===
+  const handleDeleteFloorplan = async () => {
+    if (!apiFloorplans[0]) return;
+    const confirmed = window.confirm(
+      locale === 'th' ? 'ลบ Floor Plan SVG ของชั้นนี้?' : 'Delete Floor Plan SVG for this floor?'
+    );
+    if (!confirmed) return;
+    try {
+      await deleteFloorplanMut.mutateAsync(apiFloorplans[0].id);
+      setFloorplanSvg(null);
+      setFloorplanFilename('');
+    } catch (err: any) {
+      alert(err.response?.data?.error || 'Delete failed');
+    }
+  };
+
+  const formatMoney = (n: number) => new Intl.NumberFormat('th-TH').format(Math.round(n));
 
   return (
     <>
@@ -785,28 +981,106 @@ export default function FloorPlan() {
 
         {/* === Center: Canvas === */}
         <Paper elevation={0} sx={{ border: '1px solid rgba(22,63,107,.12)', boxShadow: '0 2px 12px rgba(10,22,40,.08)', display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
-          {/* Airport/Building/Floor selector */}
+          {/* Airport/Building/Floor selector — DB-driven */}
           <Box sx={{ px: 2, py: 1.25, borderBottom: '1px solid rgba(22,63,107,.08)', display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center', bgcolor: '#f8fafc' }}>
-            <Select size="small" value={airportId} onChange={(e) => setAirportId(e.target.value)} sx={{ fontSize: 12, minWidth: 160 }}>
-              {airportOptions.map((a) => (
-                <MenuItem key={a.value} value={a.value}>{locale === 'th' ? a.labelTh : a.labelEn}</MenuItem>
+            <Select
+              size="small"
+              value={selectedAirportId || ''}
+              onChange={(e) => setSelectedAirportId(Number(e.target.value))}
+              sx={{ fontSize: 12, minWidth: 160 }}
+              displayEmpty
+              renderValue={(v) => {
+                if (!v) return <span style={{ color: '#8a9cb2' }}>{locale === 'th' ? 'เลือกสนามบิน' : 'Select airport'}</span>;
+                const a = airports.find((x) => x.id === v);
+                return a ? (locale === 'th' ? a.airportNameTh : (a.airportNameEn || a.airportNameTh)) : '';
+              }}
+            >
+              {airports.map((a) => (
+                <MenuItem key={a.id} value={a.id}>
+                  {a.airportCode} — {locale === 'th' ? a.airportNameTh : (a.airportNameEn || a.airportNameTh)}
+                </MenuItem>
               ))}
             </Select>
-            <Select size="small" value={buildingId} onChange={(e) => setBuildingId(e.target.value)} sx={{ fontSize: 12, minWidth: 140 }}>
-              {buildingOptions.map((b) => (
-                <MenuItem key={b.value} value={b.value}>{locale === 'th' ? b.labelTh : b.labelEn}</MenuItem>
+
+            <Select
+              size="small"
+              value={selectedBuildingId || ''}
+              onChange={(e) => setSelectedBuildingId(Number(e.target.value))}
+              sx={{ fontSize: 12, minWidth: 140 }}
+              disabled={!selectedAirportId || buildings.length === 0}
+              displayEmpty
+              renderValue={(v) => {
+                if (!v) return <span style={{ color: '#8a9cb2' }}>{locale === 'th' ? 'อาคาร' : 'Building'}</span>;
+                const b = buildings.find((x) => x.id === v);
+                return b ? (locale === 'th' ? b.buildingNameTh : (b.buildingNameEn || b.buildingNameTh)) : '';
+              }}
+            >
+              {buildings.map((b) => (
+                <MenuItem key={b.id} value={b.id}>
+                  {b.buildingCode} — {locale === 'th' ? b.buildingNameTh : (b.buildingNameEn || b.buildingNameTh)}
+                </MenuItem>
               ))}
             </Select>
-            <Select size="small" value={floorId} onChange={(e) => setFloorId(e.target.value)} sx={{ fontSize: 12, minWidth: 100 }}>
-              {floorOptions.map((f) => (
-                <MenuItem key={f.value} value={f.value}>{locale === 'th' ? f.labelTh : f.labelEn}</MenuItem>
+
+            <Select
+              size="small"
+              value={selectedFloorId || ''}
+              onChange={(e) => setSelectedFloorId(Number(e.target.value))}
+              sx={{ fontSize: 12, minWidth: 120 }}
+              disabled={!selectedBuildingId || floors.length === 0}
+              displayEmpty
+              renderValue={(v) => {
+                if (!v) return <span style={{ color: '#8a9cb2' }}>{locale === 'th' ? 'ชั้น' : 'Floor'}</span>;
+                const f = floors.find((x) => x.id === v);
+                return f ? `${f.floorCode} · ${locale === 'th' ? f.floorNameTh : (f.floorNameEn || f.floorNameTh)}` : '';
+              }}
+            >
+              {floors.map((f) => (
+                <MenuItem key={f.id} value={f.id}>
+                  {f.floorCode} — {locale === 'th' ? f.floorNameTh : (f.floorNameEn || f.floorNameTh)}
+                  {f._count && f._count.zones > 0 && (
+                    <Chip label={f._count.zones} size="small" sx={{ ml: 1, height: 16, fontSize: 9 }} />
+                  )}
+                </MenuItem>
               ))}
             </Select>
+
+            {/* Floor management buttons */}
+            <Box sx={{ display: 'flex', gap: .25, ml: .5 }}>
+              <IconButton
+                size="small"
+                onClick={openCreateFloor}
+                disabled={!selectedBuildingId}
+                title={locale === 'th' ? 'เพิ่มชั้น' : 'Add floor'}
+                sx={{ color: '#0f7a43' }}
+              >
+                <span className="material-icons-outlined" style={{ fontSize: 18 }}>add_circle</span>
+              </IconButton>
+              <IconButton
+                size="small"
+                onClick={openEditFloor}
+                disabled={!activeFloor}
+                title={locale === 'th' ? 'แก้ไขชั้น' : 'Edit floor'}
+                sx={{ color: '#005b9f' }}
+              >
+                <span className="material-icons-outlined" style={{ fontSize: 18 }}>edit</span>
+              </IconButton>
+              <IconButton
+                size="small"
+                onClick={handleDeleteFloor}
+                disabled={!activeFloor}
+                title={locale === 'th' ? 'ลบชั้น' : 'Delete floor'}
+                sx={{ color: '#b52822' }}
+              >
+                <span className="material-icons-outlined" style={{ fontSize: 18 }}>delete</span>
+              </IconButton>
+            </Box>
+
             {floorplanFilename && (
               <Chip
                 size="small"
                 label={floorplanFilename}
-                onDelete={() => { setFloorplanSvg(null); setFloorplanFilename(''); }}
+                onDelete={handleDeleteFloorplan}
                 sx={{ fontSize: 10, ml: 'auto' }}
               />
             )}
@@ -834,7 +1108,14 @@ export default function FloorPlan() {
                   <span className="material-icons-outlined" style={{ fontSize: 16, marginRight: 4 }}>gesture</span>
                   {locale === 'th' ? 'ลากมือ' : 'Freehand'}
                 </ToggleButton>
+                <ToggleButton value="pan" sx={{ fontSize: 10, px: 1.25, py: .5 }} title={locale === 'th' ? 'ลากย้ายแผนผัง (หรือกด Space ค้าง)' : 'Pan (or hold Space)'}>
+                  <span className="material-icons-outlined" style={{ fontSize: 16, marginRight: 4 }}>pan_tool</span>
+                  {locale === 'th' ? 'มือ' : 'Pan'}
+                </ToggleButton>
               </ToggleButtonGroup>
+              {spaceHeld && (
+                <Chip label="Space" size="small" sx={{ fontSize: 9, height: 18, bgcolor: '#d7a94b22', color: '#a45a00' }} />
+              )}
 
               <Box sx={{ display: 'flex', alignItems: 'center', gap: .25, ml: 'auto' }}>
                 <IconButton size="small" onClick={zoomOut} title="Zoom out">
@@ -923,7 +1204,14 @@ export default function FloorPlan() {
                 border: '1px solid rgba(22,63,107,.12)',
                 borderRadius: 2,
                 overflow: 'hidden',
-                cursor: mode === 'edit' ? (drawMode === 'polygon' ? 'copy' : drawMode === 'freehand' ? 'grabbing' : 'crosshair') : 'default',
+                cursor:
+                  isPanning ? 'grabbing' :
+                  effectiveDrawMode === 'pan' ? 'grab' :
+                  mode === 'edit' ? (
+                    effectiveDrawMode === 'polygon' ? PIN_CURSOR :
+                    effectiveDrawMode === 'freehand' ? PENCIL_CURSOR :
+                    'crosshair'
+                  ) : 'grab',
                 // === Zoom + Pan transform ===
                 transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
                 transformOrigin: '0 0',
@@ -1226,6 +1514,62 @@ export default function FloorPlan() {
           </Box>
         </Paper>
       </Box>
+
+      {/* === Floor management dialog === */}
+      <Dialog open={floorDialogOpen} onClose={() => setFloorDialogOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ fontSize: 14, fontWeight: 700 }}>
+          {floorDialogMode === 'create'
+            ? (locale === 'th' ? 'เพิ่มชั้นใหม่' : 'Add New Floor')
+            : (locale === 'th' ? 'แก้ไขชั้น' : 'Edit Floor')}
+          {activeBuilding && (
+            <Typography sx={{ fontSize: 11, color: '#5a6d80', fontWeight: 400 }}>
+              {activeBuilding.buildingCode} · {locale === 'th' ? activeBuilding.buildingNameTh : (activeBuilding.buildingNameEn || activeBuilding.buildingNameTh)}
+            </Typography>
+          )}
+        </DialogTitle>
+        <DialogContent dividers>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
+            <TextField
+              size="small" fullWidth label={locale === 'th' ? 'รหัสชั้น' : 'Floor Code'}
+              value={floorForm.floorCode}
+              onChange={(e) => setFloorForm({ ...floorForm, floorCode: e.target.value.toUpperCase() })}
+              helperText={locale === 'th' ? 'เช่น T1-F1, F2, B1' : 'e.g. T1-F1, F2, B1'}
+              inputProps={{ style: { fontFamily: "'IBM Plex Mono', monospace", fontSize: 12 } }}
+            />
+            <TextField
+              size="small" fullWidth type="number" label={locale === 'th' ? 'หมายเลขชั้น' : 'Floor Number'}
+              value={floorForm.floorNumber}
+              onChange={(e) => setFloorForm({ ...floorForm, floorNumber: Number(e.target.value) })}
+              helperText={locale === 'th' ? '-1 = ชั้นใต้ดิน, 1 = ชั้น 1' : '-1 = basement, 1 = ground'}
+            />
+            <TextField
+              size="small" fullWidth label={locale === 'th' ? 'ชื่อชั้น (ไทย)' : 'Name (Thai)'}
+              value={floorForm.floorNameTh}
+              onChange={(e) => setFloorForm({ ...floorForm, floorNameTh: e.target.value })}
+            />
+            <TextField
+              size="small" fullWidth label={locale === 'th' ? 'ชื่อชั้น (อังกฤษ)' : 'Name (English)'}
+              value={floorForm.floorNameEn}
+              onChange={(e) => setFloorForm({ ...floorForm, floorNameEn: e.target.value })}
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setFloorDialogOpen(false)} size="small">
+            {locale === 'th' ? 'ยกเลิก' : 'Cancel'}
+          </Button>
+          <Button
+            onClick={saveFloor}
+            variant="contained"
+            size="small"
+            disabled={createFloorMut.isPending || updateFloorMut.isPending}
+          >
+            {createFloorMut.isPending || updateFloorMut.isPending
+              ? (locale === 'th' ? 'บันทึก...' : 'Saving...')
+              : (locale === 'th' ? 'บันทึก' : 'Save')}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 }
