@@ -864,7 +864,8 @@ export default function FloorPlan() {
         flex: 1, overflow: 'auto',
         p: { xs: 1.5, md: 2.5 },
         display: 'grid',
-        gridTemplateColumns: { xs: '1fr', lg: mode === 'edit' ? '300px 1fr 280px' : '1fr 300px' },
+        // ใช้ md breakpoint (900px) แทน lg (1200px) เพื่อให้ 3-col layout แสดงเร็วขึ้น
+        gridTemplateColumns: { xs: '1fr', md: mode === 'edit' ? '280px 1fr 260px' : '1fr 280px' },
         gap: 2,
         '&:focus-visible': { outline: '2px solid #005b9f', outlineOffset: -2 },
       }}>
@@ -1225,47 +1226,84 @@ export default function FloorPlan() {
             </Box>
           )}
 
-          {/* Stats bar (edit mode) */}
+          {/* Stats bar (edit mode) — มีปุ่มบันทึกใหญ่ใน bar เพื่อไม่ต้อง scroll หา */}
           {mode === 'edit' && (
-            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }, gap: 1, p: 1.5, borderBottom: '1px solid rgba(22,63,107,.08)', bgcolor: '#f8fafc' }}>
-              <Box>
-                <Typography sx={{ fontSize: 10, color: '#5a6d80' }}>{locale === 'th' ? 'ขนาด' : 'Size'}</Typography>
-                <Typography sx={{ fontSize: 14, fontWeight: 700, fontFamily: "'IBM Plex Mono', monospace", color: '#163f6b' }}>
-                  {selection ? `${selection.widthM.toFixed(1)}×${selection.heightM.toFixed(1)}m` : '—'}
-                </Typography>
+            <Box sx={{ display: 'flex', gap: 1, p: 1.5, borderBottom: '1px solid rgba(22,63,107,.08)', bgcolor: '#f8fafc', flexWrap: 'wrap', alignItems: 'center' }}>
+              <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(70px, 1fr))', gap: 1.5, flex: 1, minWidth: 280 }}>
+                <Box>
+                  <Typography sx={{ fontSize: 10, color: '#5a6d80' }}>{locale === 'th' ? 'ขนาด' : 'Size'}</Typography>
+                  <Typography sx={{ fontSize: 14, fontWeight: 700, fontFamily: "'IBM Plex Mono', monospace", color: '#163f6b' }}>
+                    {selection ? `${selection.widthM.toFixed(1)}×${selection.heightM.toFixed(1)}m` : '—'}
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography sx={{ fontSize: 10, color: '#5a6d80' }}>
+                    {locale === 'th' ? 'พื้นที่' : 'Area'} {manualAreaOverride && <span style={{ color: '#a45a00' }}>✎</span>}
+                  </Typography>
+                  <Typography sx={{ fontSize: 14, fontWeight: 700, fontFamily: "'IBM Plex Mono', monospace", color: '#163f6b' }}>
+                    {selection ? `${effectiveArea.toFixed(2)} sqm` : '—'}
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography sx={{ fontSize: 10, color: '#5a6d80' }}>
+                    {locale === 'th' ? 'ราคา' : 'Price'} {manualPriceOverride && <span style={{ color: '#a45a00' }}>✎</span>}
+                  </Typography>
+                  <Typography sx={{ fontSize: 14, fontWeight: 700, fontFamily: "'IBM Plex Mono', monospace", color: currentCollision ? '#b52822' : '#0f7a43' }}>
+                    {selection ? `฿${formatMoney(effectivePrice)}` : '—'}
+                  </Typography>
+                </Box>
+                <Box>
+                  <Typography sx={{ fontSize: 10, color: '#5a6d80' }}>{locale === 'th' ? 'สถานะ' : 'Status'}</Typography>
+                  <Chip
+                    label={
+                      currentCollision ? (locale === 'th' ? 'ชน' : 'Collide') :
+                      selection ? (selection.shapeType === 'POLYGON' ? '▲ OK' : selection.shapeType === 'FREEHAND' ? '✎ OK' : '▭ OK') : '—'
+                    }
+                    size="small"
+                    sx={{
+                      fontSize: 10, fontWeight: 700, height: 22,
+                      bgcolor: currentCollision ? 'rgba(217,83,79,.1)' : selection ? 'rgba(26,158,92,.1)' : '#f4f8fc',
+                      color: currentCollision ? '#b52822' : selection ? '#0f7a43' : '#5a6d80',
+                      border: `1px solid ${currentCollision ? 'rgba(217,83,79,.25)' : selection ? 'rgba(26,158,92,.25)' : 'rgba(22,63,107,.12)'}`,
+                    }}
+                  />
+                </Box>
               </Box>
-              <Box>
-                <Typography sx={{ fontSize: 10, color: '#5a6d80' }}>
-                  {locale === 'th' ? 'พื้นที่' : 'Area'} {manualAreaOverride && <span style={{ color: '#a45a00' }}>✎</span>}
-                </Typography>
-                <Typography sx={{ fontSize: 14, fontWeight: 700, fontFamily: "'IBM Plex Mono', monospace", color: '#163f6b' }}>
-                  {selection ? `${effectiveArea.toFixed(2)} sqm` : '—'}
-                </Typography>
-              </Box>
-              <Box>
-                <Typography sx={{ fontSize: 10, color: '#5a6d80' }}>
-                  {locale === 'th' ? 'ราคา' : 'Price'} {manualPriceOverride && <span style={{ color: '#a45a00' }}>✎</span>}
-                </Typography>
-                <Typography sx={{ fontSize: 14, fontWeight: 700, fontFamily: "'IBM Plex Mono', monospace", color: currentCollision ? '#b52822' : '#0f7a43' }}>
-                  {selection ? `฿${formatMoney(effectivePrice)}` : '—'}
-                </Typography>
-              </Box>
-              <Box>
-                <Typography sx={{ fontSize: 10, color: '#5a6d80' }}>{locale === 'th' ? 'สถานะ' : 'Status'}</Typography>
-                <Chip
-                  label={
-                    currentCollision ? (locale === 'th' ? 'ชน' : 'Collide') :
-                    selection ? (selection.shapeType === 'POLYGON' ? '▲ OK' : selection.shapeType === 'FREEHAND' ? '✎ OK' : '▭ OK') : '—'
-                  }
+
+              {/* ปุ่มบันทึก + ล้าง ใหญ่ ๆ เห็นชัด */}
+              <Box sx={{ display: 'flex', gap: .75, alignItems: 'center' }}>
+                <Button
+                  variant="outlined"
                   size="small"
-                  sx={{
-                    fontSize: 10, fontWeight: 700, height: 22,
-                    bgcolor: currentCollision ? 'rgba(217,83,79,.1)' : selection ? 'rgba(26,158,92,.1)' : '#f4f8fc',
-                    color: currentCollision ? '#b52822' : selection ? '#0f7a43' : '#5a6d80',
-                    border: `1px solid ${currentCollision ? 'rgba(217,83,79,.25)' : selection ? 'rgba(26,158,92,.25)' : 'rgba(22,63,107,.12)'}`,
-                  }}
-                />
+                  onClick={handleClear}
+                  disabled={!selection && !drawing && polygonPoints.length === 0 && freehandPath.length === 0}
+                  sx={{ fontSize: 11 }}
+                  title={locale === 'th' ? 'ล้าง (ESC)' : 'Clear (ESC)'}
+                >
+                  <span className="material-icons-outlined" style={{ fontSize: 16, marginRight: 4 }}>close</span>
+                  {locale === 'th' ? 'ล้าง' : 'Clear'}
+                </Button>
+                <Button
+                  variant="contained"
+                  size="small"
+                  color="success"
+                  onClick={handleConfirm}
+                  disabled={!selection || currentCollision || savingZone || !bookerName.trim() || !unitCode.trim()}
+                  sx={{ fontSize: 12, fontWeight: 700, minWidth: 110 }}
+                >
+                  <span className="material-icons-outlined" style={{ fontSize: 18, marginRight: 4 }}>save</span>
+                  {savingZone
+                    ? (locale === 'th' ? 'บันทึก...' : 'Saving...')
+                    : (locale === 'th' ? 'บันทึกพื้นที่' : 'Save Zone')}
+                </Button>
               </Box>
+
+              {/* แจ้งเตือนถ้ายังไม่กรอก booker name */}
+              {selection && !currentCollision && !bookerName.trim() && (
+                <Alert severity="warning" sx={{ fontSize: 10, py: 0, width: '100%' }}>
+                  {locale === 'th' ? 'กรุณากรอก "ชื่อผู้จอง" ในแถบซ้ายก่อนบันทึก' : 'Please fill "Booker" in left panel first'}
+                </Alert>
+              )}
             </Box>
           )}
 
@@ -1344,38 +1382,92 @@ export default function FloorPlan() {
 
               {/* SVG zones layer — pointerEvents เปิดใน view mode เพื่อให้คลิก unit ได้ */}
               <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: mode === 'view' ? 'auto' : 'none' }}>
-                {/* Existing units from DB */}
-                {apiUnits.slice(0, 48).map((u, i) => {
+                {/* Existing units from DB — render ตาม fp_shape_type + fp_points ที่เก็บไว้ */}
+                {apiUnits.map((u: any, i: number) => {
                   if (!u.id) return null;
-                  // ใช้ grid layout สำหรับ units ที่ไม่มี coords
-                  const cols = 8;
-                  const x = 30 + (i % cols) * 105;
-                  const y = 70 + Math.floor(i / cols) * 95;
-                  const w = 95, h = 80;
                   const color = unitStatusColors[u.status] || unitStatusColors.VACANT;
                   const isSelected = selectedUnitId === u.id;
+                  const stroke = isSelected ? '#d7a94b' : color.stroke;
+                  const strokeW = isSelected ? 4 : 2;
+                  const clickProps = {
+                    onClick: () => mode === 'view' && setSelectedUnitId(u.id!),
+                    style: { cursor: mode === 'view' ? 'pointer' : 'default' },
+                  };
+
+                  // POLYGON
+                  if (u.fpShapeType === 'POLYGON' && Array.isArray(u.fpPoints) && u.fpPoints.length >= 3) {
+                    const pts = u.fpPoints.map((p: any) => `${p.x * GRID_SIZE},${p.y * GRID_SIZE}`).join(' ');
+                    const labelX = (u.fpCoordX || 0) * GRID_SIZE + 6;
+                    const labelY = (u.fpCoordY || 0) * GRID_SIZE + 16;
+                    return (
+                      <g key={`db-${u.id}`} {...clickProps}>
+                        <polygon points={pts} fill={color.fill} stroke={stroke} strokeWidth={strokeW} />
+                        <text x={labelX} y={labelY} fontSize="11" fontWeight="700" fill={color.stroke} fontFamily="'IBM Plex Mono',monospace">
+                          {u.unitCode}
+                        </text>
+                        <text x={labelX} y={labelY + 14} fontSize="9" fill="#5a6d80">
+                          ▲ {u.areaSqm} sqm{u.currentShop ? ` · ${u.currentShop.slice(0, 16)}` : ''}
+                        </text>
+                      </g>
+                    );
+                  }
+                  // FREEHAND
+                  if (u.fpShapeType === 'FREEHAND' && Array.isArray(u.fpPoints) && u.fpPoints.length >= 3) {
+                    const d = pointsToPath(u.fpPoints, GRID_SIZE, true);
+                    const labelX = (u.fpCoordX || 0) * GRID_SIZE + 6;
+                    const labelY = (u.fpCoordY || 0) * GRID_SIZE + 16;
+                    return (
+                      <g key={`db-${u.id}`} {...clickProps}>
+                        <path d={d} fill={color.fill} stroke={stroke} strokeWidth={strokeW} strokeLinejoin="round" />
+                        <text x={labelX} y={labelY} fontSize="11" fontWeight="700" fill={color.stroke} fontFamily="'IBM Plex Mono',monospace">
+                          {u.unitCode}
+                        </text>
+                        <text x={labelX} y={labelY + 14} fontSize="9" fill="#5a6d80">
+                          ✎ {u.areaSqm} sqm{u.currentShop ? ` · ${u.currentShop.slice(0, 16)}` : ''}
+                        </text>
+                      </g>
+                    );
+                  }
+                  // RECT with coords
+                  if (u.fpCoordX != null && u.fpWidth != null) {
+                    const x = u.fpCoordX * GRID_SIZE;
+                    const y = (u.fpCoordY || 0) * GRID_SIZE;
+                    const w = u.fpWidth * GRID_SIZE;
+                    const h = (u.fpHeight || 0) * GRID_SIZE;
+                    return (
+                      <g key={`db-${u.id}`} {...clickProps}>
+                        <rect x={x} y={y} width={w} height={h} fill={color.fill} stroke={stroke} strokeWidth={strokeW} rx="4" />
+                        <text x={x + w / 2} y={y + 22} textAnchor="middle" fontSize="11" fontWeight="700" fill={color.stroke} fontFamily="'IBM Plex Mono',monospace">
+                          {u.unitCode}
+                        </text>
+                        {u.currentShop && (
+                          <text x={x + w / 2} y={y + 40} textAnchor="middle" fontSize="9" fill="#3a5068">
+                            {u.currentShop.length > 12 ? u.currentShop.slice(0, 12) + '…' : u.currentShop}
+                          </text>
+                        )}
+                        <text x={x + w / 2} y={y + 56} textAnchor="middle" fontSize="8" fill="#5a6d80" fontFamily="'IBM Plex Mono',monospace">
+                          {u.areaSqm} sqm
+                        </text>
+                      </g>
+                    );
+                  }
+                  // Fallback: grid layout สำหรับ units ที่ไม่มี coords (legacy)
+                  const cols = 8;
+                  const gx = 30 + (i % cols) * 105;
+                  const gy = 70 + Math.floor(i / cols) * 95;
+                  const gw = 95, gh = 80;
                   return (
-                    <g
-                      key={`db-${u.id}`}
-                      onClick={() => mode === 'view' && setSelectedUnitId(u.id!)}
-                      style={{ cursor: mode === 'view' ? 'pointer' : 'default' }}
-                    >
-                      <rect
-                        x={x} y={y} width={w} height={h}
-                        fill={color.fill}
-                        stroke={isSelected ? '#d7a94b' : color.stroke}
-                        strokeWidth={isSelected ? 4 : 2}
-                        rx="4"
-                      />
-                      <text x={x + w / 2} y={y + 22} textAnchor="middle" fontSize="11" fontWeight="700" fill={color.stroke} fontFamily="'IBM Plex Mono',monospace">
+                    <g key={`db-${u.id}`} {...clickProps}>
+                      <rect x={gx} y={gy} width={gw} height={gh} fill={color.fill} stroke={stroke} strokeWidth={strokeW} rx="4" strokeDasharray="3 3" />
+                      <text x={gx + gw / 2} y={gy + 22} textAnchor="middle" fontSize="11" fontWeight="700" fill={color.stroke} fontFamily="'IBM Plex Mono',monospace">
                         {u.unitCode}
                       </text>
                       {u.currentShop && (
-                        <text x={x + w / 2} y={y + 40} textAnchor="middle" fontSize="9" fill="#3a5068">
+                        <text x={gx + gw / 2} y={gy + 40} textAnchor="middle" fontSize="9" fill="#3a5068">
                           {u.currentShop.length > 12 ? u.currentShop.slice(0, 12) + '…' : u.currentShop}
                         </text>
                       )}
-                      <text x={x + w / 2} y={y + 56} textAnchor="middle" fontSize="8" fill="#5a6d80" fontFamily="'IBM Plex Mono',monospace">
+                      <text x={gx + gw / 2} y={gy + 56} textAnchor="middle" fontSize="8" fill="#5a6d80" fontFamily="'IBM Plex Mono',monospace">
                         {u.areaSqm} sqm
                       </text>
                     </g>

@@ -79,10 +79,19 @@ export interface Unit {
   areaSqm: number;
   status: 'VACANT' | 'LEASED' | 'RESERVED' | 'MAINTENANCE';
   purpose: string | null;
+  meterNumber?: string | null;
   zoneCode?: string;
   zoneNameTh?: string;
+  airportId?: number;
   airportCode: string;
   airportNameTh: string;
+  // Floor plan geometry
+  fpCoordX?: number | null;
+  fpCoordY?: number | null;
+  fpWidth?: number | null;
+  fpHeight?: number | null;
+  fpShapeType?: 'RECT' | 'POLYGON' | 'FREEHAND' | null;
+  fpPoints?: { x: number; y: number }[] | null;
   currentTenant?: string | null;
   currentShop?: string | null;
   currentContractNo?: string | null;
