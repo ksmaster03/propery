@@ -3,6 +3,39 @@ import { prisma } from '../../lib/prisma.js';
 
 const router = Router();
 
+// GET /api/contracts/by-unit/:unitId — ดึงสัญญาทั้งหมดของพื้นที่ (active + ประวัติ)
+// ใช้ใน Floor Plan side panel เพื่อเช็คว่า unit ไหนมีสัญญาอะไร
+router.get('/by-unit/:unitId', async (req: Request, res: Response) => {
+  try {
+    const unitId = Number(req.params.unitId);
+    if (!unitId) {
+      res.status(400).json({ success: false, error: 'unitId ต้องเป็นตัวเลข' });
+      return;
+    }
+    const contracts = await prisma.ttContract.findMany({
+      where: { unitId },
+      include: {
+        partner: { select: { id: true, partnerCode: true, nameTh: true, shopNameTh: true } },
+        unit: { select: { id: true, unitCode: true, unitNameTh: true, areaSqm: true, status: true } },
+      },
+      orderBy: [
+        { contractStatus: 'asc' }, // ACTIVE มาก่อน
+        { startDate: 'desc' },
+      ],
+      take: 20,
+    });
+
+    // แยก active ออกจาก history
+    const active = contracts.find((c) => c.contractStatus === 'ACTIVE');
+    const history = contracts.filter((c) => c.contractStatus !== 'ACTIVE');
+
+    res.json({ success: true, data: { active, history, total: contracts.length } });
+  } catch (err) {
+    console.error('[CONTRACT] by-unit error:', err);
+    res.status(500).json({ success: false, error: 'ไม่สามารถดึงสัญญาได้' });
+  }
+});
+
 // GET /api/contracts — รายการสัญญาทั้งหมด
 router.get('/', async (req: Request, res: Response) => {
   try {

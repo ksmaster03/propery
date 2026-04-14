@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box, Paper, Typography, TextField, Select, MenuItem, Button,
   Radio, RadioGroup, FormControlLabel, Alert, Chip, Divider, CircularProgress,
   Table, TableHead, TableBody, TableRow, TableCell,
 } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import PageHeader from '../../components/shared/PageHeader';
 import { useTranslation } from '../../lib/i18n';
 import { useMaster, BusinessCategory, DocumentType, PaymentMethod } from '../../api/master-hooks';
@@ -32,6 +32,9 @@ const contractTypes = [
 export default function ContractCreate() {
   const { t, locale } = useTranslation();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  // Prefill จาก query param — มาจากหน้า Floor Plan "สร้างสัญญาใหม่"
+  const prefillUnitId = searchParams.get('unitId');
   const [currentStep, setCurrentStep] = useState(1);
   const [contractType, setContractType] = useState<'FIXED_RENT' | 'REVENUE_SHARING' | 'CONSIGNMENT' | 'REAL_ESTATE'>('FIXED_RENT');
   const [saving, setSaving] = useState(false);
@@ -45,6 +48,26 @@ export default function ContractCreate() {
 
   // === Track uploaded documents (docTypeId → filename) ===
   const [uploadedDocs, setUploadedDocs] = useState<Record<number, { filename: string; url: string }>>({});
+
+  // === Prefill จาก Floor Plan ถ้ามี ?unitId= ===
+  useEffect(() => {
+    if (!prefillUnitId) return;
+    api.get(`/units/${prefillUnitId}`)
+      .then(({ data }) => {
+        if (data?.success && data.data) {
+          const u = data.data;
+          setFormData((prev) => ({
+            ...prev,
+            unitCode: u.unitCode || prev.unitCode,
+            areaSqm: String(u.areaSqm || prev.areaSqm),
+            purpose: u.purpose || prev.purpose,
+            meterNumber: u.meterNumber || prev.meterNumber,
+            building: u.building || prev.building,
+          }));
+        }
+      })
+      .catch((err) => console.warn('Prefill unit failed:', err));
+  }, [prefillUnitId]);
 
   // Upload handler — ส่งไฟล์ขึ้น /api/upload
   const handleDocUpload = async (docId: number, file: File) => {

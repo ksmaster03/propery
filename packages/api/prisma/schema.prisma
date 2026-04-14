@@ -12,6 +12,13 @@ datasource db {
 // ============================================================
 
 // สถานะพื้นที่เช่า
+// รูปร่างพื้นที่บน floor plan — เดิมรองรับแค่สี่เหลี่ยม, เพิ่ม polygon/freehand สำหรับพื้นที่รูปร่างไม่ปกติ
+enum FpShapeType {
+  RECT      // สี่เหลี่ยม — ใช้ fp_coord_x/y/width/height
+  POLYGON   // หลายเหลี่ยม (เส้นตรง) — ใช้ fp_points
+  FREEHAND  // ลากมืออิสระ — ใช้ fp_points (จำนวน points มาก)
+}
+
 enum UnitStatus {
   VACANT      // ว่าง
   LEASED      // เช่าแล้ว
@@ -296,10 +303,18 @@ model TmUnit {
   purpose     String?    @map("purpose") @db.VarChar(100)
   meterNumber String?    @map("meter_number") @db.VarChar(50)
   // พิกัดบน Floor Plan (SVG)
-  fpCoordX    Decimal?   @map("fp_coord_x") @db.Decimal(8, 2)
-  fpCoordY    Decimal?   @map("fp_coord_y") @db.Decimal(8, 2)
-  fpWidth     Decimal?   @map("fp_width") @db.Decimal(8, 2)
-  fpHeight    Decimal?   @map("fp_height") @db.Decimal(8, 2)
+  fpCoordX    Decimal?     @map("fp_coord_x") @db.Decimal(8, 2)
+  fpCoordY    Decimal?     @map("fp_coord_y") @db.Decimal(8, 2)
+  fpWidth     Decimal?     @map("fp_width") @db.Decimal(8, 2)
+  fpHeight    Decimal?     @map("fp_height") @db.Decimal(8, 2)
+  // รูปร่าง — RECT (เดิม) / POLYGON / FREEHAND
+  fpShapeType FpShapeType? @default(RECT) @map("fp_shape_type")
+  // Points array สำหรับ polygon/freehand — [{x, y}, ...] ในหน่วย grid เดียวกับ coord
+  fpPoints    Json?        @map("fp_points")
+  // Manual override — ถ้า true ให้ใช้ areaSqm ที่ผู้ใช้กรอกแทนการคำนวณจาก shape
+  fpManualArea  Boolean?   @default(false) @map("fp_manual_area")
+  // Manual override ราคา — ถ้ามีให้ใช้ค่านี้แทน area * rate
+  fpManualPrice Decimal?   @map("fp_manual_price") @db.Decimal(12, 2)
   // สำหรับอสังหาริมทรัพย์ (ที่ดิน)
   landRai     Int?       @map("land_rai")
   landNgan    Int?       @map("land_ngan")
