@@ -241,6 +241,7 @@ model TmBuilding {
 
   airport TmAirport @relation(fields: [airportId], references: [id])
   floors  TmFloor[]
+  units   TmUnit[]
 
   @@index([airportId])
   @@map("m_building")
@@ -262,6 +263,7 @@ model TmFloor {
 
   building TmBuilding @relation(fields: [buildingId], references: [id])
   zones    TmZone[]
+  units    TmUnit[]
 
   @@index([buildingId])
   @@map("m_floor")
@@ -297,6 +299,8 @@ model TmUnit {
   unitNameTh  String?    @map("unit_name_th") @db.VarChar(200)
   unitNameEn  String?    @map("unit_name_en") @db.VarChar(200)
   airportId   Int        @map("airport_id")
+  buildingId  Int?       @map("building_id")
+  floorId     Int?       @map("floor_id")
   zoneId      Int?       @map("zone_id")
   areaSqm     Decimal?   @map("area_sqm") @db.Decimal(10, 2)
   status      UnitStatus @default(VACANT) @map("status")
@@ -327,10 +331,14 @@ model TmUnit {
   updatedAt   DateTime   @updatedAt @map("updated_at") @db.Timestamptz()
 
   airport   TmAirport    @relation(fields: [airportId], references: [id])
+  building  TmBuilding?  @relation(fields: [buildingId], references: [id])
+  floor     TmFloor?     @relation(fields: [floorId], references: [id])
   zone      TmZone?      @relation(fields: [zoneId], references: [id])
   contracts TtContract[]
 
   @@index([airportId])
+  @@index([buildingId])
+  @@index([floorId])
   @@index([zoneId])
   @@index([status])
   @@map("m_unit")

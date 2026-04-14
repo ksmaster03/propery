@@ -97,7 +97,7 @@ export interface Unit {
   currentContractNo?: string | null;
 }
 
-export function useUnits(params?: { airportId?: number; status?: string; search?: string; page?: number }) {
+export function useUnits(params?: { airportId?: number; buildingId?: number; floorId?: number; status?: string; search?: string; page?: number; limit?: number }) {
   return useQuery({
     queryKey: ['units', 'list', params],
     queryFn: async (): Promise<{ data: Unit[]; total: number }> => {

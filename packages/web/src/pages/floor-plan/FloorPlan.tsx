@@ -225,8 +225,11 @@ export default function FloorPlan() {
   // === View mode: selected unit (สำหรับ side panel แสดงรายละเอียด + สัญญา) ===
   const [selectedUnitId, setSelectedUnitId] = useState<number | null>(null);
 
-  // === โหลด units เดิมจาก API (ใช้ fallback ถ้า offline) ===
-  const { data: apiData, refetch } = useUnits({});
+  // === โหลด units เดิมจาก API ตาม airport + floor ปัจจุบัน ===
+  const { data: apiData, refetch } = useUnits({
+    airportId: selectedAirportId || undefined,
+    floorId: selectedFloorId || undefined,
+  });
   const apiUnits = apiData?.data || [];
 
   // === Master data: zone types + allocation statuses ===
@@ -693,6 +696,8 @@ export default function FloorPlan() {
         unitCode,
         unitNameTh: bookerName,
         airportId: activeAirport?.id || 1,
+        buildingId: activeBuilding?.id || null,
+        floorId: activeFloor?.id || null,
         areaSqm: effectiveArea,
         status: mappedStatus,
         purpose: zt?.nameTh || zoneType,

@@ -6,7 +6,7 @@ const router = Router();
 // GET /api/units — รายการพื้นที่เช่าทั้งหมด (รองรับ filter + pagination + multi-tenant)
 router.get('/', async (req: Request, res: Response) => {
   try {
-    const { airportId, zoneId, status, search, page = '1', limit = '20' } = req.query;
+    const { airportId, buildingId, floorId, zoneId, status, search, page = '1', limit = '20' } = req.query;
     const skip = (Number(page) - 1) * Number(limit);
 
     const where: any = { isActive: true };
@@ -15,6 +15,8 @@ router.get('/', async (req: Request, res: Response) => {
       where.airport = { OR: [{ organizationId: req.orgId }, { organizationId: null }] };
     }
     if (airportId) where.airportId = Number(airportId);
+    if (buildingId) where.buildingId = Number(buildingId);
+    if (floorId) where.floorId = Number(floorId);
     if (zoneId) where.zoneId = Number(zoneId);
     if (status) where.status = status as string;
     if (search) {

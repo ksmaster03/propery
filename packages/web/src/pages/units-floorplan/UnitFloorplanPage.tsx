@@ -80,11 +80,15 @@ export default function UnitFloorplanPage() {
   const activeBuilding = buildings.find((b) => b.id === selectedBuildingId);
   const activeFloor = floors.find((f) => f.id === selectedFloorId);
 
-  // === Fetch units + floorplan SVG ===
+  // === Fetch units + floorplan SVG — filter ตาม airport/building/floor ที่เลือก ===
   const { data: unitsResponse } = useQuery({
-    queryKey: ['units-floorplan', selectedAirportId],
+    queryKey: ['units-floorplan', selectedAirportId, selectedBuildingId, selectedFloorId],
     queryFn: async () => {
-      const { data } = await api.get('/units', { params: { airportId: selectedAirportId, limit: 100 } });
+      const params: any = { limit: 100 };
+      if (selectedAirportId) params.airportId = selectedAirportId;
+      if (selectedBuildingId) params.buildingId = selectedBuildingId;
+      if (selectedFloorId) params.floorId = selectedFloorId;
+      const { data } = await api.get('/units', { params });
       return data;
     },
     enabled: !!selectedAirportId,
