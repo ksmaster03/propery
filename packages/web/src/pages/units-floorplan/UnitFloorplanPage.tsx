@@ -9,6 +9,7 @@ import PageHeader from '../../components/shared/PageHeader';
 import { useTranslation } from '../../lib/i18n';
 import api from '../../api/client';
 import { useAirports, useBuildings, useFloors, useFloorplan } from '../../api/master-hooks';
+import { pointsToPolygon as gPointsToPolygon, pointsToPath as gPointsToPath } from '../../lib/geometry';
 
 // === Types ===
 type UnitStatus = 'VACANT' | 'LEASED' | 'RESERVED' | 'MAINTENANCE';
@@ -43,14 +44,9 @@ const statusColors: Record<UnitStatus, { fill: string; stroke: string; label: st
   MAINTENANCE: { fill: 'rgba(90,109,128,.15)',  stroke: '#5a6d80', label: 'ซ่อมแซม' },
 };
 
-// แปลง points array → SVG polygon points attribute
-function pointsToPolygon(points: { x: number; y: number }[]): string {
-  return points.map((p) => `${p.x * GRID_SIZE},${p.y * GRID_SIZE}`).join(' ');
-}
-function pointsToPath(points: { x: number; y: number }[]): string {
-  if (points.length === 0) return '';
-  return points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x * GRID_SIZE},${p.y * GRID_SIZE}`).join(' ') + ' Z';
-}
+// ใช้ helpers ร่วมจาก lib/geometry — รองรับ gridSize
+const pointsToPolygon = (points: { x: number; y: number }[]) => gPointsToPolygon(points, GRID_SIZE);
+const pointsToPath = (points: { x: number; y: number }[]) => gPointsToPath(points, GRID_SIZE, true);
 
 export default function UnitFloorplanPage() {
   const { locale } = useTranslation();
