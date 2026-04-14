@@ -128,6 +128,9 @@ router.get('/buildings', async (req: Request, res: Response) => {
     if (airportId) where.airportId = Number(airportId);
     const data = await prisma.tmBuilding.findMany({
       where,
+      include: {
+        _count: { select: { floors: true, units: true } },
+      },
       orderBy: { buildingCode: 'asc' },
     });
     res.json({ success: true, data });
@@ -151,7 +154,7 @@ router.post('/buildings', adminOnly, async (req: Request, res: Response) => {
 
 router.put('/buildings/:id', adminOnly, async (req: Request, res: Response) => {
   try {
-    const { id, createdAt, updatedAt, ...updateData } = req.body;
+    const { id, createdAt, updatedAt, airport, floors, units, _count, ...updateData } = req.body;
     const data = await prisma.tmBuilding.update({
       where: { id: Number(req.params.id) },
       data: updateData,
@@ -159,6 +162,34 @@ router.put('/buildings/:id', adminOnly, async (req: Request, res: Response) => {
     res.json({ success: true, data });
   } catch (err) {
     res.status(500).json({ success: false, error: 'ไม่สามารถแก้ไขได้' });
+  }
+});
+
+// DELETE /buildings/:id — D combo: hard delete ถ้าไม่มี floors/units, soft delete ถ้ามี
+router.delete('/buildings/:id', adminOnly, async (req: Request, res: Response) => {
+  try {
+    const buildingId = Number(req.params.id);
+    const floorCount = await prisma.tmFloor.count({ where: { buildingId } });
+    const unitCount = await prisma.tmUnit.count({ where: { buildingId } });
+
+    if (floorCount === 0 && unitCount === 0) {
+      const deleted = await prisma.tmBuilding.delete({ where: { id: buildingId } });
+      res.json({ success: true, data: deleted, mode: 'hard' });
+    } else {
+      const soft = await prisma.tmBuilding.update({
+        where: { id: buildingId },
+        data: { isActive: false },
+      });
+      res.json({
+        success: true,
+        data: soft,
+        mode: 'soft',
+        warning: `มี ${floorCount} ชั้น และ ${unitCount} พื้นที่เช่าในอาคารนี้ — ทำ soft delete แทน`,
+      });
+    }
+  } catch (err: any) {
+    console.error('[MASTER] Delete building error:', err.message);
+    res.status(500).json({ success: false, error: err.message || 'ไม่สามารถลบได้' });
   }
 });
 

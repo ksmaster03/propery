@@ -209,6 +209,7 @@ export interface Building {
   airportId: number;
   totalFloors?: number | null;
   isActive: boolean;
+  _count?: { floors: number; units: number };
 }
 
 export interface Floor {
@@ -297,6 +298,28 @@ export function useCreateBuilding() {
     mutationFn: async (payload: Partial<Building>) => {
       const { data } = await api.post('/master/buildings', payload);
       return data.data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['master', 'buildings'] }),
+  });
+}
+
+export function useUpdateBuilding() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...payload }: Partial<Building> & { id: number }) => {
+      const { data } = await api.put(`/master/buildings/${id}`, payload);
+      return data.data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['master', 'buildings'] }),
+  });
+}
+
+export function useDeleteBuilding() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const { data } = await api.delete(`/master/buildings/${id}`);
+      return data;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['master', 'buildings'] }),
   });

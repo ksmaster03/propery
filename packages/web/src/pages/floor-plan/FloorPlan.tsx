@@ -10,6 +10,7 @@ import { useUnits } from '../../api/hooks';
 import {
   useMaster, ZoneType, AllocationStatus, useFloorplan, useSaveFloorplan, useDeleteFloorplan,
   useAirports, useBuildings, useFloors,
+  useCreateBuilding, useUpdateBuilding, useDeleteBuilding,
   useCreateFloor, useUpdateFloor, useDeleteFloor,
   Airport, Building, Floor,
 } from '../../api/master-hooks';
@@ -112,6 +113,20 @@ export default function FloorPlan() {
   const activeAirport = airports.find((a) => a.id === selectedAirportId);
   const activeBuilding = buildings.find((b) => b.id === selectedBuildingId);
   const activeFloor = floors.find((f) => f.id === selectedFloorId);
+
+  // === Building management dialog ===
+  const [buildingDialogOpen, setBuildingDialogOpen] = useState(false);
+  const [buildingDialogMode, setBuildingDialogMode] = useState<'create' | 'edit'>('create');
+  const [buildingForm, setBuildingForm] = useState({
+    id: 0,
+    buildingCode: '',
+    buildingNameTh: '',
+    buildingNameEn: '',
+    totalFloors: 1,
+  });
+  const createBuildingMut = useCreateBuilding();
+  const updateBuildingMut = useUpdateBuilding();
+  const deleteBuildingMut = useDeleteBuilding();
 
   // === Floor management dialog ===
   const [floorDialogOpen, setFloorDialogOpen] = useState(false);
@@ -689,6 +704,83 @@ export default function FloorPlan() {
   };
   const handleDeleteDraft = (id: string) => setDraftZones(draftZones.filter((z) => z.id !== id));
 
+  // === Building dialog handlers ===
+  const openCreateBuilding = () => {
+    if (!activeAirport) {
+      alert(locale === 'th' ? 'กรุณาเลือกสถานที่ก่อน' : 'Please select a location first');
+      return;
+    }
+    const nextNum = (buildings[buildings.length - 1]?.id || 0) + 1;
+    setBuildingDialogMode('create');
+    setBuildingForm({
+      id: 0,
+      buildingCode: `${activeAirport.airportCode}-T${nextNum}`,
+      buildingNameTh: `อาคารผู้โดยสาร ${nextNum}`,
+      buildingNameEn: `Terminal ${nextNum}`,
+      totalFloors: 1,
+    });
+    setBuildingDialogOpen(true);
+  };
+  const openEditBuilding = () => {
+    if (!activeBuilding) return;
+    setBuildingDialogMode('edit');
+    setBuildingForm({
+      id: activeBuilding.id,
+      buildingCode: activeBuilding.buildingCode,
+      buildingNameTh: activeBuilding.buildingNameTh,
+      buildingNameEn: activeBuilding.buildingNameEn || '',
+      totalFloors: activeBuilding.totalFloors || 1,
+    });
+    setBuildingDialogOpen(true);
+  };
+  const saveBuilding = async () => {
+    if (!activeAirport) return;
+    if (!buildingForm.buildingCode.trim() || !buildingForm.buildingNameTh.trim()) {
+      alert(locale === 'th' ? 'กรุณากรอกรหัสและชื่ออาคาร' : 'Code and name required');
+      return;
+    }
+    try {
+      if (buildingDialogMode === 'create') {
+        const created = await createBuildingMut.mutateAsync({
+          buildingCode: buildingForm.buildingCode,
+          buildingNameTh: buildingForm.buildingNameTh,
+          buildingNameEn: buildingForm.buildingNameEn || undefined,
+          totalFloors: buildingForm.totalFloors,
+          airportId: activeAirport.id,
+        });
+        setBuildingDialogOpen(false);
+        if (created?.id) setSelectedBuildingId(created.id);
+      } else {
+        await updateBuildingMut.mutateAsync({
+          id: buildingForm.id,
+          buildingCode: buildingForm.buildingCode,
+          buildingNameTh: buildingForm.buildingNameTh,
+          buildingNameEn: buildingForm.buildingNameEn || undefined,
+          totalFloors: buildingForm.totalFloors,
+        });
+        setBuildingDialogOpen(false);
+      }
+    } catch (err: any) {
+      alert(err.response?.data?.error || 'Error');
+    }
+  };
+  const handleDeleteBuilding = async () => {
+    if (!activeBuilding) return;
+    const confirmed = window.confirm(
+      locale === 'th'
+        ? `ลบอาคาร "${activeBuilding.buildingNameTh}"?\n(ถ้ามีชั้น/พื้นที่เช่าจะทำ soft delete ให้อัตโนมัติ)`
+        : `Delete building "${activeBuilding.buildingNameTh}"?\n(Soft delete if has floors/units)`
+    );
+    if (!confirmed) return;
+    try {
+      const result: any = await deleteBuildingMut.mutateAsync(activeBuilding.id);
+      if (result.warning) alert(result.warning);
+      setSelectedBuildingId(null);
+    } catch (err: any) {
+      alert(err.response?.data?.error || 'Delete failed');
+    }
+  };
+
   // === Floor dialog handlers ===
   const openCreateFloor = () => {
     if (!activeBuilding) {
@@ -1062,7 +1154,7 @@ export default function FloorPlan() {
             </Box>
 
             {/* อาคาร (Building) — ขึ้นกับสถานที่ */}
-            <Box sx={{ minWidth: 160 }}>
+            <Box sx={{ minWidth: 200 }}>
               <Typography sx={{ fontSize: 10, fontWeight: 700, color: '#5a6d80', mb: .3, display: 'flex', alignItems: 'center', gap: .5, textTransform: 'uppercase', letterSpacing: .5 }}>
                 <span className="material-icons-outlined" style={{ fontSize: 13, color: '#005b9f' }}>apartment</span>
                 {locale === 'th' ? 'อาคาร' : 'Building'}
@@ -1070,37 +1162,71 @@ export default function FloorPlan() {
                   <Chip label={buildings.length} size="small" sx={{ height: 14, fontSize: 8, ml: .25 }} />
                 )}
               </Typography>
-              <Select
-                size="small"
-                fullWidth
-                value={selectedBuildingId || ''}
-                onChange={(e) => setSelectedBuildingId(Number(e.target.value))}
-                sx={{ fontSize: 12, bgcolor: '#fff' }}
-                disabled={!selectedAirportId || buildings.length === 0}
-                displayEmpty
-                renderValue={(v) => {
-                  if (!selectedAirportId) return <span style={{ color: '#8a9cb2' }}>{locale === 'th' ? '(เลือกสถานที่ก่อน)' : '(Select location first)'}</span>;
-                  if (buildings.length === 0) return <span style={{ color: '#b52822' }}>{locale === 'th' ? 'ไม่มีอาคาร' : 'No buildings'}</span>;
-                  if (!v) return <span style={{ color: '#8a9cb2' }}>{locale === 'th' ? 'เลือกอาคาร' : 'Select building'}</span>;
-                  const b = buildings.find((x) => x.id === v);
-                  return b ? `${b.buildingCode} · ${locale === 'th' ? b.buildingNameTh : (b.buildingNameEn || b.buildingNameTh)}` : '';
-                }}
-              >
-                {buildings.map((b) => (
-                  <MenuItem key={b.id} value={b.id}>
-                    <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-                      <Typography sx={{ fontSize: 12, fontWeight: 600 }}>
-                        {b.buildingCode} · {locale === 'th' ? b.buildingNameTh : (b.buildingNameEn || b.buildingNameTh)}
-                      </Typography>
-                      {b.totalFloors && (
-                        <Typography sx={{ fontSize: 10, color: '#5a6d80' }}>
-                          {b.totalFloors} {locale === 'th' ? 'ชั้น' : 'floors'}
-                        </Typography>
-                      )}
-                    </Box>
-                  </MenuItem>
-                ))}
-              </Select>
+              <Box sx={{ display: 'flex', gap: .25 }}>
+                <Select
+                  size="small"
+                  value={selectedBuildingId || ''}
+                  onChange={(e) => setSelectedBuildingId(Number(e.target.value))}
+                  sx={{ fontSize: 12, bgcolor: '#fff', flex: 1 }}
+                  disabled={!selectedAirportId || buildings.length === 0}
+                  displayEmpty
+                  renderValue={(v) => {
+                    if (!selectedAirportId) return <span style={{ color: '#8a9cb2' }}>{locale === 'th' ? '(เลือกสถานที่ก่อน)' : '(Select location first)'}</span>;
+                    if (buildings.length === 0) return <span style={{ color: '#b52822' }}>{locale === 'th' ? 'ไม่มีอาคาร — กด ➕' : 'No buildings — click ➕'}</span>;
+                    if (!v) return <span style={{ color: '#8a9cb2' }}>{locale === 'th' ? 'เลือกอาคาร' : 'Select building'}</span>;
+                    const b = buildings.find((x) => x.id === v);
+                    return b ? `${b.buildingCode} · ${locale === 'th' ? b.buildingNameTh : (b.buildingNameEn || b.buildingNameTh)}` : '';
+                  }}
+                >
+                  {buildings.map((b) => (
+                    <MenuItem key={b.id} value={b.id}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                        <Box>
+                          <Typography sx={{ fontSize: 12, fontWeight: 600 }}>
+                            {b.buildingCode} · {locale === 'th' ? b.buildingNameTh : (b.buildingNameEn || b.buildingNameTh)}
+                          </Typography>
+                          {b.totalFloors && (
+                            <Typography sx={{ fontSize: 10, color: '#5a6d80' }}>
+                              {b.totalFloors} {locale === 'th' ? 'ชั้น' : 'floors'}
+                            </Typography>
+                          )}
+                        </Box>
+                        {b._count && (b._count.floors > 0 || b._count.units > 0) && (
+                          <Chip label={`${b._count.floors}F · ${b._count.units}U`} size="small" sx={{ ml: 1, height: 16, fontSize: 9 }} />
+                        )}
+                      </Box>
+                    </MenuItem>
+                  ))}
+                </Select>
+                {/* Building management buttons */}
+                <IconButton
+                  size="small"
+                  onClick={openCreateBuilding}
+                  disabled={!selectedAirportId}
+                  title={locale === 'th' ? 'เพิ่มอาคาร' : 'Add building'}
+                  sx={{ color: '#0f7a43', bgcolor: '#fff', border: '1px solid rgba(15,122,67,.25)' }}
+                >
+                  <span className="material-icons-outlined" style={{ fontSize: 16 }}>add</span>
+                </IconButton>
+                <IconButton
+                  size="small"
+                  onClick={openEditBuilding}
+                  disabled={!activeBuilding}
+                  title={locale === 'th' ? 'แก้ไขอาคาร' : 'Edit building'}
+                  sx={{ color: '#005b9f', bgcolor: '#fff', border: '1px solid rgba(0,91,159,.25)' }}
+                >
+                  <span className="material-icons-outlined" style={{ fontSize: 16 }}>edit</span>
+                </IconButton>
+                <IconButton
+                  size="small"
+                  onClick={handleDeleteBuilding}
+                  disabled={!activeBuilding}
+                  title={locale === 'th' ? 'ลบอาคาร' : 'Delete building'}
+                  sx={{ color: '#b52822', bgcolor: '#fff', border: '1px solid rgba(181,40,34,.25)' }}
+                >
+                  <span className="material-icons-outlined" style={{ fontSize: 16 }}>delete</span>
+                </IconButton>
+              </Box>
             </Box>
 
             {/* ชั้น (Floor) — ขึ้นกับอาคาร */}
@@ -1713,6 +1839,62 @@ export default function FloorPlan() {
           </Box>
         </Paper>
       </Box>
+
+      {/* === Building management dialog === */}
+      <Dialog open={buildingDialogOpen} onClose={() => setBuildingDialogOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle sx={{ fontSize: 14, fontWeight: 700 }}>
+          {buildingDialogMode === 'create'
+            ? (locale === 'th' ? 'เพิ่มอาคารใหม่' : 'Add New Building')
+            : (locale === 'th' ? 'แก้ไขอาคาร' : 'Edit Building')}
+          {activeAirport && (
+            <Typography sx={{ fontSize: 11, color: '#5a6d80', fontWeight: 400 }}>
+              {activeAirport.airportCode} · {locale === 'th' ? activeAirport.airportNameTh : (activeAirport.airportNameEn || activeAirport.airportNameTh)}
+            </Typography>
+          )}
+        </DialogTitle>
+        <DialogContent dividers>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
+            <TextField
+              size="small" fullWidth label={locale === 'th' ? 'รหัสอาคาร' : 'Building Code'}
+              value={buildingForm.buildingCode}
+              onChange={(e) => setBuildingForm({ ...buildingForm, buildingCode: e.target.value.toUpperCase() })}
+              helperText={locale === 'th' ? 'เช่น DMK-T1, CNX-T2' : 'e.g. DMK-T1, CNX-T2'}
+              inputProps={{ style: { fontFamily: "'IBM Plex Mono', monospace", fontSize: 12 } }}
+            />
+            <TextField
+              size="small" fullWidth label={locale === 'th' ? 'ชื่ออาคาร (ไทย)' : 'Name (Thai)'}
+              value={buildingForm.buildingNameTh}
+              onChange={(e) => setBuildingForm({ ...buildingForm, buildingNameTh: e.target.value })}
+            />
+            <TextField
+              size="small" fullWidth label={locale === 'th' ? 'ชื่ออาคาร (อังกฤษ)' : 'Name (English)'}
+              value={buildingForm.buildingNameEn}
+              onChange={(e) => setBuildingForm({ ...buildingForm, buildingNameEn: e.target.value })}
+            />
+            <TextField
+              size="small" fullWidth type="number" label={locale === 'th' ? 'จำนวนชั้น (ประมาณ)' : 'Total Floors (approx)'}
+              value={buildingForm.totalFloors}
+              onChange={(e) => setBuildingForm({ ...buildingForm, totalFloors: Number(e.target.value) })}
+              helperText={locale === 'th' ? 'ใช้แสดงใน dropdown เท่านั้น — ต้องสร้างชั้นแยกต่างหาก' : 'For display only — create floors separately'}
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setBuildingDialogOpen(false)} size="small">
+            {locale === 'th' ? 'ยกเลิก' : 'Cancel'}
+          </Button>
+          <Button
+            onClick={saveBuilding}
+            variant="contained"
+            size="small"
+            disabled={createBuildingMut.isPending || updateBuildingMut.isPending}
+          >
+            {createBuildingMut.isPending || updateBuildingMut.isPending
+              ? (locale === 'th' ? 'บันทึก...' : 'Saving...')
+              : (locale === 'th' ? 'บันทึก' : 'Save')}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* === Floor management dialog === */}
       <Dialog open={floorDialogOpen} onClose={() => setFloorDialogOpen(false)} maxWidth="xs" fullWidth>
