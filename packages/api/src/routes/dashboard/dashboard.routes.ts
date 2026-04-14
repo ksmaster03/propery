@@ -9,8 +9,8 @@ router.get('/kpi', async (req: Request, res: Response) => {
     const airportId = req.query.airportId ? Number(req.query.airportId) : undefined;
     const where: any = {};
     if (airportId) where.airportId = airportId;
-    // Multi-tenant filter
-    if (req.orgId) where.airport = { organizationId: req.orgId };
+    // Multi-tenant filter (รวม airport ที่ organizationId = null = shared)
+    if (req.orgId) where.airport = { OR: [{ organizationId: req.orgId }, { organizationId: null }] };
 
     // นับพื้นที่ตามสถานะ
     const [totalUnits, leasedUnits, vacantUnits, reservedUnits] = await Promise.all([

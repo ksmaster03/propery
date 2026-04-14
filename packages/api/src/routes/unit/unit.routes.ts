@@ -10,8 +10,10 @@ router.get('/', async (req: Request, res: Response) => {
     const skip = (Number(page) - 1) * Number(limit);
 
     const where: any = { isActive: true };
-    // Multi-tenant: filter ตาม active org ถ้ามี
-    if (req.orgId) where.airport = { organizationId: req.orgId };
+    // Multi-tenant: filter ตาม active org ถ้ามี — ยอมรับ airport ที่ organizationId = null (shared) ด้วย
+    if (req.orgId) {
+      where.airport = { OR: [{ organizationId: req.orgId }, { organizationId: null }] };
+    }
     if (airportId) where.airportId = Number(airportId);
     if (zoneId) where.zoneId = Number(zoneId);
     if (status) where.status = status as string;

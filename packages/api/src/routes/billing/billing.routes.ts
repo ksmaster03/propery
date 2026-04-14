@@ -10,8 +10,8 @@ router.get('/', async (req: Request, res: Response) => {
     const skip = (Number(page) - 1) * Number(limit);
 
     const where: any = {};
-    // Multi-tenant filter via contract → airport → organization
-    if (req.orgId) where.contract = { airport: { organizationId: req.orgId } };
+    // Multi-tenant filter via contract → airport → organization (รวม null = shared)
+    if (req.orgId) where.contract = { airport: { OR: [{ organizationId: req.orgId }, { organizationId: null }] } };
     if (status && status !== 'ALL') where.status = status as string;
     if (contractId) where.contractId = Number(contractId);
 
