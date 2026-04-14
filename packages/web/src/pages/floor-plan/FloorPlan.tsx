@@ -981,109 +981,173 @@ export default function FloorPlan() {
 
         {/* === Center: Canvas === */}
         <Paper elevation={0} sx={{ border: '1px solid rgba(22,63,107,.12)', boxShadow: '0 2px 12px rgba(10,22,40,.08)', display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
-          {/* Airport/Building/Floor selector — DB-driven */}
-          <Box sx={{ px: 2, py: 1.25, borderBottom: '1px solid rgba(22,63,107,.08)', display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center', bgcolor: '#f8fafc' }}>
-            <Select
-              size="small"
-              value={selectedAirportId || ''}
-              onChange={(e) => setSelectedAirportId(Number(e.target.value))}
-              sx={{ fontSize: 12, minWidth: 160 }}
-              displayEmpty
-              renderValue={(v) => {
-                if (!v) return <span style={{ color: '#8a9cb2' }}>{locale === 'th' ? 'เลือกสนามบิน' : 'Select airport'}</span>;
-                const a = airports.find((x) => x.id === v);
-                return a ? (locale === 'th' ? a.airportNameTh : (a.airportNameEn || a.airportNameTh)) : '';
-              }}
-            >
-              {airports.map((a) => (
-                <MenuItem key={a.id} value={a.id}>
-                  {a.airportCode} — {locale === 'th' ? a.airportNameTh : (a.airportNameEn || a.airportNameTh)}
-                </MenuItem>
-              ))}
-            </Select>
-
-            <Select
-              size="small"
-              value={selectedBuildingId || ''}
-              onChange={(e) => setSelectedBuildingId(Number(e.target.value))}
-              sx={{ fontSize: 12, minWidth: 140 }}
-              disabled={!selectedAirportId || buildings.length === 0}
-              displayEmpty
-              renderValue={(v) => {
-                if (!v) return <span style={{ color: '#8a9cb2' }}>{locale === 'th' ? 'อาคาร' : 'Building'}</span>;
-                const b = buildings.find((x) => x.id === v);
-                return b ? (locale === 'th' ? b.buildingNameTh : (b.buildingNameEn || b.buildingNameTh)) : '';
-              }}
-            >
-              {buildings.map((b) => (
-                <MenuItem key={b.id} value={b.id}>
-                  {b.buildingCode} — {locale === 'th' ? b.buildingNameTh : (b.buildingNameEn || b.buildingNameTh)}
-                </MenuItem>
-              ))}
-            </Select>
-
-            <Select
-              size="small"
-              value={selectedFloorId || ''}
-              onChange={(e) => setSelectedFloorId(Number(e.target.value))}
-              sx={{ fontSize: 12, minWidth: 120 }}
-              disabled={!selectedBuildingId || floors.length === 0}
-              displayEmpty
-              renderValue={(v) => {
-                if (!v) return <span style={{ color: '#8a9cb2' }}>{locale === 'th' ? 'ชั้น' : 'Floor'}</span>;
-                const f = floors.find((x) => x.id === v);
-                return f ? `${f.floorCode} · ${locale === 'th' ? f.floorNameTh : (f.floorNameEn || f.floorNameTh)}` : '';
-              }}
-            >
-              {floors.map((f) => (
-                <MenuItem key={f.id} value={f.id}>
-                  {f.floorCode} — {locale === 'th' ? f.floorNameTh : (f.floorNameEn || f.floorNameTh)}
-                  {f._count && f._count.zones > 0 && (
-                    <Chip label={f._count.zones} size="small" sx={{ ml: 1, height: 16, fontSize: 9 }} />
-                  )}
-                </MenuItem>
-              ))}
-            </Select>
-
-            {/* Floor management buttons */}
-            <Box sx={{ display: 'flex', gap: .25, ml: .5 }}>
-              <IconButton
+          {/* Airport/Building/Floor selector — DB-driven + labels + cascade */}
+          <Box sx={{ px: 2, py: 1.5, borderBottom: '1px solid rgba(22,63,107,.08)', display: 'flex', gap: 1.5, flexWrap: 'wrap', alignItems: 'flex-end', bgcolor: '#f8fafc' }}>
+            {/* สถานที่ (Airport) */}
+            <Box sx={{ minWidth: 180 }}>
+              <Typography sx={{ fontSize: 10, fontWeight: 700, color: '#5a6d80', mb: .3, display: 'flex', alignItems: 'center', gap: .5, textTransform: 'uppercase', letterSpacing: .5 }}>
+                <span className="material-icons-outlined" style={{ fontSize: 13, color: '#005b9f' }}>place</span>
+                {locale === 'th' ? 'สถานที่' : 'Location'}
+              </Typography>
+              <Select
                 size="small"
-                onClick={openCreateFloor}
-                disabled={!selectedBuildingId}
-                title={locale === 'th' ? 'เพิ่มชั้น' : 'Add floor'}
-                sx={{ color: '#0f7a43' }}
+                fullWidth
+                value={selectedAirportId || ''}
+                onChange={(e) => setSelectedAirportId(Number(e.target.value))}
+                sx={{ fontSize: 12, bgcolor: '#fff' }}
+                displayEmpty
+                renderValue={(v) => {
+                  if (!v) return <span style={{ color: '#8a9cb2' }}>{locale === 'th' ? 'เลือกสถานที่' : 'Select location'}</span>;
+                  const a = airports.find((x) => x.id === v);
+                  return a ? `${a.airportCode} · ${locale === 'th' ? a.airportNameTh : (a.airportNameEn || a.airportNameTh)}` : '';
+                }}
               >
-                <span className="material-icons-outlined" style={{ fontSize: 18 }}>add_circle</span>
-              </IconButton>
-              <IconButton
-                size="small"
-                onClick={openEditFloor}
-                disabled={!activeFloor}
-                title={locale === 'th' ? 'แก้ไขชั้น' : 'Edit floor'}
-                sx={{ color: '#005b9f' }}
-              >
-                <span className="material-icons-outlined" style={{ fontSize: 18 }}>edit</span>
-              </IconButton>
-              <IconButton
-                size="small"
-                onClick={handleDeleteFloor}
-                disabled={!activeFloor}
-                title={locale === 'th' ? 'ลบชั้น' : 'Delete floor'}
-                sx={{ color: '#b52822' }}
-              >
-                <span className="material-icons-outlined" style={{ fontSize: 18 }}>delete</span>
-              </IconButton>
+                {airports.map((a) => (
+                  <MenuItem key={a.id} value={a.id}>
+                    <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                      <Typography sx={{ fontSize: 12, fontWeight: 600 }}>
+                        {a.airportCode} · {locale === 'th' ? a.airportNameTh : (a.airportNameEn || a.airportNameTh)}
+                      </Typography>
+                      {a.province && (
+                        <Typography sx={{ fontSize: 10, color: '#5a6d80' }}>{a.province}</Typography>
+                      )}
+                    </Box>
+                  </MenuItem>
+                ))}
+              </Select>
             </Box>
 
-            {floorplanFilename && (
-              <Chip
+            {/* อาคาร (Building) — ขึ้นกับสถานที่ */}
+            <Box sx={{ minWidth: 160 }}>
+              <Typography sx={{ fontSize: 10, fontWeight: 700, color: '#5a6d80', mb: .3, display: 'flex', alignItems: 'center', gap: .5, textTransform: 'uppercase', letterSpacing: .5 }}>
+                <span className="material-icons-outlined" style={{ fontSize: 13, color: '#005b9f' }}>apartment</span>
+                {locale === 'th' ? 'อาคาร' : 'Building'}
+                {buildings.length > 0 && (
+                  <Chip label={buildings.length} size="small" sx={{ height: 14, fontSize: 8, ml: .25 }} />
+                )}
+              </Typography>
+              <Select
                 size="small"
-                label={floorplanFilename}
-                onDelete={handleDeleteFloorplan}
-                sx={{ fontSize: 10, ml: 'auto' }}
-              />
-            )}
+                fullWidth
+                value={selectedBuildingId || ''}
+                onChange={(e) => setSelectedBuildingId(Number(e.target.value))}
+                sx={{ fontSize: 12, bgcolor: '#fff' }}
+                disabled={!selectedAirportId || buildings.length === 0}
+                displayEmpty
+                renderValue={(v) => {
+                  if (!selectedAirportId) return <span style={{ color: '#8a9cb2' }}>{locale === 'th' ? '(เลือกสถานที่ก่อน)' : '(Select location first)'}</span>;
+                  if (buildings.length === 0) return <span style={{ color: '#b52822' }}>{locale === 'th' ? 'ไม่มีอาคาร' : 'No buildings'}</span>;
+                  if (!v) return <span style={{ color: '#8a9cb2' }}>{locale === 'th' ? 'เลือกอาคาร' : 'Select building'}</span>;
+                  const b = buildings.find((x) => x.id === v);
+                  return b ? `${b.buildingCode} · ${locale === 'th' ? b.buildingNameTh : (b.buildingNameEn || b.buildingNameTh)}` : '';
+                }}
+              >
+                {buildings.map((b) => (
+                  <MenuItem key={b.id} value={b.id}>
+                    <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                      <Typography sx={{ fontSize: 12, fontWeight: 600 }}>
+                        {b.buildingCode} · {locale === 'th' ? b.buildingNameTh : (b.buildingNameEn || b.buildingNameTh)}
+                      </Typography>
+                      {b.totalFloors && (
+                        <Typography sx={{ fontSize: 10, color: '#5a6d80' }}>
+                          {b.totalFloors} {locale === 'th' ? 'ชั้น' : 'floors'}
+                        </Typography>
+                      )}
+                    </Box>
+                  </MenuItem>
+                ))}
+              </Select>
+            </Box>
+
+            {/* ชั้น (Floor) — ขึ้นกับอาคาร */}
+            <Box sx={{ minWidth: 180 }}>
+              <Typography sx={{ fontSize: 10, fontWeight: 700, color: '#5a6d80', mb: .3, display: 'flex', alignItems: 'center', gap: .5, textTransform: 'uppercase', letterSpacing: .5 }}>
+                <span className="material-icons-outlined" style={{ fontSize: 13, color: '#005b9f' }}>layers</span>
+                {locale === 'th' ? 'ชั้น' : 'Floor'}
+                {floors.length > 0 && (
+                  <Chip label={floors.length} size="small" sx={{ height: 14, fontSize: 8, ml: .25 }} />
+                )}
+              </Typography>
+              <Box sx={{ display: 'flex', gap: .25 }}>
+                <Select
+                  size="small"
+                  value={selectedFloorId || ''}
+                  onChange={(e) => setSelectedFloorId(Number(e.target.value))}
+                  sx={{ fontSize: 12, flex: 1, bgcolor: '#fff' }}
+                  disabled={!selectedBuildingId || floors.length === 0}
+                  displayEmpty
+                  renderValue={(v) => {
+                    if (!selectedBuildingId) return <span style={{ color: '#8a9cb2' }}>{locale === 'th' ? '(เลือกอาคารก่อน)' : '(Select building first)'}</span>;
+                    if (floors.length === 0) return <span style={{ color: '#b52822' }}>{locale === 'th' ? 'ไม่มีชั้น — กด ➕' : 'No floors — click ➕'}</span>;
+                    if (!v) return <span style={{ color: '#8a9cb2' }}>{locale === 'th' ? 'เลือกชั้น' : 'Select floor'}</span>;
+                    const f = floors.find((x) => x.id === v);
+                    return f ? `${f.floorCode} · ${locale === 'th' ? f.floorNameTh : (f.floorNameEn || f.floorNameTh)}` : '';
+                  }}
+                >
+                  {floors.map((f) => (
+                    <MenuItem key={f.id} value={f.id}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                        <Box>
+                          <Typography sx={{ fontSize: 12, fontWeight: 600 }}>
+                            {f.floorCode} · {locale === 'th' ? f.floorNameTh : (f.floorNameEn || f.floorNameTh)}
+                          </Typography>
+                        </Box>
+                        {f._count && f._count.zones > 0 && (
+                          <Chip label={`${f._count.zones} zones`} size="small" sx={{ ml: 1, height: 16, fontSize: 9 }} />
+                        )}
+                      </Box>
+                    </MenuItem>
+                  ))}
+                </Select>
+                {/* Floor management buttons */}
+                <IconButton
+                  size="small"
+                  onClick={openCreateFloor}
+                  disabled={!selectedBuildingId}
+                  title={locale === 'th' ? 'เพิ่มชั้น' : 'Add floor'}
+                  sx={{ color: '#0f7a43', bgcolor: '#fff', border: '1px solid rgba(15,122,67,.25)' }}
+                >
+                  <span className="material-icons-outlined" style={{ fontSize: 16 }}>add</span>
+                </IconButton>
+                <IconButton
+                  size="small"
+                  onClick={openEditFloor}
+                  disabled={!activeFloor}
+                  title={locale === 'th' ? 'แก้ไขชั้น' : 'Edit floor'}
+                  sx={{ color: '#005b9f', bgcolor: '#fff', border: '1px solid rgba(0,91,159,.25)' }}
+                >
+                  <span className="material-icons-outlined" style={{ fontSize: 16 }}>edit</span>
+                </IconButton>
+                <IconButton
+                  size="small"
+                  onClick={handleDeleteFloor}
+                  disabled={!activeFloor}
+                  title={locale === 'th' ? 'ลบชั้น' : 'Delete floor'}
+                  sx={{ color: '#b52822', bgcolor: '#fff', border: '1px solid rgba(181,40,34,.25)' }}
+                >
+                  <span className="material-icons-outlined" style={{ fontSize: 16 }}>delete</span>
+                </IconButton>
+              </Box>
+            </Box>
+
+            {/* Breadcrumb + filename chip */}
+            <Box sx={{ ml: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: .5 }}>
+              {(activeAirport || activeBuilding || activeFloor) && (
+                <Typography sx={{ fontSize: 9, color: '#5a6d80', fontFamily: "'IBM Plex Mono', monospace" }}>
+                  {activeAirport?.airportCode || '—'}
+                  {activeBuilding ? ` / ${activeBuilding.buildingCode}` : ''}
+                  {activeFloor ? ` / ${activeFloor.floorCode}` : ''}
+                </Typography>
+              )}
+              {floorplanFilename && (
+                <Chip
+                  size="small"
+                  label={floorplanFilename}
+                  onDelete={handleDeleteFloorplan}
+                  sx={{ fontSize: 10 }}
+                />
+              )}
+            </Box>
           </Box>
 
           {/* Drawing mode + Zoom toolbar (edit mode) */}
