@@ -8,7 +8,7 @@ import { useTranslation } from '../../lib/i18n';
 import api from '../../api/client';
 import { useUnits } from '../../api/hooks';
 import {
-  useMaster, ZoneType, useFloorplan, useSaveFloorplan, useDeleteFloorplan,
+  useMaster, ZoneType, AllocationStatus, useFloorplan, useSaveFloorplan, useDeleteFloorplan,
   useAirports, useBuildings, useFloors,
   useCreateFloor, useUpdateFloor, useDeleteFloor,
   Airport, Building, Floor,
@@ -229,14 +229,17 @@ export default function FloorPlan() {
   const { data: apiData, refetch } = useUnits({});
   const apiUnits = apiData?.data || [];
 
-  // === Master data: zone types ===
+  // === Master data: zone types + allocation statuses ===
   const { data: zoneTypes = [] } = useMaster<ZoneType>('zone-types');
+  const { data: allocationStatuses = [] } = useMaster<AllocationStatus>('allocation-statuses');
+  const activeAllocations = allocationStatuses.filter((a) => a.isActive);
 
   // === Booking form ===
   const [bookerName, setBookerName] = useState('');
   const [unitCode, setUnitCode] = useState('');        // รหัสพื้นที่ — auto-generate + editable
   const [unitCodeTouched, setUnitCodeTouched] = useState(false); // ถ้า user แก้แล้ว จะไม่ override
   const [zoneType, setZoneType] = useState<string>('BOOTH');
+  const [allocationCode, setAllocationCode] = useState<string>(''); // จัดสรรพื้นที่ → map เป็น UnitStatus
   const [ratePerSqm, setRatePerSqm] = useState(3500);
 
   // เมื่อ master data โหลดเสร็จ — ตั้ง default zone type + rate
@@ -322,6 +325,13 @@ export default function FloorPlan() {
       window.removeEventListener('keyup', onKeyUp);
     };
   }, [spaceHeld, mode, drawMode, polygonPoints.length]);
+
+  // Auto-select allocation status ตัวแรกเมื่อ master โหลดเสร็จ
+  useEffect(() => {
+    if (!allocationCode && activeAllocations.length > 0) {
+      setAllocationCode(activeAllocations[0].code);
+    }
+  }, [activeAllocations, allocationCode]);
 
   // Auto-generate unit code ตาม zoneType + running number — ถ้า user ยังไม่ได้แก้
   useEffect(() => {
@@ -675,12 +685,16 @@ export default function FloorPlan() {
 
     // พยายามบันทึกลง DB (graceful fallback ถ้า API ไม่มี)
     try {
+      // หา allocation status ที่เลือก เพื่อ map เป็น UnitStatus
+      const allocation = activeAllocations.find((a) => a.code === allocationCode);
+      const mappedStatus = allocation?.mapsTo || 'RESERVED';
+
       const payload: any = {
         unitCode,
         unitNameTh: bookerName,
         airportId: activeAirport?.id || 1,
         areaSqm: effectiveArea,
-        status: 'RESERVED',
+        status: mappedStatus,
         purpose: zt?.nameTh || zoneType,
         fpCoordX: newDraft.x,
         fpCoordY: newDraft.y,
@@ -899,6 +913,56 @@ export default function FloorPlan() {
                 }}
                 FormHelperTextProps={{ sx: { fontSize: 9, mt: .25 } }}
               />
+
+              {/* จัดสรรพื้นที่ — map to UnitStatus enum */}
+              <Box>
+                <Typography sx={{ fontSize: 10, fontWeight: 700, color: '#5a6d80', mb: .3, textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: .5 }}>
+                  <span className="material-icons-outlined" style={{ fontSize: 13, color: '#005b9f' }}>assignment_ind</span>
+                  {locale === 'th' ? 'จัดสรรพื้นที่' : 'Allocation'}
+                </Typography>
+                <Select
+                  size="small" fullWidth
+                  value={allocationCode}
+                  onChange={(e) => setAllocationCode(e.target.value)}
+                  sx={{ fontSize: 12 }}
+                  displayEmpty
+                  renderValue={(v) => {
+                    if (!v) return <span style={{ color: '#8a9cb2' }}>{locale === 'th' ? 'เลือกการจัดสรร' : 'Select allocation'}</span>;
+                    const a = activeAllocations.find((x) => x.code === v);
+                    if (!a) return v;
+                    return (
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: .75 }}>
+                        {a.icon && <span className="material-icons-outlined" style={{ fontSize: 16, color: a.color || '#005b9f' }}>{a.icon}</span>}
+                        <span>{locale === 'th' ? a.nameTh : (a.nameEn || a.nameTh)}</span>
+                      </Box>
+                    );
+                  }}
+                >
+                  {activeAllocations.map((a) => (
+                    <MenuItem key={a.id} value={a.code}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        {a.icon && (
+                          <Box sx={{ width: 22, height: 22, borderRadius: .75, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: (a.color || '#005b9f') + '22' }}>
+                            <span className="material-icons-outlined" style={{ fontSize: 14, color: a.color || '#005b9f' }}>{a.icon}</span>
+                          </Box>
+                        )}
+                        <Box>
+                          <Typography sx={{ fontSize: 12, fontWeight: 600 }}>
+                            {locale === 'th' ? a.nameTh : (a.nameEn || a.nameTh)}
+                          </Typography>
+                          {a.description && (
+                            <Typography sx={{ fontSize: 10, color: '#5a6d80' }}>{a.description}</Typography>
+                          )}
+                        </Box>
+                      </Box>
+                    </MenuItem>
+                  ))}
+                </Select>
+                <Typography sx={{ fontSize: 9, color: '#8a9cb2', mt: .25 }}>
+                  {locale === 'th' ? 'จัดการเพิ่มเติมได้ที่ Master Data' : 'Manage in Master Data'}
+                </Typography>
+              </Box>
+
               <TextField
                 size="small" fullWidth
                 label={locale === 'th' ? 'ชื่อผู้จอง / หน่วยงาน' : 'Booker / Organization'}

@@ -45,6 +45,18 @@ async function main() {
   });
 
   // === ประเภทโซน ===
+  // === สถานะการจัดสรรพื้นที่ (Allocation Status) — ใช้ใน Floor Plan booking ===
+  await prisma.tmAllocationStatus.createMany({
+    data: [
+      { code: 'OPEN_RENT',   nameTh: 'ปล่อยให้เช่า',      nameEn: 'Open for Rent',   mapsTo: 'VACANT',      icon: 'lock_open',    color: '#0f7a43', description: 'พร้อมให้เช่าทั่วไป', sortOrder: 1 },
+      { code: 'RESERVED',    nameTh: 'สงวนพื้นที่',       nameEn: 'Reserved',        mapsTo: 'RESERVED',    icon: 'bookmark',     color: '#a45a00', description: 'จองไว้ / รอทำสัญญา', sortOrder: 2 },
+      { code: 'LEASED',      nameTh: 'เช่าแล้ว',          nameEn: 'Leased',          mapsTo: 'LEASED',      icon: 'handshake',    color: '#005b9f', description: 'มีสัญญาเช่า active', sortOrder: 3 },
+      { code: 'MAINTENANCE', nameTh: 'ปิดปรับปรุง',        nameEn: 'Maintenance',     mapsTo: 'MAINTENANCE', icon: 'construction', color: '#5a6d80', description: 'ปิดชั่วคราว ซ่อมแซม', sortOrder: 4 },
+      { code: 'INTERNAL',    nameTh: 'ใช้ภายในหน่วยงาน',  nameEn: 'Internal Use',    mapsTo: 'RESERVED',    icon: 'corporate_fare', color: '#7c3aed', description: 'สงวนไว้ใช้ภายในกรม', sortOrder: 5 },
+    ],
+    skipDuplicates: true,
+  });
+
   await prisma.tmZoneType.createMany({
     data: [
       { code: 'BOOTH', nameTh: 'คูหา', nameEn: 'Booth', icon: 'storefront', color: '#005b9f', defaultRate: 3500, sortOrder: 1 },

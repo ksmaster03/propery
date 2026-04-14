@@ -102,6 +102,7 @@ function createCrudRouter(modelName: keyof typeof prisma, defaultSort: string = 
 // === Routes ===
 router.use('/organizations', createCrudRouter('tmOrganization', 'id'));
 router.use('/zone-types', createCrudRouter('tmZoneType', 'sortOrder'));
+router.use('/allocation-statuses', createCrudRouter('tmAllocationStatus', 'sortOrder'));
 router.use('/business-categories', createCrudRouter('tmBusinessCategory', 'sortOrder'));
 router.use('/payment-methods', createCrudRouter('tmPaymentMethod', 'sortOrder'));
 router.use('/document-types', createCrudRouter('tmDocumentType', 'sortOrder'));

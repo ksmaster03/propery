@@ -4,6 +4,7 @@ import PageHeader from '../../components/shared/PageHeader';
 import { useTranslation } from '../../lib/i18n';
 import OrganizationTab from './tabs/OrganizationTab';
 import ZoneTypeTab from './tabs/ZoneTypeTab';
+import AllocationStatusTab from './tabs/AllocationStatusTab';
 import BusinessCategoryTab from './tabs/BusinessCategoryTab';
 import PaymentMethodTab from './tabs/PaymentMethodTab';
 import DocumentTypeTab from './tabs/DocumentTypeTab';
@@ -17,6 +18,7 @@ export default function MasterDataPage() {
   const tabs = [
     { labelTh: 'หน่วยงาน', labelEn: 'Organization', icon: 'business', component: <OrganizationTab /> },
     { labelTh: 'ประเภทโซน', labelEn: 'Zone Types', icon: 'category', component: <ZoneTypeTab /> },
+    { labelTh: 'จัดสรรพื้นที่', labelEn: 'Allocation Status', icon: 'assignment_ind', component: <AllocationStatusTab /> },
     { labelTh: 'หมวดหมู่ธุรกิจ', labelEn: 'Business Categories', icon: 'storefront', component: <BusinessCategoryTab /> },
     { labelTh: 'วิธีชำระเงิน', labelEn: 'Payment Methods', icon: 'payments', component: <PaymentMethodTab /> },
     { labelTh: 'ประเภทเอกสาร', labelEn: 'Document Types', icon: 'description', component: <DocumentTypeTab /> },

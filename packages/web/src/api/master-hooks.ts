@@ -3,7 +3,7 @@ import api from './client';
 
 // === Master Data types + hooks ===
 
-export type MasterEntity = 'organizations' | 'zone-types' | 'business-categories' | 'payment-methods' | 'document-types' | 'departments';
+export type MasterEntity = 'organizations' | 'zone-types' | 'allocation-statuses' | 'business-categories' | 'payment-methods' | 'document-types' | 'departments';
 
 // Generic list hook — ใช้ร่วมกันได้ทุก master data entity
 export function useMaster<T = any>(entity: MasterEntity) {
@@ -82,6 +82,19 @@ export interface ZoneType {
   icon?: string | null;
   color?: string | null;
   defaultRate?: number | null;
+  sortOrder: number;
+  isActive: boolean;
+}
+
+export interface AllocationStatus {
+  id: number;
+  code: string;
+  nameTh: string;
+  nameEn?: string | null;
+  mapsTo: 'VACANT' | 'LEASED' | 'RESERVED' | 'MAINTENANCE';
+  icon?: string | null;
+  color?: string | null;
+  description?: string | null;
   sortOrder: number;
   isActive: boolean;
 }

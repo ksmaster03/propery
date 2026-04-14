@@ -3,7 +3,7 @@ import {
   Box, Paper, Typography, Button, TextField, IconButton, Chip, Alert,
   Table, TableHead, TableBody, TableRow, TableCell,
   Dialog, DialogTitle, DialogContent, DialogActions,
-  FormControlLabel, Switch,
+  FormControlLabel, Switch, Select, MenuItem, InputLabel, FormControl,
 } from '@mui/material';
 import { useTranslation } from '../../lib/i18n';
 import { useMaster, useCreateMaster, useUpdateMaster, useDeleteMaster, MasterEntity } from '../../api/master-hooks';
@@ -11,11 +11,18 @@ import { useMaster, useCreateMaster, useUpdateMaster, useDeleteMaster, MasterEnt
 // === CRUD table สำหรับ master data แบบง่าย ===
 // รองรับ fields: code, nameTh, nameEn, icon?, sortOrder?, custom extras
 
+export interface FieldOption {
+  value: string;
+  labelTh: string;
+  labelEn?: string;
+}
+
 export interface Field {
   key: string;
   labelTh: string;
   labelEn: string;
-  type?: 'text' | 'number' | 'icon' | 'color' | 'switch';
+  type?: 'text' | 'number' | 'icon' | 'color' | 'switch' | 'select';
+  options?: FieldOption[]; // for type=select
   required?: boolean;
   readonly?: boolean;
 }
@@ -170,19 +177,41 @@ export default function SimpleCrudTable({ entity, fields, titleTh, titleEn, desc
         </DialogTitle>
         <DialogContent sx={{ pt: '20px !important' }}>
           <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2, mt: 1 }}>
-            {fields.map((f) => (
-              <TextField
-                key={f.key}
-                size="small"
-                label={locale === 'th' ? f.labelTh : f.labelEn}
-                required={f.required}
-                type={f.type === 'number' ? 'number' : 'text'}
-                disabled={f.readonly}
-                value={form[f.key] ?? ''}
-                onChange={(e) => setForm({ ...form, [f.key]: f.type === 'number' ? Number(e.target.value) : e.target.value })}
-                sx={{ gridColumn: f.key === 'nameTh' || f.key === 'nameEn' ? '1/3' : undefined }}
-              />
-            ))}
+            {fields.map((f) => {
+              const gridColumn = f.key === 'nameTh' || f.key === 'nameEn' || f.key === 'description' ? '1/3' : undefined;
+              if (f.type === 'select' && f.options) {
+                return (
+                  <FormControl key={f.key} size="small" required={f.required} sx={{ gridColumn }}>
+                    <InputLabel>{locale === 'th' ? f.labelTh : f.labelEn}</InputLabel>
+                    <Select
+                      label={locale === 'th' ? f.labelTh : f.labelEn}
+                      value={form[f.key] ?? ''}
+                      onChange={(e) => setForm({ ...form, [f.key]: e.target.value })}
+                      disabled={f.readonly}
+                    >
+                      {f.options.map((o) => (
+                        <MenuItem key={o.value} value={o.value}>
+                          {locale === 'th' ? o.labelTh : (o.labelEn || o.labelTh)}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                );
+              }
+              return (
+                <TextField
+                  key={f.key}
+                  size="small"
+                  label={locale === 'th' ? f.labelTh : f.labelEn}
+                  required={f.required}
+                  type={f.type === 'number' ? 'number' : 'text'}
+                  disabled={f.readonly}
+                  value={form[f.key] ?? ''}
+                  onChange={(e) => setForm({ ...form, [f.key]: f.type === 'number' ? Number(e.target.value) : e.target.value })}
+                  sx={{ gridColumn }}
+                />
+              );
+            })}
             <FormControlLabel
               control={<Switch checked={form.isActive ?? true} onChange={(e) => setForm({ ...form, isActive: e.target.checked })} />}
               label={<Typography sx={{ fontSize: 12 }}>{locale === 'th' ? 'เปิดใช้งาน' : 'Active'}</Typography>}
