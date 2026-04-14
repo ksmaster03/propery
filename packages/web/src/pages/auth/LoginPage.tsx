@@ -1,5 +1,13 @@
 import { useState } from 'react';
-import { Box, Paper, Typography, TextField, Button, Alert, CircularProgress, Divider } from '@mui/material';
+// ใช้ direct imports เพื่อ tree-shake MUI — ลด initial bundle ของ Login page
+import Box from '@mui/material/Box';
+import Paper from '@mui/material/Paper';
+import Typography from '@mui/material/Typography';
+import TextField from '@mui/material/TextField';
+import Button from '@mui/material/Button';
+import Alert from '@mui/material/Alert';
+import CircularProgress from '@mui/material/CircularProgress';
+import Divider from '@mui/material/Divider';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../lib/auth-store';
 import { useTranslation } from '../../lib/i18n';

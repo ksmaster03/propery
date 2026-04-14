@@ -25,8 +25,7 @@ export default defineConfig({
       // เก็บเฉพาะ core vendor chunks ที่ต้องการแน่ๆ
       resolveDependencies: (_filename, deps) => {
         return deps.filter((dep) => {
-          // ไม่ preload pdf-vendor และ chart-vendor ตอน initial load
-          // ให้โหลดตอนที่ component ที่ใช้ถูก import เข้าสู่หน้าจอ
+          // ไม่ preload chunks หนัก ๆ ที่ไม่ใช้ตอน Login
           if (dep.includes('pdf-vendor')) return false;
           if (dep.includes('chart-vendor')) return false;
           return true;
@@ -35,17 +34,12 @@ export default defineConfig({
     },
     rollupOptions: {
       output: {
-        // แยก vendor chunks เพื่อลดขนาด main bundle
+        // แยก vendor chunks — รวม MUI เป็น chunk เดียวเพื่อเลี่ยง circular deps
         manualChunks: {
-          // React core
           'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-          // MUI (ใหญ่สุด ~300KB)
           'mui-vendor': ['@mui/material', '@mui/icons-material', '@emotion/react', '@emotion/styled'],
-          // Chart.js
           'chart-vendor': ['chart.js', 'react-chartjs-2'],
-          // PDF libs (ขนาดใหญ่) — lazy โดย dynamic import
           'pdf-vendor': ['jspdf', 'html2canvas'],
-          // State + query + forms
           'state-vendor': ['zustand', '@tanstack/react-query', 'react-hook-form', 'zod', '@hookform/resolvers', 'axios'],
         },
       },
