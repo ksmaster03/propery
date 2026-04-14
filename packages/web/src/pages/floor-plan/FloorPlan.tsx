@@ -27,7 +27,7 @@ const PIN_CURSOR = `url("data:image/svg+xml;utf8,${encodeURIComponent(
 )}") 12 22, crosshair`;
 
 // === Types ===
-type DrawMode = 'rect' | 'polygon' | 'freehand' | 'pan';
+type DrawMode = 'select' | 'rect' | 'polygon' | 'freehand' | 'pan';
 type ShapeType = 'RECT' | 'POLYGON' | 'FREEHAND';
 
 interface ZoneDraft {
@@ -185,6 +185,17 @@ export default function FloorPlan() {
   // === View mode: selected unit (สำหรับ side panel แสดงรายละเอียด + สัญญา) ===
   const [selectedUnitId, setSelectedUnitId] = useState<number | null>(null);
 
+  // === Edit mode — select/move saved unit ===
+  const [editingUnitId, setEditingUnitId] = useState<number | null>(null);
+  // Local override สำหรับ unit ที่กำลังลาก — แสดงตำแหน่งใหม่ก่อน save
+  const [unitOverrides, setUnitOverrides] = useState<Record<number, { fpCoordX: number; fpCoordY: number; fpPoints?: Point[] | null }>>({});
+  // State ขณะลาก — เก็บ mouse position เริ่มต้น + original position ของ unit
+  const [dragUnitStart, setDragUnitStart] = useState<{
+    unitId: number;
+    mouseStart: Point;
+    unitStart: { x: number; y: number; points?: Point[] | null };
+  } | null>(null);
+
   // === โหลด units เดิมจาก API ตาม airport + floor ปัจจุบัน ===
   const { data: apiData, refetch } = useUnits({
     airportId: selectedAirportId || undefined,
@@ -255,15 +266,46 @@ export default function FloorPlan() {
         setSpaceHeld(true);
         return;
       }
-      // ESC → cancel current drawing (stay in edit mode)
-      if (e.code === 'Escape' && mode === 'edit') {
+      // ESC → cancel current drawing OR deselect editing unit
+      if (e.code === 'Escape') {
+        if (editingUnitId) {
+          e.preventDefault();
+          setEditingUnitId(null);
+          setDragUnitStart(null);
+          // revert override ของ unit นี้
+          if (editingUnitId) {
+            setUnitOverrides((prev) => {
+              const next = { ...prev };
+              delete next[editingUnitId];
+              return next;
+            });
+          }
+          return;
+        }
+        if (mode === 'edit') {
+          e.preventDefault();
+          setCurrentRect(null);
+          setDrawing(null);
+          setPolygonPoints([]);
+          setPolygonCursor(null);
+          setFreehandPath([]);
+          setIsFreehanding(false);
+          return;
+        }
+      }
+      // Delete → ลบ unit ที่กำลัง edit (select mode)
+      if ((e.code === 'Delete' || e.code === 'Backspace') && editingUnitId && effectiveDrawMode === 'select') {
         e.preventDefault();
-        setCurrentRect(null);
-        setDrawing(null);
-        setPolygonPoints([]);
-        setPolygonCursor(null);
-        setFreehandPath([]);
-        setIsFreehanding(false);
+        const u = (apiUnits as any[]).find((x) => x.id === editingUnitId);
+        const name = u?.unitCode || 'unit';
+        if (window.confirm(locale === 'th' ? `ลบพื้นที่ "${name}"?` : `Delete unit "${name}"?`)) {
+          api.delete(`/units/${editingUnitId}`).then(() => {
+            refetch();
+            setEditingUnitId(null);
+          }).catch((err) => {
+            alert(err.response?.data?.error || 'Delete failed');
+          });
+        }
         return;
       }
       // Backspace / Ctrl+Z → undo last polygon vertex
@@ -287,7 +329,7 @@ export default function FloorPlan() {
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('keyup', onKeyUp);
     };
-  }, [spaceHeld, mode, drawMode, polygonPoints.length]);
+  }, [spaceHeld, mode, drawMode, polygonPoints.length, editingUnitId, apiUnits, locale, refetch]);
 
   // Auto-select allocation status ตัวแรกเมื่อ master โหลดเสร็จ
   useEffect(() => {
@@ -385,9 +427,31 @@ export default function FloorPlan() {
   // effective mode: ถ้า spaceHeld หรือ middle click → force pan
   const effectiveDrawMode: DrawMode = spaceHeld ? 'pan' : drawMode;
 
+  // หา unit ที่ mouse position ตกอยู่ข้างใน (รองรับ RECT ก่อน, POLYGON/FREEHAND ใช้ bbox)
+  const findUnitAt = (gridX: number, gridY: number): any => {
+    for (const u of apiUnits as any[]) {
+      if (!u.id) continue;
+      const override = unitOverrides[u.id];
+      const x = override?.fpCoordX ?? u.fpCoordX;
+      const y = override?.fpCoordY ?? u.fpCoordY;
+      const points = override?.fpPoints ?? u.fpPoints;
+      if (u.fpShapeType === 'RECT' && x != null && u.fpWidth != null) {
+        if (gridX >= x && gridX <= x + Number(u.fpWidth) && gridY >= y && gridY <= y + Number(u.fpHeight || 0)) {
+          return u;
+        }
+      } else if ((u.fpShapeType === 'POLYGON' || u.fpShapeType === 'FREEHAND') && Array.isArray(points) && points.length > 0) {
+        const bb = pointsBounds(points);
+        if (gridX >= bb.minX && gridX <= bb.maxX && gridY >= bb.minY && gridY <= bb.maxY) {
+          return u;
+        }
+      }
+    }
+    return null;
+  };
+
   const handleMouseDown = (e: ReactMouseEvent<HTMLDivElement>) => {
     // Pan mode (toolbar pan, หรือ Space-held, หรือ middle click)
-    if (mode === 'view' || effectiveDrawMode === 'pan' || e.button === 1) {
+    if (effectiveDrawMode === 'pan' || e.button === 1 || (mode === 'view' && effectiveDrawMode !== 'select')) {
       const rect = canvasRef.current!.getBoundingClientRect();
       setIsPanning(true);
       setPanStart({
@@ -397,6 +461,29 @@ export default function FloorPlan() {
         panY: pan.y,
       });
       e.preventDefault();
+      return;
+    }
+    // === Select mode: คลิก unit → เริ่มลาก ===
+    if (effectiveDrawMode === 'select') {
+      const pos = getMousePos(e, false);
+      const gridX = toGrid(pos.x);
+      const gridY = toGrid(pos.y);
+      const hit = findUnitAt(gridX, gridY);
+      if (hit) {
+        setEditingUnitId(hit.id);
+        const override = unitOverrides[hit.id];
+        setDragUnitStart({
+          unitId: hit.id,
+          mouseStart: { x: gridX, y: gridY },
+          unitStart: {
+            x: override?.fpCoordX ?? Number(hit.fpCoordX || 0),
+            y: override?.fpCoordY ?? Number(hit.fpCoordY || 0),
+            points: override?.fpPoints ?? hit.fpPoints ?? null,
+          },
+        });
+      } else {
+        setEditingUnitId(null);
+      }
       return;
     }
     if (mode !== 'edit') return;
@@ -434,6 +521,29 @@ export default function FloorPlan() {
       setPan({ x: panStart.panX + dx, y: panStart.panY + dy });
       return;
     }
+    // === Drag unit ขณะ select mode ===
+    if (dragUnitStart && effectiveDrawMode === 'select') {
+      const pos = getMousePos(e, true); // snap to grid ตอนลาก
+      const gridX = toGrid(pos.x);
+      const gridY = toGrid(pos.y);
+      const dx = gridX - dragUnitStart.mouseStart.x;
+      const dy = gridY - dragUnitStart.mouseStart.y;
+      const newX = dragUnitStart.unitStart.x + dx;
+      const newY = dragUnitStart.unitStart.y + dy;
+      let newPoints: Point[] | null = null;
+      if (dragUnitStart.unitStart.points && Array.isArray(dragUnitStart.unitStart.points)) {
+        newPoints = dragUnitStart.unitStart.points.map((p) => ({ x: p.x + dx, y: p.y + dy }));
+      }
+      setUnitOverrides((prev) => ({
+        ...prev,
+        [dragUnitStart.unitId]: {
+          fpCoordX: newX,
+          fpCoordY: newY,
+          fpPoints: newPoints,
+        },
+      }));
+      return;
+    }
     if (mode !== 'edit') return;
     if (drawMode === 'rect' && drawing) {
       const pos = getMousePos(e);
@@ -451,10 +561,41 @@ export default function FloorPlan() {
     }
   };
 
-  const handleMouseUp = () => {
+  const handleMouseUp = async () => {
     if (isPanning) {
       setIsPanning(false);
       setPanStart(null);
+      return;
+    }
+    // === ปล่อยลาก unit ที่กำลัง edit ===
+    if (dragUnitStart) {
+      const unitId = dragUnitStart.unitId;
+      const override = unitOverrides[unitId];
+      setDragUnitStart(null);
+      if (override) {
+        // Check ว่าตำแหน่งเปลี่ยนจริงไหม
+        const movedX = override.fpCoordX !== dragUnitStart.unitStart.x;
+        const movedY = override.fpCoordY !== dragUnitStart.unitStart.y;
+        if (movedX || movedY) {
+          try {
+            await api.put(`/units/${unitId}`, {
+              fpCoordX: override.fpCoordX,
+              fpCoordY: override.fpCoordY,
+              fpPoints: override.fpPoints,
+            });
+            // Refetch เพื่อ sync ข้อมูลใหม่ + clear override
+            refetch();
+            setUnitOverrides((prev) => {
+              const next = { ...prev };
+              delete next[unitId];
+              return next;
+            });
+          } catch (err) {
+            console.error('Failed to save unit position:', err);
+            alert(locale === 'th' ? 'บันทึกตำแหน่งไม่สำเร็จ' : 'Failed to save position');
+          }
+        }
+      }
       return;
     }
     if (drawMode === 'rect') {
@@ -546,6 +687,8 @@ export default function FloorPlan() {
     setPolygonCursor(null);
     setFreehandPath([]);
     setIsFreehanding(false);
+    setEditingUnitId(null);
+    setDragUnitStart(null);
   };
 
   // === Collision check — rect only สำหรับ draft (polygon/freehand ข้าม — AABB ก็พอ) ===
@@ -1330,6 +1473,10 @@ export default function FloorPlan() {
                 onChange={(_, v) => v && setDrawModeAndReset(v)}
                 aria-label="drawing mode"
               >
+                <ToggleButton value="select" sx={{ fontSize: 10, px: 1.25, py: .5 }} title={locale === 'th' ? 'เลือก/ย้ายพื้นที่ที่บันทึกแล้ว' : 'Select/move saved units'}>
+                  <span className="material-icons-outlined" style={{ fontSize: 16, marginRight: 4 }}>near_me</span>
+                  {locale === 'th' ? 'เลือก' : 'Select'}
+                </ToggleButton>
                 <ToggleButton value="rect" sx={{ fontSize: 10, px: 1.25, py: .5 }}>
                   <span className="material-icons-outlined" style={{ fontSize: 16, marginRight: 4 }}>crop_square</span>
                   {locale === 'th' ? 'สี่เหลี่ยม' : 'Rect'}
@@ -1520,28 +1667,52 @@ export default function FloorPlan() {
                 </Box>
               )}
 
-              {/* SVG zones layer — pointerEvents เปิดใน view mode เพื่อให้คลิก unit ได้ */}
-              <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: mode === 'view' ? 'auto' : 'none' }}>
+              {/* SVG zones layer — pointerEvents เปิดเมื่อ view mode หรือ select drawMode */}
+              <svg style={{
+                position: 'absolute',
+                inset: 0,
+                width: '100%',
+                height: '100%',
+                pointerEvents: (mode === 'view' || effectiveDrawMode === 'select') ? 'auto' : 'none',
+              }}>
                 {/* Existing units from DB — render ตาม fp_shape_type + fp_points ที่เก็บไว้ */}
                 {apiUnits.map((u: any, i: number) => {
                   if (!u.id) return null;
+                  // Apply override ถ้ามี (ระหว่างลากย้าย)
+                  const override = unitOverrides[u.id];
+                  const effectiveX = override?.fpCoordX ?? u.fpCoordX;
+                  const effectiveY = override?.fpCoordY ?? u.fpCoordY;
+                  const effectivePoints = override?.fpPoints ?? u.fpPoints;
+
                   const color = unitStatusColors[u.status] || unitStatusColors.VACANT;
-                  const isSelected = selectedUnitId === u.id;
-                  const stroke = isSelected ? '#d7a94b' : color.stroke;
-                  const strokeW = isSelected ? 4 : 2;
+                  const isViewSelected = selectedUnitId === u.id;
+                  const isEditSelected = editingUnitId === u.id;
+                  const highlighted = isViewSelected || isEditSelected;
+                  const stroke = highlighted ? '#d7a94b' : color.stroke;
+                  const strokeW = highlighted ? 4 : 2;
+                  const isSelectMode = effectiveDrawMode === 'select';
                   const clickProps = {
-                    onClick: () => mode === 'view' && setSelectedUnitId(u.id!),
-                    style: { cursor: mode === 'view' ? 'pointer' : 'default' },
+                    onClick: (e: React.MouseEvent) => {
+                      if (mode === 'view') {
+                        e.stopPropagation();
+                        setSelectedUnitId(u.id!);
+                      }
+                    },
+                    style: {
+                      cursor:
+                        isSelectMode ? (isEditSelected ? 'grabbing' : 'move') :
+                        mode === 'view' ? 'pointer' : 'default',
+                    },
                   };
 
-                  // POLYGON
-                  if (u.fpShapeType === 'POLYGON' && Array.isArray(u.fpPoints) && u.fpPoints.length >= 3) {
-                    const pts = u.fpPoints.map((p: any) => `${p.x * GRID_SIZE},${p.y * GRID_SIZE}`).join(' ');
-                    const labelX = (u.fpCoordX || 0) * GRID_SIZE + 6;
-                    const labelY = (u.fpCoordY || 0) * GRID_SIZE + 16;
+                  // POLYGON — ใช้ effectivePoints (มี override ถ้ากำลังลาก)
+                  if (u.fpShapeType === 'POLYGON' && Array.isArray(effectivePoints) && effectivePoints.length >= 3) {
+                    const pts = effectivePoints.map((p: any) => `${p.x * GRID_SIZE},${p.y * GRID_SIZE}`).join(' ');
+                    const labelX = Number(effectiveX || 0) * GRID_SIZE + 6;
+                    const labelY = Number(effectiveY || 0) * GRID_SIZE + 16;
                     return (
                       <g key={`db-${u.id}`} {...clickProps}>
-                        <polygon points={pts} fill={color.fill} stroke={stroke} strokeWidth={strokeW} />
+                        <polygon points={pts} fill={color.fill} stroke={stroke} strokeWidth={strokeW} strokeDasharray={isEditSelected ? '4 2' : undefined} />
                         <text x={labelX} y={labelY} fontSize="11" fontWeight="700" fill={color.stroke} fontFamily="'IBM Plex Mono',monospace">
                           {u.unitCode}
                         </text>
@@ -1552,13 +1723,13 @@ export default function FloorPlan() {
                     );
                   }
                   // FREEHAND
-                  if (u.fpShapeType === 'FREEHAND' && Array.isArray(u.fpPoints) && u.fpPoints.length >= 3) {
-                    const d = pointsToPath(u.fpPoints, GRID_SIZE, true);
-                    const labelX = (u.fpCoordX || 0) * GRID_SIZE + 6;
-                    const labelY = (u.fpCoordY || 0) * GRID_SIZE + 16;
+                  if (u.fpShapeType === 'FREEHAND' && Array.isArray(effectivePoints) && effectivePoints.length >= 3) {
+                    const d = pointsToPath(effectivePoints, GRID_SIZE, true);
+                    const labelX = Number(effectiveX || 0) * GRID_SIZE + 6;
+                    const labelY = Number(effectiveY || 0) * GRID_SIZE + 16;
                     return (
                       <g key={`db-${u.id}`} {...clickProps}>
-                        <path d={d} fill={color.fill} stroke={stroke} strokeWidth={strokeW} strokeLinejoin="round" />
+                        <path d={d} fill={color.fill} stroke={stroke} strokeWidth={strokeW} strokeLinejoin="round" strokeDasharray={isEditSelected ? '4 2' : undefined} />
                         <text x={labelX} y={labelY} fontSize="11" fontWeight="700" fill={color.stroke} fontFamily="'IBM Plex Mono',monospace">
                           {u.unitCode}
                         </text>
@@ -1568,15 +1739,15 @@ export default function FloorPlan() {
                       </g>
                     );
                   }
-                  // RECT with coords
-                  if (u.fpCoordX != null && u.fpWidth != null) {
-                    const x = u.fpCoordX * GRID_SIZE;
-                    const y = (u.fpCoordY || 0) * GRID_SIZE;
-                    const w = u.fpWidth * GRID_SIZE;
-                    const h = (u.fpHeight || 0) * GRID_SIZE;
+                  // RECT with coords — ใช้ effectiveX / effectiveY
+                  if (effectiveX != null && u.fpWidth != null) {
+                    const x = Number(effectiveX) * GRID_SIZE;
+                    const y = Number(effectiveY || 0) * GRID_SIZE;
+                    const w = Number(u.fpWidth) * GRID_SIZE;
+                    const h = Number(u.fpHeight || 0) * GRID_SIZE;
                     return (
                       <g key={`db-${u.id}`} {...clickProps}>
-                        <rect x={x} y={y} width={w} height={h} fill={color.fill} stroke={stroke} strokeWidth={strokeW} rx="4" />
+                        <rect x={x} y={y} width={w} height={h} fill={color.fill} stroke={stroke} strokeWidth={strokeW} rx="4" strokeDasharray={isEditSelected ? '4 2' : undefined} />
                         <text x={x + w / 2} y={y + 22} textAnchor="middle" fontSize="11" fontWeight="700" fill={color.stroke} fontFamily="'IBM Plex Mono',monospace">
                           {u.unitCode}
                         </text>
