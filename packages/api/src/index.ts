@@ -19,6 +19,7 @@ import settingsRoutes from './routes/settings/settings.routes.js';
 import auditRoutes from './routes/audit/audit.routes.js';
 import profileRoutes from './routes/profile/profile.routes.js';
 import businessRoutes from './routes/business/business.routes.js';
+import kbRoutes from './routes/kb/kb.routes.js';
 import { orgContext } from './middleware/org-context.js';
 
 const app = express();
@@ -53,6 +54,7 @@ app.use('/api/settings', authGuard, settingsRoutes);
 app.use('/api/audit', authGuard, auditRoutes);
 app.use('/api/profile', authGuard, profileRoutes);
 app.use('/api/business', authGuard, businessRoutes);
+app.use('/api/kb', authGuard, kbRoutes);
 
 // === จัดการ Error กลาง ===
 app.use(errorHandler);

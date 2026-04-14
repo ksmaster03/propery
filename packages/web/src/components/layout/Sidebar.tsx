@@ -76,6 +76,12 @@ const navGroups: NavGroup[] = [
       { icon: 'settings', labelKey: 'nav.settings', path: '/settings' },
     ],
   },
+  {
+    titleKey: 'nav.knowledge',
+    items: [
+      { icon: 'menu_book', labelKey: 'nav.kb', path: '/kb' },
+    ],
+  },
 ];
 
 const badgeStyles: Record<string, { bg: string; color: string; border: string }> = {

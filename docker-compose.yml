@@ -41,6 +41,12 @@ services:
       NODE_ENV: production
       PORT: 3001
       CORS_ORIGIN: ${CORS_ORIGIN:-https://propery.toptierdigital.space}
+      # === Knowledge Base database (แยกจาก doa_lease, ใช้ instance เดียวกัน) ===
+      KB_DB_HOST: db
+      KB_DB_PORT: 5432
+      KB_DB_NAME: ${KB_DB_NAME:-kb}
+      KB_DB_USER: ${KB_DB_USER:-kb_admin}
+      KB_DB_PASSWORD: ${KB_DB_PASSWORD:-kb_secret_2026}
     depends_on:
       db:
         condition: service_healthy

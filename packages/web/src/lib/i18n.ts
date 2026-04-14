@@ -42,6 +42,8 @@ const translations: Record<Locale, Record<string, string>> = {
     'nav.audit': 'Audit Trail · ประวัติ',
     'nav.template': 'Template เอกสาร',
     'nav.settings': 'ตั้งค่าระบบ',
+    'nav.knowledge': 'คลังความรู้',
+    'nav.kb': 'Knowledge Base',
 
     // === Dashboard ===
     'dashboard.title': 'Dashboard ภาพรวมรายรับ',
@@ -197,6 +199,8 @@ const translations: Record<Locale, Record<string, string>> = {
     'nav.audit': 'Audit Trail',
     'nav.template': 'Document Templates',
     'nav.settings': 'System Settings',
+    'nav.knowledge': 'Knowledge',
+    'nav.kb': 'Knowledge Base',
 
     // === Dashboard ===
     'dashboard.title': 'Revenue Dashboard',
