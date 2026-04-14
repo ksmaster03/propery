@@ -52,10 +52,19 @@ router.get('/', async (req: Request, res: Response) => {
       areaSqm: Number(u.areaSqm),
       status: u.status,
       purpose: u.purpose,
+      meterNumber: u.meterNumber,
       zoneCode: u.zone?.zoneCode,
       zoneNameTh: u.zone?.zoneNameTh,
+      airportId: u.airportId,
       airportCode: u.airport.airportCode,
       airportNameTh: u.airport.airportNameTh,
+      // พิกัดสำหรับ floor plan rendering
+      fpCoordX: u.fpCoordX != null ? Number(u.fpCoordX) : null,
+      fpCoordY: u.fpCoordY != null ? Number(u.fpCoordY) : null,
+      fpWidth: u.fpWidth != null ? Number(u.fpWidth) : null,
+      fpHeight: u.fpHeight != null ? Number(u.fpHeight) : null,
+      fpShapeType: u.fpShapeType,
+      fpPoints: u.fpPoints,
       currentTenant: u.contracts[0]?.partner?.nameTh || null,
       currentShop: u.contracts[0]?.partner?.shopNameTh || null,
       currentContractNo: u.contracts[0]?.contractNo || null,
@@ -203,14 +212,44 @@ router.post('/', async (req: Request, res: Response) => {
 // PUT /api/units/:id — แก้ไขพื้นที่เช่า
 router.put('/:id', async (req: Request, res: Response) => {
   try {
+    const { id, createdAt, updatedAt, airport, zone, contracts, ...updateData } = req.body;
     const unit = await prisma.tmUnit.update({
       where: { id: Number(req.params.id) },
-      data: req.body,
+      data: updateData,
     });
     res.json({ success: true, data: unit });
   } catch (err) {
     console.error('[UNIT] Update error:', err);
     res.status(500).json({ success: false, error: 'ไม่สามารถแก้ไขพื้นที่เช่าได้' });
+  }
+});
+
+// DELETE /api/units/:id — ลบพื้นที่เช่า (soft delete ถ้ามี contracts, hard delete ถ้าไม่มี)
+router.delete('/:id', async (req: Request, res: Response) => {
+  try {
+    const unitId = Number(req.params.id);
+    const contractCount = await prisma.ttContract.count({ where: { unitId } });
+
+    if (contractCount === 0) {
+      // ไม่มีสัญญา → hard delete
+      await prisma.tmUnit.delete({ where: { id: unitId } });
+      res.json({ success: true, mode: 'hard' });
+    } else {
+      // มีสัญญา → soft delete
+      const soft = await prisma.tmUnit.update({
+        where: { id: unitId },
+        data: { isActive: false },
+      });
+      res.json({
+        success: true,
+        data: soft,
+        mode: 'soft',
+        warning: `มีสัญญา ${contractCount} รายการในพื้นที่นี้ — ทำ soft delete แทน`,
+      });
+    }
+  } catch (err: any) {
+    console.error('[UNIT] Delete error:', err.message);
+    res.status(500).json({ success: false, error: err.message || 'ไม่สามารถลบได้' });
   }
 });
 

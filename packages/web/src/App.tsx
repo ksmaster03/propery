@@ -32,6 +32,7 @@ const MasterDataPage = lazy(() => import('./pages/master-data/MasterDataPage'));
 const UserManagement = lazy(() => import('./pages/users/UserManagement'));
 const AuditPage = lazy(() => import('./pages/audit/AuditPage'));
 const KbPage = lazy(() => import('./pages/kb/KbPage'));
+const UnitFloorplanPage = lazy(() => import('./pages/units-floorplan/UnitFloorplanPage'));
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 30_000, retry: 1 } },
@@ -87,6 +88,7 @@ export default function App() {
               <Route path="/portal" element={<Suspense fallback={<PageLoading />}><TenantPortal /></Suspense>} />
               <Route path="/profile" element={<Suspense fallback={<PageLoading />}><ProfilePage /></Suspense>} />
               <Route path="/kb" element={<Suspense fallback={<PageLoading />}><KbPage /></Suspense>} />
+              <Route path="/units-floorplan" element={<Suspense fallback={<PageLoading />}><UnitFloorplanPage /></Suspense>} />
             </Route>
           </Routes>
         </BrowserRouter>

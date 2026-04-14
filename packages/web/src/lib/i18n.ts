@@ -44,6 +44,7 @@ const translations: Record<Locale, Record<string, string>> = {
     'nav.settings': 'ตั้งค่าระบบ',
     'nav.knowledge': 'คลังความรู้',
     'nav.kb': 'Knowledge Base',
+    'nav.unitsFloorplan': 'รายการพื้นที่เช่า — Floor Plan',
 
     // === Dashboard ===
     'dashboard.title': 'Dashboard ภาพรวมรายรับ',
@@ -201,6 +202,7 @@ const translations: Record<Locale, Record<string, string>> = {
     'nav.settings': 'System Settings',
     'nav.knowledge': 'Knowledge',
     'nav.kb': 'Knowledge Base',
+    'nav.unitsFloorplan': 'Rental Units — Floor Plan',
 
     // === Dashboard ===
     'dashboard.title': 'Revenue Dashboard',

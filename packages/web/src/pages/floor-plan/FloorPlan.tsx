@@ -273,7 +273,7 @@ export default function FloorPlan() {
     }
   }, [apiFloorplans]);
 
-  // Space key hold → temporary pan mode (ยกเว้นเมื่อ user อยู่ใน input)
+  // Keyboard shortcuts — Space (pan hold) / ESC (cancel drawing) / Backspace (undo polygon vertex)
   useEffect(() => {
     const isTextInput = (el: EventTarget | null) => {
       const t = el as HTMLElement | null;
@@ -282,9 +282,34 @@ export default function FloorPlan() {
       return tag === 'INPUT' || tag === 'TEXTAREA' || t.isContentEditable;
     };
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.code === 'Space' && !spaceHeld && !isTextInput(e.target)) {
+      if (isTextInput(e.target)) return;
+      // Space → pan mode (hold)
+      if (e.code === 'Space' && !spaceHeld) {
         e.preventDefault();
         setSpaceHeld(true);
+        return;
+      }
+      // ESC → cancel current drawing (stay in edit mode)
+      if (e.code === 'Escape' && mode === 'edit') {
+        e.preventDefault();
+        setCurrentRect(null);
+        setDrawing(null);
+        setPolygonPoints([]);
+        setPolygonCursor(null);
+        setFreehandPath([]);
+        setIsFreehanding(false);
+        return;
+      }
+      // Backspace / Ctrl+Z → undo last polygon vertex
+      if (
+        mode === 'edit' &&
+        drawMode === 'polygon' &&
+        polygonPoints.length > 0 &&
+        (e.code === 'Backspace' || (e.ctrlKey && e.code === 'KeyZ') || (e.metaKey && e.code === 'KeyZ'))
+      ) {
+        e.preventDefault();
+        setPolygonPoints((prev) => prev.slice(0, -1));
+        return;
       }
     };
     const onKeyUp = (e: KeyboardEvent) => {
@@ -296,7 +321,7 @@ export default function FloorPlan() {
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('keyup', onKeyUp);
     };
-  }, [spaceHeld]);
+  }, [spaceHeld, mode, drawMode, polygonPoints.length]);
 
   // Auto-generate unit code ตาม zoneType + running number — ถ้า user ยังไม่ได้แก้
   useEffect(() => {
@@ -366,15 +391,17 @@ export default function FloorPlan() {
   // === Helpers ===
   const snap = (val: number) => Math.round(val / GRID_SIZE) * GRID_SIZE;
 
-  // แปลง screen pixel → canvas pixel โดยหัก zoom/pan ออก
+  // แปลง screen pixel → canvas pixel โดยหัก zoom ออก
+  // canvasRef คือ element ที่มี transform: translate + scale อยู่แล้ว ดังนั้น
+  // getBoundingClientRect() คืนค่า visual rect ที่รวม transform แล้ว
+  // sx = e.clientX - rect.left = visual pixel offset (ภายใน transformed canvas)
+  // canvas_coord = sx / zoom (ไม่ต้องหัก pan อีกเพราะ rect.left รวมมาแล้ว)
   const getMousePos = (e: ReactMouseEvent<HTMLDivElement>, snapGrid = true) => {
     const rect = canvasRef.current!.getBoundingClientRect();
-    // screen offset ภายใน wrapper
     const sx = e.clientX - rect.left;
     const sy = e.clientY - rect.top;
-    // กลับทิศ transform: raw = (screen - pan) / zoom
-    const x = (sx - pan.x) / zoom;
-    const y = (sy - pan.y) / zoom;
+    const x = sx / zoom;
+    const y = sy / zoom;
     return snapGrid ? { x: snap(x), y: snap(y) } : { x, y };
   };
 
@@ -517,6 +544,8 @@ export default function FloorPlan() {
     : effectiveArea * ratePerSqm;
 
   // === Zoom handlers ===
+  // Zoom toward cursor — ให้ canvas coord ใต้ cursor อยู่กับที่หลัง zoom
+  // สูตร: newPan = pan + sx * (1 - newZoom/zoom) เมื่อ sx = e.clientX - rect.left (ที่รวม transform แล้ว)
   const handleWheel = (e: ReactWheelEvent<HTMLDivElement>) => {
     if (!e.ctrlKey && !e.metaKey) return; // ต้องกด Ctrl + scroll เพื่อ zoom
     e.preventDefault();
@@ -525,9 +554,9 @@ export default function FloorPlan() {
     const sy = e.clientY - rect.top;
     const delta = e.deltaY > 0 ? 0.9 : 1.1;
     const newZoom = Math.min(4, Math.max(0.25, zoom * delta));
-    // zoom toward cursor — ปรับ pan ให้จุดใต้ cursor อยู่กับที่
-    const newPanX = sx - ((sx - pan.x) * newZoom) / zoom;
-    const newPanY = sy - ((sy - pan.y) * newZoom) / zoom;
+    const scaleChange = 1 - newZoom / zoom;
+    const newPanX = pan.x + sx * scaleChange;
+    const newPanY = pan.y + sy * scaleChange;
     setZoom(newZoom);
     setPan({ x: newPanX, y: newPanY });
   };
