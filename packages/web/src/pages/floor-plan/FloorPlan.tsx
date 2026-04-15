@@ -185,16 +185,32 @@ export default function FloorPlan() {
   // === View mode: selected unit (สำหรับ side panel แสดงรายละเอียด + สัญญา) ===
   const [selectedUnitId, setSelectedUnitId] = useState<number | null>(null);
 
-  // === Edit mode — select/move saved unit ===
-  const [editingUnitId, setEditingUnitId] = useState<number | null>(null);
-  // Local override สำหรับ unit ที่กำลังลาก — แสดงตำแหน่งใหม่ก่อน save
-  const [unitOverrides, setUnitOverrides] = useState<Record<number, { fpCoordX: number; fpCoordY: number; fpPoints?: Point[] | null }>>({});
-  // State ขณะลาก — เก็บ mouse position เริ่มต้น + original position ของ unit
-  const [dragUnitStart, setDragUnitStart] = useState<{
-    unitId: number;
-    mouseStart: Point;
-    unitStart: { x: number; y: number; points?: Point[] | null };
-  } | null>(null);
+  // === Edit mode — select/move/resize/vertex-edit saved units ===
+  // editingUnitIds = Set สำหรับ multi-select
+  const [editingUnitIds, setEditingUnitIds] = useState<Set<number>>(new Set());
+  // primary unit = ตัวล่าสุดที่ถูกเลือก (ใช้สำหรับ resize handles / vertex handles)
+  const [primaryEditId, setPrimaryEditId] = useState<number | null>(null);
+  // Local override ของแต่ละ unit — รวม x/y/width/height/points
+  const [unitOverrides, setUnitOverrides] = useState<Record<number, { fpCoordX?: number; fpCoordY?: number; fpWidth?: number; fpHeight?: number; fpPoints?: Point[] | null }>>({});
+  // Drag action ปัจจุบัน
+  type DragAction =
+    | { type: 'move'; unitIds: number[]; mouseStart: Point; starts: Record<number, { x: number; y: number; w?: number; h?: number; points?: Point[] | null }> }
+    | { type: 'resize'; unitId: number; corner: 'nw' | 'ne' | 'sw' | 'se'; mouseStart: Point; unitStart: { x: number; y: number; w: number; h: number } }
+    | { type: 'vertex'; unitId: number; vertexIndex: number; mouseStart: Point; pointsStart: Point[] };
+  const [dragAction, setDragAction] = useState<DragAction | null>(null);
+
+  // === Undo history ===
+  // แต่ละ entry = snapshot ของ units ก่อนทำการเปลี่ยนแปลง
+  type HistoryEntry = Record<number, { fpCoordX?: number; fpCoordY?: number; fpWidth?: number; fpHeight?: number; fpPoints?: Point[] | null }>;
+  const [history, setHistory] = useState<HistoryEntry[]>([]);
+  const HISTORY_LIMIT = 30;
+
+  const pushHistory = (snapshot: HistoryEntry) => {
+    setHistory((h) => {
+      const next = [...h, snapshot];
+      return next.length > HISTORY_LIMIT ? next.slice(-HISTORY_LIMIT) : next;
+    });
+  };
 
   // === โหลด units เดิมจาก API ตาม airport + floor ปัจจุบัน ===
   const { data: apiData, refetch } = useUnits({
@@ -266,20 +282,19 @@ export default function FloorPlan() {
         setSpaceHeld(true);
         return;
       }
-      // ESC → cancel current drawing OR deselect editing unit
+      // ESC → cancel current drawing OR deselect editing units
       if (e.code === 'Escape') {
-        if (editingUnitId) {
+        if (editingUnitIds.size > 0) {
           e.preventDefault();
-          setEditingUnitId(null);
-          setDragUnitStart(null);
-          // revert override ของ unit นี้
-          if (editingUnitId) {
-            setUnitOverrides((prev) => {
-              const next = { ...prev };
-              delete next[editingUnitId];
-              return next;
-            });
-          }
+          // revert overrides ของ units ที่เลือก
+          setUnitOverrides((prev) => {
+            const next = { ...prev };
+            for (const id of editingUnitIds) delete next[id];
+            return next;
+          });
+          setEditingUnitIds(new Set());
+          setPrimaryEditId(null);
+          setDragAction(null);
           return;
         }
         if (mode === 'edit') {
@@ -293,19 +308,45 @@ export default function FloorPlan() {
           return;
         }
       }
-      // Delete → ลบ unit ที่กำลัง edit (select mode)
-      if ((e.code === 'Delete' || e.code === 'Backspace') && editingUnitId && effectiveDrawMode === 'select') {
+      // Delete → ลบ units ทั้งหมดที่เลือก (select mode)
+      if ((e.code === 'Delete' || e.code === 'Backspace') && editingUnitIds.size > 0 && effectiveDrawMode === 'select') {
         e.preventDefault();
-        const u = (apiUnits as any[]).find((x) => x.id === editingUnitId);
-        const name = u?.unitCode || 'unit';
-        if (window.confirm(locale === 'th' ? `ลบพื้นที่ "${name}"?` : `Delete unit "${name}"?`)) {
-          api.delete(`/units/${editingUnitId}`).then(() => {
-            refetch();
-            setEditingUnitId(null);
-          }).catch((err) => {
-            alert(err.response?.data?.error || 'Delete failed');
-          });
+        const ids = [...editingUnitIds];
+        const names = ids.map((id) => (apiUnits as any[]).find((x) => x.id === id)?.unitCode || id).join(', ');
+        if (window.confirm(locale === 'th' ? `ลบ ${ids.length} พื้นที่ (${names})?` : `Delete ${ids.length} unit(s) (${names})?`)) {
+          Promise.all(ids.map((id) => api.delete(`/units/${id}`)))
+            .then(() => {
+              refetch();
+              setEditingUnitIds(new Set());
+              setPrimaryEditId(null);
+            })
+            .catch((err) => alert(err.response?.data?.error || 'Delete failed'));
         }
+        return;
+      }
+      // Ctrl+Z / Cmd+Z → Undo (ต้องไม่อยู่ระหว่างวาด polygon)
+      if ((e.ctrlKey || e.metaKey) && e.code === 'KeyZ' && !(drawMode === 'polygon' && polygonPoints.length > 0)) {
+        e.preventDefault();
+        setHistory((h) => {
+          if (h.length === 0) return h;
+          const snapshot = h[h.length - 1];
+          // ส่ง PUT กลับ + restore
+          Promise.all(
+            Object.entries(snapshot).map(async ([id, val]: [string, any]) => {
+              await api.put(`/units/${id}`, {
+                fpCoordX: val.fpCoordX,
+                fpCoordY: val.fpCoordY,
+                fpWidth: val.fpWidth,
+                fpHeight: val.fpHeight,
+                fpPoints: val.fpPoints,
+              });
+            })
+          ).then(() => {
+            refetch();
+            setUnitOverrides({});
+          });
+          return h.slice(0, -1);
+        });
         return;
       }
       // Backspace / Ctrl+Z → undo last polygon vertex
@@ -329,7 +370,7 @@ export default function FloorPlan() {
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('keyup', onKeyUp);
     };
-  }, [spaceHeld, mode, drawMode, polygonPoints.length, editingUnitId, apiUnits, locale, refetch]);
+  }, [spaceHeld, mode, drawMode, polygonPoints.length, editingUnitIds, apiUnits, locale, refetch]);
 
   // Auto-select allocation status ตัวแรกเมื่อ master โหลดเสร็จ
   useEffect(() => {
@@ -463,26 +504,124 @@ export default function FloorPlan() {
       e.preventDefault();
       return;
     }
-    // === Select mode: คลิก unit → เริ่มลาก ===
+    // === Select mode: คลิก handle / vertex / unit / empty ===
     if (effectiveDrawMode === 'select') {
       const pos = getMousePos(e, false);
       const gridX = toGrid(pos.x);
       const gridY = toGrid(pos.y);
+
+      // ตรวจ resize handle ของ primary rect ก่อน
+      if (primaryEditId) {
+        const pu = (apiUnits as any[]).find((x) => x.id === primaryEditId);
+        if (pu && pu.fpShapeType === 'RECT') {
+          const ov = unitOverrides[primaryEditId];
+          const x = Number(ov?.fpCoordX ?? pu.fpCoordX);
+          const y = Number(ov?.fpCoordY ?? pu.fpCoordY);
+          const w = Number(ov?.fpWidth ?? pu.fpWidth);
+          const h = Number(ov?.fpHeight ?? pu.fpHeight);
+          const tol = 0.5; // grid units
+          const corners: Array<[number, number, 'nw' | 'ne' | 'sw' | 'se']> = [
+            [x, y, 'nw'],
+            [x + w, y, 'ne'],
+            [x, y + h, 'sw'],
+            [x + w, y + h, 'se'],
+          ];
+          for (const [cx, cy, corner] of corners) {
+            if (Math.abs(gridX - cx) < tol && Math.abs(gridY - cy) < tol) {
+              // push history
+              pushHistory({ [primaryEditId]: { fpCoordX: x, fpCoordY: y, fpWidth: w, fpHeight: h } });
+              setDragAction({
+                type: 'resize',
+                unitId: primaryEditId,
+                corner,
+                mouseStart: { x: gridX, y: gridY },
+                unitStart: { x, y, w, h },
+              });
+              return;
+            }
+          }
+        }
+        // ตรวจ polygon vertex handle
+        if (pu && (pu.fpShapeType === 'POLYGON' || pu.fpShapeType === 'FREEHAND')) {
+          const ov = unitOverrides[primaryEditId];
+          const points: Point[] = (ov?.fpPoints ?? pu.fpPoints) || [];
+          const tol = 0.5;
+          for (let i = 0; i < points.length; i++) {
+            if (Math.abs(gridX - points[i].x) < tol && Math.abs(gridY - points[i].y) < tol) {
+              pushHistory({ [primaryEditId]: { fpPoints: points.map((p) => ({ ...p })) } });
+              setDragAction({
+                type: 'vertex',
+                unitId: primaryEditId,
+                vertexIndex: i,
+                mouseStart: { x: gridX, y: gridY },
+                pointsStart: points.map((p) => ({ ...p })),
+              });
+              return;
+            }
+          }
+        }
+      }
+
+      // ตรวจ hit กับ unit ใด ๆ
       const hit = findUnitAt(gridX, gridY);
       if (hit) {
-        setEditingUnitId(hit.id);
-        const override = unitOverrides[hit.id];
-        setDragUnitStart({
-          unitId: hit.id,
+        // Shift+click → add/remove จาก multi-select
+        if (e.shiftKey) {
+          setEditingUnitIds((prev) => {
+            const next = new Set(prev);
+            if (next.has(hit.id)) next.delete(hit.id);
+            else next.add(hit.id);
+            return next;
+          });
+          setPrimaryEditId(hit.id);
+          return;
+        }
+        // Click ธรรมดา — ถ้า unit นี้อยู่ในการเลือกอยู่แล้ว → เริ่มลากหลายตัว
+        // ถ้าไม่อยู่ → clear + select เฉพาะ unit นี้
+        const inSelection = editingUnitIds.has(hit.id);
+        const targetIds = inSelection ? [...editingUnitIds] : [hit.id];
+        if (!inSelection) {
+          setEditingUnitIds(new Set([hit.id]));
+        }
+        setPrimaryEditId(hit.id);
+        // เริ่ม move drag — เก็บ start coords ของทุก unit
+        const starts: Record<number, any> = {};
+        for (const id of targetIds) {
+          const u = (apiUnits as any[]).find((x) => x.id === id);
+          if (!u) continue;
+          const ov = unitOverrides[id];
+          starts[id] = {
+            x: Number(ov?.fpCoordX ?? u.fpCoordX ?? 0),
+            y: Number(ov?.fpCoordY ?? u.fpCoordY ?? 0),
+            w: Number(ov?.fpWidth ?? u.fpWidth ?? 0),
+            h: Number(ov?.fpHeight ?? u.fpHeight ?? 0),
+            points: (ov?.fpPoints ?? u.fpPoints) ? (ov?.fpPoints ?? u.fpPoints).map((p: Point) => ({ ...p })) : null,
+          };
+        }
+        // push history ก่อนเริ่ม move
+        const snapshot: HistoryEntry = {};
+        for (const [id, s] of Object.entries(starts)) {
+          snapshot[Number(id)] = {
+            fpCoordX: (s as any).x,
+            fpCoordY: (s as any).y,
+            fpWidth: (s as any).w,
+            fpHeight: (s as any).h,
+            fpPoints: (s as any).points,
+          };
+        }
+        pushHistory(snapshot);
+        setDragAction({
+          type: 'move',
+          unitIds: targetIds,
           mouseStart: { x: gridX, y: gridY },
-          unitStart: {
-            x: override?.fpCoordX ?? Number(hit.fpCoordX || 0),
-            y: override?.fpCoordY ?? Number(hit.fpCoordY || 0),
-            points: override?.fpPoints ?? hit.fpPoints ?? null,
-          },
+          starts,
         });
       } else {
-        setEditingUnitId(null);
+        // คลิกที่ว่าง → ถ้าไม่กด shift, clear selection
+        if (!e.shiftKey) {
+          setEditingUnitIds(new Set());
+          setPrimaryEditId(null);
+        }
       }
       return;
     }
@@ -521,28 +660,74 @@ export default function FloorPlan() {
       setPan({ x: panStart.panX + dx, y: panStart.panY + dy });
       return;
     }
-    // === Drag unit ขณะ select mode ===
-    if (dragUnitStart && effectiveDrawMode === 'select') {
-      const pos = getMousePos(e, true); // snap to grid ตอนลาก
+    // === Drag action (move / resize / vertex) ขณะ select mode ===
+    if (dragAction && effectiveDrawMode === 'select') {
+      const pos = getMousePos(e, true);
       const gridX = toGrid(pos.x);
       const gridY = toGrid(pos.y);
-      const dx = gridX - dragUnitStart.mouseStart.x;
-      const dy = gridY - dragUnitStart.mouseStart.y;
-      const newX = dragUnitStart.unitStart.x + dx;
-      const newY = dragUnitStart.unitStart.y + dy;
-      let newPoints: Point[] | null = null;
-      if (dragUnitStart.unitStart.points && Array.isArray(dragUnitStart.unitStart.points)) {
-        newPoints = dragUnitStart.unitStart.points.map((p) => ({ x: p.x + dx, y: p.y + dy }));
+
+      if (dragAction.type === 'move') {
+        const dx = gridX - dragAction.mouseStart.x;
+        const dy = gridY - dragAction.mouseStart.y;
+        const newOverrides: typeof unitOverrides = {};
+        for (const id of dragAction.unitIds) {
+          const start = dragAction.starts[id];
+          if (!start) continue;
+          newOverrides[id] = {
+            fpCoordX: start.x + dx,
+            fpCoordY: start.y + dy,
+            fpWidth: start.w,
+            fpHeight: start.h,
+            fpPoints: start.points ? start.points.map((p: Point) => ({ x: p.x + dx, y: p.y + dy })) : null,
+          };
+        }
+        setUnitOverrides((prev) => ({ ...prev, ...newOverrides }));
+        return;
       }
-      setUnitOverrides((prev) => ({
-        ...prev,
-        [dragUnitStart.unitId]: {
-          fpCoordX: newX,
-          fpCoordY: newY,
-          fpPoints: newPoints,
-        },
-      }));
-      return;
+
+      if (dragAction.type === 'resize') {
+        const { x, y, w, h } = dragAction.unitStart;
+        const dx = gridX - dragAction.mouseStart.x;
+        const dy = gridY - dragAction.mouseStart.y;
+        let newX = x, newY = y, newW = w, newH = h;
+        switch (dragAction.corner) {
+          case 'nw': newX = x + dx; newY = y + dy; newW = w - dx; newH = h - dy; break;
+          case 'ne': newY = y + dy; newW = w + dx; newH = h - dy; break;
+          case 'sw': newX = x + dx; newW = w - dx; newH = h + dy; break;
+          case 'se': newW = w + dx; newH = h + dy; break;
+        }
+        // บังคับขั้นต่ำ 1 grid unit
+        if (newW < 1) { newW = 1; if (dragAction.corner === 'nw' || dragAction.corner === 'sw') newX = x + w - 1; }
+        if (newH < 1) { newH = 1; if (dragAction.corner === 'nw' || dragAction.corner === 'ne') newY = y + h - 1; }
+        setUnitOverrides((prev) => ({
+          ...prev,
+          [dragAction.unitId]: {
+            fpCoordX: newX,
+            fpCoordY: newY,
+            fpWidth: newW,
+            fpHeight: newH,
+          },
+        }));
+        return;
+      }
+
+      if (dragAction.type === 'vertex') {
+        const newPoints = dragAction.pointsStart.map((p, i) =>
+          i === dragAction.vertexIndex ? { x: gridX, y: gridY } : p
+        );
+        const bb = pointsBounds(newPoints);
+        setUnitOverrides((prev) => ({
+          ...prev,
+          [dragAction.unitId]: {
+            fpCoordX: bb.minX,
+            fpCoordY: bb.minY,
+            fpWidth: bb.maxX - bb.minX,
+            fpHeight: bb.maxY - bb.minY,
+            fpPoints: newPoints,
+          },
+        }));
+        return;
+      }
     }
     if (mode !== 'edit') return;
     if (drawMode === 'rect' && drawing) {
@@ -567,34 +752,29 @@ export default function FloorPlan() {
       setPanStart(null);
       return;
     }
-    // === ปล่อยลาก unit ที่กำลัง edit ===
-    if (dragUnitStart) {
-      const unitId = dragUnitStart.unitId;
-      const override = unitOverrides[unitId];
-      setDragUnitStart(null);
-      if (override) {
-        // Check ว่าตำแหน่งเปลี่ยนจริงไหม
-        const movedX = override.fpCoordX !== dragUnitStart.unitStart.x;
-        const movedY = override.fpCoordY !== dragUnitStart.unitStart.y;
-        if (movedX || movedY) {
-          try {
-            await api.put(`/units/${unitId}`, {
+    // === ปล่อย drag action — save ตำแหน่ง/ขนาด/vertex ใหม่ ===
+    if (dragAction) {
+      const action = dragAction;
+      setDragAction(null);
+      const idsToSave = action.type === 'move' ? action.unitIds : [action.unitId];
+      try {
+        await Promise.all(
+          idsToSave.map((id) => {
+            const override = unitOverrides[id];
+            if (!override) return Promise.resolve();
+            return api.put(`/units/${id}`, {
               fpCoordX: override.fpCoordX,
               fpCoordY: override.fpCoordY,
+              fpWidth: override.fpWidth,
+              fpHeight: override.fpHeight,
               fpPoints: override.fpPoints,
             });
-            // Refetch เพื่อ sync ข้อมูลใหม่ + clear override
-            refetch();
-            setUnitOverrides((prev) => {
-              const next = { ...prev };
-              delete next[unitId];
-              return next;
-            });
-          } catch (err) {
-            console.error('Failed to save unit position:', err);
-            alert(locale === 'th' ? 'บันทึกตำแหน่งไม่สำเร็จ' : 'Failed to save position');
-          }
-        }
+          })
+        );
+        refetch();
+      } catch (err: any) {
+        console.error('Save failed:', err);
+        alert(locale === 'th' ? 'บันทึกไม่สำเร็จ' : 'Failed to save');
       }
       return;
     }
@@ -687,8 +867,10 @@ export default function FloorPlan() {
     setPolygonCursor(null);
     setFreehandPath([]);
     setIsFreehanding(false);
-    setEditingUnitId(null);
-    setDragUnitStart(null);
+    setEditingUnitIds(new Set());
+    setPrimaryEditId(null);
+    setDragAction(null);
+    setUnitOverrides({});
   };
 
   // === Collision check — rect only สำหรับ draft (polygon/freehand ข้าม — AABB ก็พอ) ===
@@ -1686,10 +1868,11 @@ export default function FloorPlan() {
 
                   const color = unitStatusColors[u.status] || unitStatusColors.VACANT;
                   const isViewSelected = selectedUnitId === u.id;
-                  const isEditSelected = editingUnitId === u.id;
+                  const isEditSelected = editingUnitIds.has(u.id);
+                  const isPrimary = primaryEditId === u.id;
                   const highlighted = isViewSelected || isEditSelected;
                   const stroke = highlighted ? '#d7a94b' : color.stroke;
-                  const strokeW = highlighted ? 4 : 2;
+                  const strokeW = highlighted ? (isPrimary ? 4 : 3) : 2;
                   const isSelectMode = effectiveDrawMode === 'select';
                   const clickProps = {
                     onClick: (e: React.MouseEvent) => {
@@ -1784,6 +1967,61 @@ export default function FloorPlan() {
                     </g>
                   );
                 })}
+
+                {/* Resize handles สำหรับ primary editing RECT unit */}
+                {effectiveDrawMode === 'select' && primaryEditId && (() => {
+                  const pu = (apiUnits as any[]).find((x) => x.id === primaryEditId);
+                  if (!pu) return null;
+                  const ov = unitOverrides[primaryEditId];
+                  if (pu.fpShapeType === 'RECT' && (ov?.fpCoordX ?? pu.fpCoordX) != null) {
+                    const x = Number(ov?.fpCoordX ?? pu.fpCoordX);
+                    const y = Number(ov?.fpCoordY ?? pu.fpCoordY);
+                    const w = Number(ov?.fpWidth ?? pu.fpWidth);
+                    const h = Number(ov?.fpHeight ?? pu.fpHeight);
+                    const corners: Array<[number, number, string, string]> = [
+                      [x, y, 'nw-resize', 'nw'],
+                      [x + w, y, 'ne-resize', 'ne'],
+                      [x, y + h, 'sw-resize', 'sw'],
+                      [x + w, y + h, 'se-resize', 'se'],
+                    ];
+                    return (
+                      <g>
+                        {corners.map(([cx, cy, cursor, key]) => (
+                          <rect
+                            key={key}
+                            x={cx * GRID_SIZE - 6}
+                            y={cy * GRID_SIZE - 6}
+                            width={12} height={12}
+                            fill="#fff"
+                            stroke="#d7a94b"
+                            strokeWidth={2}
+                            style={{ cursor }}
+                          />
+                        ))}
+                      </g>
+                    );
+                  }
+                  if ((pu.fpShapeType === 'POLYGON' || pu.fpShapeType === 'FREEHAND')) {
+                    const points: Point[] = (ov?.fpPoints ?? pu.fpPoints) || [];
+                    return (
+                      <g>
+                        {points.map((p, i) => (
+                          <circle
+                            key={i}
+                            cx={p.x * GRID_SIZE}
+                            cy={p.y * GRID_SIZE}
+                            r={5}
+                            fill="#fff"
+                            stroke="#d7a94b"
+                            strokeWidth={2}
+                            style={{ cursor: 'move' }}
+                          />
+                        ))}
+                      </g>
+                    );
+                  }
+                  return null;
+                })()}
 
                 {/* Draft zones (ใหม่จากการวาด) — render ตาม shape type */}
                 {draftZones.map((zone) => {

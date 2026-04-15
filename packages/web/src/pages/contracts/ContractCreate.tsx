@@ -10,6 +10,7 @@ import { useTranslation } from '../../lib/i18n';
 import { useMaster, BusinessCategory, DocumentType, PaymentMethod } from '../../api/master-hooks';
 import api from '../../api/client';
 import { generateSimplePdf } from '../../lib/pdf';
+import SignaturePad from '../../components/shared/SignaturePad';
 
 // === กำหนดขั้นตอน Wizard ===
 const steps = [
@@ -117,6 +118,11 @@ export default function ContractCreate() {
     depositType: 'CASH',
     depositAmount: '195000',
   });
+
+  // Step 5-6 — ลายเซ็นอิเล็กทรอนิกส์ (e-sign)
+  const [lessorSignature, setLessorSignature] = useState<string | null>(null); // ฝ่ายให้เช่า (DOA)
+  const [lesseeSignature, setLesseeSignature] = useState<string | null>(null); // ผู้เช่า
+  const [signedDate, setSignedDate] = useState(new Date().toISOString().slice(0, 10));
 
   // ตรวจสอบความถูกต้องของ step ปัจจุบัน
   const goNext = () => setCurrentStep(Math.min(6, currentStep + 1));
@@ -526,8 +532,47 @@ export default function ContractCreate() {
                 </Box>
 
                 <Divider sx={{ my: 2 }} />
+
+                {/* === Signature pads (e-sign) === */}
+                <Typography sx={{ fontSize: 12, fontWeight: 700, mb: 1.5, display: 'flex', alignItems: 'center', gap: .5 }}>
+                  <span className="material-icons-outlined" style={{ fontSize: 16, color: '#005b9f' }}>draw</span>
+                  {locale === 'th' ? 'ลายเซ็นอิเล็กทรอนิกส์' : 'Electronic Signature'}
+                </Typography>
+                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2, mb: 2 }}>
+                  <Box>
+                    <SignaturePad
+                      label={locale === 'th' ? 'ผู้ให้เช่า (กรมท่าอากาศยาน)' : 'Lessor (DOA)'}
+                      width={360}
+                      height={140}
+                      value={lessorSignature}
+                      onChange={setLessorSignature}
+                    />
+                    {lessorSignature && (
+                      <Typography sx={{ fontSize: 9, color: '#0f7a43', mt: .25 }}>
+                        ✓ {locale === 'th' ? 'ลงนามแล้ว' : 'Signed'} · {signedDate}
+                      </Typography>
+                    )}
+                  </Box>
+                  <Box>
+                    <SignaturePad
+                      label={locale === 'th' ? `ผู้เช่า (${formData.tenantName})` : `Lessee (${formData.tenantName})`}
+                      width={360}
+                      height={140}
+                      value={lesseeSignature}
+                      onChange={setLesseeSignature}
+                    />
+                    {lesseeSignature && (
+                      <Typography sx={{ fontSize: 9, color: '#0f7a43', mt: .25 }}>
+                        ✓ {locale === 'th' ? 'ลงนามแล้ว' : 'Signed'} · {signedDate}
+                      </Typography>
+                    )}
+                  </Box>
+                </Box>
+
                 <Typography sx={{ fontSize: 11, color: '#5a6d80', fontStyle: 'italic', textAlign: 'center' }}>
-                  {locale === 'th' ? 'ร่างสัญญาจะถูกสร้างเป็น PDF หลังจากคลิก "ลงนาม"' : 'Full contract PDF will be generated after clicking "Sign"'}
+                  {locale === 'th'
+                    ? 'ลายเซ็นจะถูก embed ใน PDF เมื่อคลิก "ลงนามและบันทึก"'
+                    : 'Signatures will be embedded in PDF on "Sign & Save"'}
                 </Typography>
               </Paper>
             </Box>
@@ -547,6 +592,30 @@ export default function ContractCreate() {
               </Typography>
 
               <Chip label={createdContractNo || 'CTR-XXXX-XXX'} sx={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 14, fontWeight: 700, color: '#005b9f', bgcolor: 'rgba(0,91,159,.08)', border: '1px solid rgba(0,91,159,.25)', py: 2, px: 1, mb: 3 }} />
+
+              {/* แสดงลายเซ็นที่บันทึก */}
+              {(lessorSignature || lesseeSignature) && (
+                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: 2, mb: 3, maxWidth: 720, mx: 'auto' }}>
+                  {lessorSignature && (
+                    <Paper elevation={0} sx={{ p: 1.5, border: '1px solid rgba(22,63,107,.12)' }}>
+                      <Typography sx={{ fontSize: 10, color: '#5a6d80', mb: .5 }}>
+                        {locale === 'th' ? 'ผู้ให้เช่า' : 'Lessor'}
+                      </Typography>
+                      <img src={lessorSignature} alt="Lessor signature" style={{ maxWidth: '100%', height: 80 }} />
+                      <Typography sx={{ fontSize: 9, color: '#0f7a43' }}>✓ {signedDate}</Typography>
+                    </Paper>
+                  )}
+                  {lesseeSignature && (
+                    <Paper elevation={0} sx={{ p: 1.5, border: '1px solid rgba(22,63,107,.12)' }}>
+                      <Typography sx={{ fontSize: 10, color: '#5a6d80', mb: .5 }}>
+                        {locale === 'th' ? 'ผู้เช่า' : 'Lessee'} · {formData.tenantName}
+                      </Typography>
+                      <img src={lesseeSignature} alt="Lessee signature" style={{ maxWidth: '100%', height: 80 }} />
+                      <Typography sx={{ fontSize: 9, color: '#0f7a43' }}>✓ {signedDate}</Typography>
+                    </Paper>
+                  )}
+                </Box>
+              )}
 
               {/* Workflow Progress */}
               <Box sx={{ display: 'flex', gap: 1, justifyContent: 'center', mb: 3, flexWrap: 'wrap' }}>
